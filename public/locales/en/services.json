@@ -1,0 +1,12 @@
+{
+  "title": "Manage Services",
+  "newService": "New Service",
+  "serviceName": "Service Name",
+  "price": "Price",
+  "category": "Category",
+  "serviceItemsTitle": "Service Items",
+  "service": "Service",
+  "quantity": "Quantity",
+  "loadingServices": "Loading services...",
+  "selectService": "Select a service"
+}

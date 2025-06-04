@@ -1,0 +1,14 @@
+{
+  "title": "Manage Orders",
+  "orderId": "Order ID",
+  "status_pending": "Pending",
+  "status_processing": "Processing",
+  "status_ready": "Ready for Pickup",
+  "status_completed": "Completed",
+  "status_cancelled": "Cancelled",
+  "filterByStatus": "Filter by status",
+  "itemCount": "Items",
+  "editOrder": "Edit Order",
+  "cancelOrder": "Cancel Order",
+  "searchByCustomer": "Search by customer name..."
+}

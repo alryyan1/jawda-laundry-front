@@ -1,0 +1,11 @@
+{
+  "title": "Manage Customers",
+  "newCustomer": "New Customer",
+  "phone": "Phone",
+  "totalOrders": "Total Orders",
+  "registeredDate": "Registered Date",
+  "viewProfile": "View Profile",
+  "editCustomer": "Edit Customer",
+  "loadingCustomers": "Loading customers...",
+  "searchByName": "Search by name..."
+}
