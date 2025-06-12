@@ -21,8 +21,8 @@ interface AuthState {
   fetchUser: () => Promise<void>; // To fetch user if token exists but user is not in store
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
+export const useAuthStore = create(
+  persist<AuthState>(
     (set, get) => ({
       token: null,
       user: null,
@@ -61,7 +61,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage', // Name of the item in storage
       storage: createJSONStorage(() => localStorage), // Or sessionStorage
-      partialize: (state) => ({ token: state.token }), // Only persist token, user can be fetched
+      partialize: (state: AuthState) => ({
+        token: state.token ?? null,
+        isAuthenticated: !!state.isAuthenticated
+      }) as AuthState, // Persist both token and isAuthenticated state, type-cast to fix TS error
     }
   )
 );

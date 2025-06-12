@@ -1,12 +1,86 @@
 {
-  "title": "Manage Services",
-  "newService": "New Service",
-  "serviceName": "Service Name",
-  "price": "Price",
-  "category": "Category",
-  "serviceItemsTitle": "Service Items",
-  "service": "Service",
-  "quantity": "Quantity",
+  "addServiceItem": "Add Item"
+,
+  
+    "title": "Manage Services",
+    "newService": "New Service",
+    "serviceName": "Service Name",
+    "price": "Price",
+    "category": "Category",
+    "description": "Description",
+    "errorLoadingServices": "Error loading services:",
+    "searchByName": "Search by service name...",
+    "serviceCreatedSuccess": "Service created successfully.",
+    "serviceCreatedError": "Failed to create service.",
+    "serviceUpdatedSuccess": "Service updated successfully.",
+    "serviceUpdatedError": "Failed to update service.",
+    "serviceDeletedSuccess": "Service deleted successfully.",
+    "serviceDeletedError": "Failed to delete service. It might be in use.",
+    "editServiceTitle": "Edit Service",
+    "newServiceTitle": "Add New Service",
+    "editServiceDescription": "Make changes to the service details here.",
+    "newServiceDescription": "Fill in the details for the new service.",
+    "deleteServiceConfirmTitle": "Are you sure?",
+    "deleteServiceConfirmDescription": "This action cannot be undone. This will permanently delete the service '{{serviceName}}'.",
+    "itemCount": "Items",
+    "serviceItemsTitle": "Service Items",
+    "service": "Service",
+    "quantity": "Quantity",
   "loadingServices": "Loading services...",
-  "selectService": "Select a service"
-}
+  "selectService": "Select a service",
+    "serviceOfferingsTitle": "Service Offerings",
+    "serviceOfferingsDescription": "Manage your available services and pricing strategies.",
+    "newServiceOfferingBtn": "New Service Offering",
+    "loadingServiceOfferings": "Loading service offerings...",
+    "offeringName": "Offering Name",
+    "productCategory": "Product Category",
+    "productType": "Product Type",
+    "serviceAction": "Service Action",
+    "defaultPrice": "Default Price",
+    "pricingStrategy": "Pricing Strategy",
+    "active": "Active",
+    "strategy": {
+      "fixed": "Fixed Price",
+      "per_unit_product": "Per Unit (Item)",
+      "dimension_based": "By Dimension (Length × Width)",
+      "customer_specific": "Customer-Specific"
+    },
+    "serviceOfferingDeletedSuccess": "Service offering deleted successfully.",
+    "serviceOfferingDeleteFailed": "Failed to delete service offering.",
+    "serviceOfferingLC": "service offering",
+    
+      "backToOfferings": "Back to Offerings",
+      "newServiceOfferingTitle": "Create New Service Offering",
+      "newServiceOfferingDescription": "Define how this service is offered and priced.",
+      "selectProductType": "Select Product Type",
+      "selectServiceAction": "Select Service Action",
+      "selectPricingStrategy": "Select Pricing Strategy",
+      "defaultPriceForItem": "Default Price (per item)",
+      "nameOverrideOptional": "Name Override (optional)",
+      "nameOverridePlaceholder": "Custom display name for this offering",
+      "descriptionOverrideOptional": "Description Override (optional)",
+      "applicableUnitOptional": "Applicable Unit (optional)",
+      "applicableUnitPlaceholder": "e.g., piece, kg, sqm",
+      "isActive": "Is Active?",
+      "createOfferingBtn": "Create Offering",
+      "serviceOfferingCreatedSuccess": "Service offering created successfully.",
+      "serviceOfferingCreationFailed": "Failed to create service offering."
+      ,
+        "serviceOfferingUpdatedSuccess": "Service offering updated successfully.",
+        "serviceOfferingUpdateFailed": "Failed to update service offering.",
+        "loadingOfferingDetails": "Loading offering details...",
+        "offeringNotFound": "Service offering not found.",
+        "editServiceOfferingTitle": "Edit Service Offering",
+        "editServiceOfferingDescription": "Update the service details and pricing configuration.",
+        
+          "quoteFailedForItem": "فشل في إنشاء عرض السعر لهذا العنصر.",
+          "itemQuote": "عرض سعر العنصر",
+          "enterDetailsForQuote": "يرجى إدخال التفاصيل اللازمة للحصول على عرض سعر.",
+          "orderTotal": "إجمالي الطلب"
+        
+        
+      }
+      
+    
+  
+  

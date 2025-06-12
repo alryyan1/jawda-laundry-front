@@ -48,5 +48,12 @@
   "submit": "إرسال",
   "notes": "ملاحظات",
   "notesPlaceholder": "أية تعليمات خاصة لهذا الطلب؟",
-  "customerNamePlaceholder": "مثال: جون دو"
+  "customerNamePlaceholder": "مثال: جون دو",
+  "edit": "تعديل",
+  "delete": "حذف",
+  "saving": "جار الحفظ...",
+  "deleting": "جار الحذف...",
+  "description": "الوصف",
+  "removeItem": "إزالة العنصر",
+  "subtotal": "المجموع الفرعي"
 }

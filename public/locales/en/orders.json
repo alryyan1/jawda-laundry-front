@@ -10,5 +10,15 @@
   "itemCount": "Items",
   "editOrder": "Edit Order",
   "cancelOrder": "Cancel Order",
-  "searchByCustomer": "Search by customer name..."
+  "searchByCustomer": "Search by customer name...",
+  "newOrderDescription": "New order description",
+  "dueDate": "Due Date (Optional)",
+  "createOrderCta": "Create Order",
+  
+    "quoteFailedForItem": "Failed to generate quote for this item.",
+    "itemQuote": "Item Quote",
+    "enterDetailsForQuote": "Please enter the necessary details to get a quote.",
+    "orderTotal": "Order Total"
+  
+  
 }

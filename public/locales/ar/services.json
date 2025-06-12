@@ -1,0 +1,86 @@
+{
+    "title": "إدارة الخدمات",
+    "newService": "خدمة جديدة",
+    "serviceName": "اسم الخدمة",
+    "price": "السعر",
+    "category": "الفئة",
+    "description": "الوصف",
+    "loadingServices": "جار تحميل الخدمات...",
+    "errorLoadingServices": "خطأ في تحميل الخدمات:",
+    "searchByName": "البحث باسم الخدمة...",
+    "serviceCreatedSuccess": "تم إنشاء الخدمة بنجاح.",
+    "serviceCreatedError": "فشل إنشاء الخدمة.",
+    "serviceUpdatedSuccess": "تم تحديث الخدمة بنجاح.",
+    "serviceUpdatedError": "فشل تحديث الخدمة.",
+    "serviceDeletedSuccess": "تم حذف الخدمة بنجاح.",
+    "serviceDeletedError": "فشل حذف الخدمة. قد تكون قيد الاستخدام.",
+    "editServiceTitle": "تعديل الخدمة",
+    "newServiceTitle": "إضافة خدمة جديدة",
+    "editServiceDescription": "قم بإجراء تغييرات على تفاصيل الخدمة هنا.",
+    "newServiceDescription": "املأ تفاصيل الخدمة الجديدة.",
+    "deleteServiceConfirmTitle": "هل أنت متأكد؟",
+    "deleteServiceConfirmDescription": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف الخدمة '{{serviceName}}' بشكل دائم.",
+    "itemCount": "العناصر",
+    "serviceItemsTitle": "بنود الخدمة",
+    "service": "الخدمة",
+    "quantity": "الكمية",
+    "selectService": "اختر خدمة",
+    
+      "serviceOfferingsTitle": "عروض الخدمة",
+      "serviceOfferingsDescription": "إدارة الخدمات المتاحة واستراتيجيات التسعير.",
+      "newServiceOfferingBtn": "إضافة عرض خدمة جديد",
+      "loadingServiceOfferings": "جارٍ تحميل عروض الخدمة...",
+      "offeringName": "اسم العرض",
+      "productCategory": "فئة المنتج",
+      "productType": "نوع المنتج",
+      "serviceAction": "إجراء الخدمة",
+      "defaultPrice": "السعر الافتراضي",
+      "pricingStrategy": "استراتيجية التسعير",
+      "active": "نشط",
+      "strategy": {
+        "fixed": "سعر ثابت",
+        "per_unit_product": "لكل وحدة (قطعة)",
+        "dimension_based": "حسب الأبعاد (الطول × العرض)",
+        "customer_specific": "حسب نوع العميل"
+      },
+      "serviceOfferingDeletedSuccess": "تم حذف عرض الخدمة بنجاح.",
+      "serviceOfferingDeleteFailed": "فشل في حذف عرض الخدمة.",
+      "serviceOfferingLC": "عرض الخدمة",
+      
+        "backToOfferings": "العودة إلى عروض الخدمة",
+        "newServiceOfferingTitle": "إضافة عرض خدمة جديد",
+        "newServiceOfferingDescription": "حدد طريقة تقديم هذه الخدمة وتسعيرها.",
+        "selectProductType": "اختر نوع المنتج",
+        "selectServiceAction": "اختر إجراء الخدمة",
+        "selectPricingStrategy": "اختر استراتيجية التسعير",
+        "defaultPriceForItem": "السعر الافتراضي (لكل قطعة)",
+        "nameOverrideOptional": "اسم مخصص (اختياري)",
+        "nameOverridePlaceholder": "اسم مخصص لعرض الخدمة هذا",
+        "descriptionOverrideOptional": "وصف مخصص (اختياري)",
+        "applicableUnitOptional": "الوحدة المستخدمة (اختياري)",
+        "applicableUnitPlaceholder": "مثال: قطعة، كجم، م²",
+        "isActive": "هل نشط؟",
+        "createOfferingBtn": "إنشاء العرض",
+        "serviceOfferingCreatedSuccess": "تم إنشاء عرض الخدمة بنجاح.",
+        "serviceOfferingCreationFailed": "فشل في إنشاء عرض الخدمة."
+      
+        ,
+          "units": {
+            "item": "قطعة",
+            "kg": "كجم",
+            "sq_meter": "متر مربع",
+            "sq_meter_total": "متر مربع (محسوبة)"
+          
+        }
+        
+        ,
+          "serviceOfferingUpdatedSuccess": "تم تحديث عرض الخدمة بنجاح.",
+          "serviceOfferingUpdateFailed": "فشل في تحديث عرض الخدمة.",
+          "loadingOfferingDetails": "جارٍ تحميل تفاصيل العرض...",
+          "offeringNotFound": "لم يتم العثور على عرض الخدمة.",
+          "editServiceOfferingTitle": "تعديل عرض الخدمة",
+          "editServiceOfferingDescription": "قم بتحديث تفاصيل الخدمة وتكوين التسعير."
+        }
+        
+    
+  

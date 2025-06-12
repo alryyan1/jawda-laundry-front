@@ -1,10 +1,10 @@
 // src/components/shared/DataTable.tsx
 import * as React from "react"
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { Loader2 } from "lucide-react"
 
 
 interface DataTableProps<TData, TValue> {
@@ -38,6 +39,10 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   searchColumnId?: string // ID of the column to filter by
   searchPlaceholder?: string
+  pageCount?: number
+  currentPage?: number
+  onPageChange?: (page: number) => void
+  isLoading?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -45,6 +50,10 @@ export function DataTable<TData, TValue>({
   data,
   searchColumnId,
   searchPlaceholder = "Search...",
+  pageCount,
+  currentPage,
+  onPageChange,
+  isLoading,
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation('common');
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -69,6 +78,8 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
     },
+    pageCount: pageCount,
+    manualPagination: !!pageCount,
   })
 
   return (
@@ -155,33 +166,44 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {t('noResults')}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="ml-2">{t('loading')}</span>
+                    </div>
+                  ) : (
+                    t('noResults')
+                  )}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-between space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {t('selectedRows', { count: table.getFilteredSelectedRowModel().rows.length, total: table.getFilteredRowModel().rows.length})}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {t('previous')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {t('next')}
-        </Button>
+        {pageCount && onPageChange && (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange((currentPage || 1) - 1)}
+              disabled={!currentPage || currentPage <= 1}
+            >
+              {t('previous')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange((currentPage || 1) + 1)}
+              disabled={!currentPage || currentPage >= pageCount}
+            >
+              {t('next')}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
