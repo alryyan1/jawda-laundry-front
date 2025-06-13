@@ -1,6 +1,6 @@
 // src/api/apiClient.ts
 import axios from 'axios';
-// import { useAuthStore } from '@/store/authStore'; // Keep if you use it directly here
+import { useAuthStore } from '@/store/authStore';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -20,15 +20,28 @@ apiClient.interceptors.response.use(
         const { useAuthStore } = await import('@/store/authStore');
         useAuthStore.getState().logout();
 
-        if (window.location.pathname !== '/auth/login' && !window.location.pathname.startsWith('/auth/')) {
-            window.location.href = '/auth/login'; // Hard redirect
-        }
+        // Do not force a hard redirect; let the app/router handle navigation if needed
       } catch (importError) {
         console.error("Failed to import authStore or logout from apiClient:", importError);
       }
     }
     return Promise.reject(error);
   }
+);
+
+// Always attach the latest token from the store to every request
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers['Authorization'] = `Bearer ${token}`;
+    } else if (config.headers && 'Authorization' in config.headers) {
+      delete config.headers['Authorization'];
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 export default apiClient;

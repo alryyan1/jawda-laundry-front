@@ -2,143 +2,60 @@
 import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  FormProvider,
-  useForm,
-  Controller,
-  useFieldArray,
-  useWatch,
-} from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Combobox } from "@/components/ui/combobox";
-import type { ComboboxOption } from "@/components/ui/combobox";
-import { Loader2, ArrowLeft, PlusCircle } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
-import { OrderItemFormLine as OrderItemFormLineComponent } from "@/pages/orders/components/OrderItemFormLine";
+// Feature Components
+import { CustomerSelection } from "@/features/orders/components/CustomerSelection";
+import { OrderItemsManager } from "@/features/orders/components/OrderItemsManager";
+import { OrderOverallDetails } from "@/features/orders/components/OrderOverallDetails";
+import { OrderSummaryAndActions } from "@/features/orders/components/OrderSummaryAndActions";
 
 import type {
-  Customer,
   ProductType,
   ServiceAction,
   ServiceOffering,
   NewOrderFormData,
   Order,
-  PricingStrategy,
-  PaginatedResponse,
+  OrderItemFormLine,
 } from "@/types";
-import { getCustomers } from "@/api/customerService";
+
+// API services
 import { getAllProductTypes } from "@/api/productTypeService";
 import { getServiceActions } from "@/api/serviceActionService";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { createOrder, getOrderItemQuote } from "@/api/orderService";
-import type { QuoteItemPayload, QuoteItemResponse } from "@/api/orderService";
 import { useDebounce } from "@/hooks/useDebounce";
+import { newOrderFormSchema } from "@/schemas/newOrderSchema";
 
-// Zod Schema (ensure it matches the types)
-const orderItemFormLineSchema = z
-  .object({
-    id: z.string(),
-    product_type_id: z
-      .string()
-      .min(1, { message: "validation.productTypeRequired" }),
-    service_action_id: z
-      .string()
-      .min(1, { message: "validation.serviceActionRequired" }),
-    product_description_custom: z.string().optional().or(z.literal("")),
-    quantity: z.preprocess(
-      (val) =>
-        val === "" ||
-        val === null ||
-        val === undefined ||
-        Number.isNaN(parseInt(String(val)))
-          ? 1
-          : parseInt(String(val), 10),
-      z.number().min(1, { message: "validation.quantityMin" })
-    ),
-    length_meters: z.preprocess(
-      (val) =>
-        val === "" ||
-        val === null ||
-        val === undefined ||
-        Number.isNaN(parseFloat(String(val)))
-          ? undefined
-          : parseFloat(String(val)),
-      z.number().min(0, { message: "validation.dimensionPositive" }).optional()
-    ),
-    width_meters: z.preprocess(
-      (val) =>
-        val === "" ||
-        val === null ||
-        val === undefined ||
-        Number.isNaN(parseFloat(String(val)))
-          ? undefined
-          : parseFloat(String(val)),
-      z.number().min(0, { message: "validation.dimensionPositive" }).optional()
-    ),
-    notes: z.string().optional().or(z.literal("")),
-    _derivedServiceOffering: z
-      .custom<ServiceOffering | null | undefined>()
-      .optional(), // Not directly validated here, but by logic
-    _pricingStrategy: z.custom<PricingStrategy | null | undefined>().optional(),
-    _quoted_price_per_unit_item: z.number().optional().nullable(),
-    _quoted_sub_total: z.number().optional().nullable(),
-    _quoted_applied_unit: z.string().optional().nullable(),
-    _isQuoting: z.boolean().optional(),
-    _quoteError: z.string().optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      // Ensure dimensions are provided if strategy requires it
-      if (data._pricingStrategy === "dimension_based") {
-        return (
-          data.length_meters !== undefined &&
-          data.length_meters > 0 &&
-          data.width_meters !== undefined &&
-          data.width_meters > 0
-        );
-      }
-      return true;
-    },
-    {
-      message: "validation.dimensionsRequiredForStrategy",
-      path: ["length_meters"], // Or a more general path
-    }
-  );
+// Define types for quote-related data
+interface QuoteItemPayload {
+  service_offering_id: number;
+  customer_id: string;
+  quantity: number;
+  length_meters?: number;
+  width_meters?: number;
+}
 
-const newOrderFormSchema = z.object({
-  customer_id: z.string().min(1, { message: "validation.customerRequired" }),
-  items: z
-    .array(orderItemFormLineSchema)
-    .min(1, { message: "validation.atLeastOneItem" }),
-  notes: z.string().optional().or(z.literal("")),
-  due_date: z
-    .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Date.parse(val)), {
-      message: "validation.invalidDate",
-    })
-    .or(z.literal("")),
-});
+interface QuoteItemResponse {
+  calculated_price_per_unit_item: number;
+  sub_total: number;
+  applied_unit: string;
+}
 
 const NewOrderPage: React.FC = () => {
-  const { t, i18n } = useTranslation([
+  const { t } = useTranslation([
     "common",
     "orders",
     "customers",
@@ -148,68 +65,47 @@ const NewOrderPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // --- Data Fetching ---
-  const { data: customersResponse, isLoading: isLoadingCustomers } = useQuery<
-    PaginatedResponse<Customer>,
-    Error
-  >({
-    queryKey: ["customersForSelect"],
-    queryFn: () => getCustomers(1, 1000),
-  });
-  const customerOptions: ComboboxOption[] = useMemo(
-    () =>
-      customersResponse?.data.map((cust) => ({
-        value: cust.id.toString(),
-        label: `${cust.name} (${cust.phone || cust.email || "N/A"})`,
-      })) || [],
-    [customersResponse]
-  );
-
-  const { data: productTypes = [], isLoading: isLoadingPT } = useQuery<ProductType[], Error>({
+  // --- Data Fetching for dropdowns ---
+  const { data: productTypes = [], isLoading: isLoadingPT } = useQuery({
     queryKey: ["allProductTypesForSelect"],
     queryFn: () => getAllProductTypes(),
   });
 
-  const { data: serviceActions = [], isLoading: isLoadingSA } = useQuery<
-    ServiceAction[],
-    Error
-  >({
+  const { data: serviceActions = [], isLoading: isLoadingSA } = useQuery({
     queryKey: ["serviceActionsForSelect"],
-    queryFn: getServiceActions,
+    queryFn: () => getServiceActions(),
   });
 
-  const { data: allServiceOfferings = [], isLoading: isLoadingSO } = useQuery<ServiceOffering[], Error>({
+  const { data: allServiceOfferings = [], isLoading: isLoadingSO } = useQuery({
     queryKey: ["allServiceOfferingsForSelect"],
     queryFn: () => getAllServiceOfferingsForSelect(),
   });
 
-  const isLoadingDropdowns =
-    isLoadingCustomers || isLoadingPT || isLoadingSA || isLoadingSO;
+  // isLoadingCustomers is handled within CustomerSelection component
+  const isLoadingPagePrerequisites = isLoadingPT || isLoadingSA || isLoadingSO;
 
   // --- Form Setup ---
   const methods = useForm<NewOrderFormData>({
-    resolver: zodResolver(newOrderFormSchema),
+    resolver: zodResolver(newOrderFormSchema) as Resolver<NewOrderFormData>,
     defaultValues: {
       customer_id: "",
-      items: [
-        {
-          id: uuidv4(),
-          product_type_id: "",
-          service_action_id: "",
-          quantity: 1,
-          product_description_custom: "",
-          length_meters: "",
-          width_meters: "",
-          notes: "",
-          _derivedServiceOffering: null,
-          _pricingStrategy: null,
-          _quoted_price_per_unit_item: null,
-          _quoted_sub_total: null,
-          _quoted_applied_unit: null,
-          _isQuoting: false,
-          _quoteError: null,
-        },
-      ],
+      items: [{
+        id: uuidv4(),
+        product_type_id: "",
+        service_action_id: "",
+        quantity: 1,
+        product_description_custom: "",
+        length_meters: "",
+        width_meters: "",
+        notes: "",
+        _derivedServiceOffering: null,
+        _pricingStrategy: null,
+        _quoted_price_per_unit_item: null,
+        _quoted_sub_total: null,
+        _quoted_applied_unit: null,
+        _isQuoting: false,
+        _quoteError: null,
+      }],
       notes: "",
       due_date: "",
     },
@@ -220,11 +116,10 @@ const NewOrderPage: React.FC = () => {
     formState: { errors },
     setValue,
     getValues,
-    register,
+    setError,
   } = methods;
 
-  const { fields, append, remove } = useFieldArray({ control, name: "items" });
-  const watchedAllItems = useWatch({ control, name: "items" }); // Watch the entire items array
+  const watchedAllItems = useWatch({ control, name: "items" });
   const watchedCustomerId = useWatch({ control, name: "customer_id" });
 
   // --- Quote Mutation ---
@@ -251,7 +146,6 @@ const NewOrderPage: React.FC = () => {
       setValue(`items.${variables.itemIndex}._quoteError`, null);
     },
     onError: (error, variables) => {
-      const currentFormItem = getValues(`items.${variables.itemIndex}`);
       const errorMessage =
         error.message || t("quoteFailedForItemGeneric", { ns: "orders" });
       setValue(`items.${variables.itemIndex}._isQuoting`, false);
@@ -265,24 +159,36 @@ const NewOrderPage: React.FC = () => {
     },
   });
 
-  // Debounce individual item changes to trigger quote
   const debouncedWatchedItems = useDebounce(watchedAllItems, 750);
 
+  // --- Effect for Deriving Service Offering & Triggering Quotes ---
   useEffect(() => {
-    debouncedWatchedItems.forEach((item, index) => {
-      const currentFormItem = getValues(`items.${index}`); // Get latest from form state
+    if (
+      !debouncedWatchedItems ||
+      debouncedWatchedItems.length === 0 ||
+      !allServiceOfferings ||
+      allServiceOfferings.length === 0
+    ) {
+      return;
+    }
+
+    debouncedWatchedItems.forEach((watchedItemState, index) => {
+      const currentFormItem = getValues(`items.${index}`);
+      if (!currentFormItem) return; // Item might have been removed
+
       let newOffering: ServiceOffering | null = null;
 
       if (
-        item.product_type_id &&
-        item.service_action_id &&
-        allServiceOfferings.length > 0
+        watchedItemState.product_type_id &&
+        watchedItemState.service_action_id
       ) {
         newOffering =
           allServiceOfferings.find(
-            (so) =>
-              so.productType?.id.toString() === item.product_type_id &&
-              so.serviceAction?.id.toString() === item.service_action_id
+            (so: ServiceOffering) =>
+              so.productType?.id.toString() ===
+                watchedItemState.product_type_id &&
+              so.serviceAction?.id.toString() ===
+                watchedItemState.service_action_id
           ) || null;
       }
 
@@ -295,70 +201,61 @@ const NewOrderPage: React.FC = () => {
           newOffering?.pricing_strategy || null
         );
         if (newOffering?.pricing_strategy !== "dimension_based") {
-          setValue(`items.${index}.length_meters`, ""); // Use empty string to clear input
+          setValue(`items.${index}.length_meters`, "");
           setValue(`items.${index}.width_meters`, "");
         }
         setValue(`items.${index}._quoted_price_per_unit_item`, null);
         setValue(`items.${index}._quoted_sub_total`, null);
         setValue(`items.${index}._quoted_applied_unit`, null);
         setValue(`items.${index}._quoteError`, null);
+        setValue(`items.${index}._isQuoting`, false);
       }
 
       const offeringToQuote =
         newOffering || currentFormItem._derivedServiceOffering;
-      if (offeringToQuote && watchedCustomerId && item.quantity) {
-        const quantityNum =
-          typeof item.quantity === "string"
-            ? parseInt(item.quantity)
-            : Number(item.quantity); // Ensure number
-        if (quantityNum > 0) {
-          let readyToQuote = true;
-          const quotePayload: QuoteItemPayload = {
-            service_offering_id: offeringToQuote.id,
-            customer_id: watchedCustomerId,
-            quantity: quantityNum,
-          };
+      const quantityStr = String(watchedItemState.quantity);
+      const quantityNum =
+        quantityStr && !isNaN(parseInt(quantityStr))
+          ? parseInt(quantityStr, 10)
+          : 0;
 
-          if (offeringToQuote.pricing_strategy === "dimension_based") {
-            const lengthNum = item.length_meters
-              ? typeof item.length_meters === "string"
-                ? parseFloat(item.length_meters)
-                : Number(item.length_meters)
-              : null;
-            const widthNum = item.width_meters
-              ? typeof item.width_meters === "string"
-                ? parseFloat(item.width_meters)
-                : Number(item.width_meters)
-              : null;
+      if (offeringToQuote && watchedCustomerId && quantityNum > 0) {
+        let readyToQuote = true;
+        const quotePayload: QuoteItemPayload = {
+          service_offering_id: offeringToQuote.id,
+          customer_id: watchedCustomerId,
+          quantity: quantityNum,
+        };
 
-            if (lengthNum && lengthNum > 0 && widthNum && widthNum > 0) {
-              quotePayload.length_meters = lengthNum;
-              quotePayload.width_meters = widthNum;
-            } else {
-              readyToQuote = false;
-            }
+        if (offeringToQuote.pricing_strategy === "dimension_based") {
+          const lengthStr = String(watchedItemState.length_meters);
+          const widthStr = String(watchedItemState.width_meters);
+          const lengthNum =
+            lengthStr && !isNaN(parseFloat(lengthStr))
+              ? parseFloat(lengthStr)
+              : 0;
+          const widthNum =
+            widthStr && !isNaN(parseFloat(widthStr)) ? parseFloat(widthStr) : 0;
+
+          if (lengthNum > 0 && widthNum > 0) {
+            quotePayload.length_meters = lengthNum;
+            quotePayload.width_meters = widthNum;
+          } else {
+            readyToQuote = false;
           }
+        }
 
-          if (readyToQuote && !currentFormItem._isQuoting) {
-            // Simple check: if quote is null, or if key inputs changed (less precise but avoids stringify)
-            const inputsChanged = currentFormItem._quoted_sub_total === null;
-
-            if (inputsChanged || true) {
-              // For now, always try to quote if ready and not already quoting
-              setValue(`items.${index}._isQuoting`, true);
-              setValue(`items.${index}._quoteError`, null); // Clear previous error before new quote
-              quoteItemMutation.mutate({
-                itemIndex: index,
-                payload: quotePayload,
-              });
-            }
-          }
+        if (readyToQuote && !currentFormItem._isQuoting) {
+          setValue(`items.${index}._isQuoting`, true);
+          setValue(`items.${index}._quoteError`, null);
+          quoteItemMutation.mutate({ itemIndex: index, payload: quotePayload });
         }
       } else if (currentFormItem._quoted_sub_total !== null) {
         setValue(`items.${index}._quoted_price_per_unit_item`, null);
         setValue(`items.${index}._quoted_sub_total`, null);
         setValue(`items.${index}._quoted_applied_unit`, null);
         setValue(`items.${index}._quoteError`, null);
+        setValue(`items.${index}._isQuoting`, false);
       }
     });
   }, [
@@ -368,11 +265,11 @@ const NewOrderPage: React.FC = () => {
     setValue,
     getValues,
     quoteItemMutation,
-  ]); // Added getValues and quoteItemMutation
+  ]);
 
   // --- Create Order Mutation ---
   const createOrderMutation = useMutation<Order, Error, NewOrderFormData>({
-    mutationFn: (formData) => createOrder(formData, allServiceOfferings),
+    mutationFn: (formData) => createOrder(formData, allServiceOfferings as ServiceOffering[]),
     onSuccess: (data) => {
       toast.success(
         t("orderCreatedSuccess", {
@@ -380,62 +277,112 @@ const NewOrderPage: React.FC = () => {
           orderNumber: data.order_number,
         })
       );
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] }); // Invalidate orders list
       navigate("/orders");
     },
     onError: (error) => {
-      toast.error(error.message || t("orderCreationFailed", { ns: "orders" }));
+      // Check for structured validation errors from backend
+      const apiErrors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
+      if (apiErrors) {
+        Object.keys(apiErrors).forEach((key) => {
+          const fieldKey = key.startsWith("items.")
+            ? key
+            : `items.0.${key}`;
+          setError(fieldKey as `items.${number}.${keyof OrderItemFormLine}`, { type: "server", message: apiErrors[key][0] });
+        });
+        toast.error(t("validation.fixErrors", { ns: "validation" }));
+      } else {
+        toast.error(
+          error.message || t("orderCreationFailed", { ns: "orders" })
+        );
+      }
     },
   });
 
   const onSubmit = (data: NewOrderFormData) => {
+    console.log('Raw form data:', data);
+    console.log('All service offerings:', allServiceOfferings);
+    alert('k')
     let allItemsValid = true;
+    // Final client-side validation pass before submit
     data.items.forEach((item, index) => {
-      if (!item._derivedServiceOffering) {
-        // This error should ideally be caught by Zod on _derivedServiceOffering if made mandatory
-        // Or by setting a form error manually
-        methods.setError(`items.${index}._derivedServiceOffering`, {
+      console.log(`Validating item ${index}:`, item);
+      
+      const offering = (allServiceOfferings as ServiceOffering[]).find(
+        (so: ServiceOffering) =>
+          so.productType?.id.toString() === item.product_type_id &&
+          so.serviceAction?.id.toString() === item.service_action_id
+      );
+      console.log(`Found offering for item ${index}:`, offering);
+
+      if (!offering) {
+        setError(`items.${index}._derivedServiceOffering` as `items.${number}._derivedServiceOffering`, {
           type: "manual",
           message: t("validation.serviceOfferingRequired"),
         });
         allItemsValid = false;
       }
-      if (
-        item._pricingStrategy === "dimension_based" &&
-        (!item.length_meters || !item.width_meters)
-      ) {
-        methods.setError(`items.${index}.length_meters`, {
-          type: "manual",
-          message: t("validation.dimensionsRequiredForStrategy"),
-        });
-        allItemsValid = false;
+
+      if (offering?.pricing_strategy === "dimension_based") {
+        const length = item.length_meters ? Number(item.length_meters) : 0;
+        const width = item.width_meters ? Number(item.width_meters) : 0;
+
+        if (!(length > 0 && width > 0)) {
+          if (!errors.items?.[index]?.length_meters) {
+            setError(`items.${index}.length_meters` as `items.${number}.length_meters`, {
+              type: "manual",
+              message: t("validation.dimensionsRequiredForStrategy"),
+            });
+          }
+          if (!errors.items?.[index]?.width_meters) {
+            setError(`items.${index}.width_meters` as `items.${number}.width_meters`, {
+              type: "manual",
+              message: " ",
+            });
+          }
+          allItemsValid = false;
+        }
+      }
+      if (item._quoteError) {
+        allItemsValid = false; // Don't submit if an item has a quote error
       }
     });
+
+    alert('s')
     if (!allItemsValid) {
       toast.error(t("pleaseCorrectErrorsInItems", { ns: "orders" }));
       return;
     }
-    createOrderMutation.mutate(data);
-  };
 
-  const addNewItem = () => {
-    append({
-      id: uuidv4(),
-      product_type_id: "",
-      service_action_id: "",
-      quantity: 1,
-      product_description_custom: "",
-      length_meters: "",
-      width_meters: "",
-      notes: "",
-      _derivedServiceOffering: null,
-      _pricingStrategy: null,
-      _quoted_price_per_unit_item: null,
-      _quoted_sub_total: null,
-      _quoted_applied_unit: null,
-      _isQuoting: false,
-      _quoteError: null,
-    });
+    // Ensure we're passing the correct data structure while maintaining types
+    const formDataToSubmit: NewOrderFormData = {
+      customer_id: data.customer_id,
+      notes: data.notes,
+      due_date: data.due_date,
+      items: data.items.map(item => {
+        console.log('Processing item for submission:', item);
+        return {
+          id: item.id,
+          product_type_id: item.product_type_id,
+          service_action_id: item.service_action_id,
+          quantity: item.quantity,
+          product_description_custom: item.product_description_custom || "",
+          length_meters: item.length_meters || "",
+          width_meters: item.width_meters || "",
+          notes: item.notes || "",
+          _derivedServiceOffering: item._derivedServiceOffering,
+          _pricingStrategy: item._pricingStrategy,
+          _quoted_price_per_unit_item: item._quoted_price_per_unit_item,
+          _quoted_sub_total: item._quoted_sub_total,
+          _quoted_applied_unit: item._quoted_applied_unit,
+          _isQuoting: item._isQuoting,
+          _quoteError: item._quoteError
+        };
+      })
+    };
+
+    console.log('Final form data to submit:', formDataToSubmit);
+    createOrderMutation.mutate(formDataToSubmit);
   };
 
   const orderTotal = useMemo(() => {
@@ -444,200 +391,84 @@ const NewOrderPage: React.FC = () => {
     }, 0);
   }, [watchedAllItems]);
 
+  if (isLoadingPagePrerequisites) {
+    // Show a page loader while essential dropdown data loads
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="ml-3 text-lg">
+          {t("loadingOrderForm", {
+            ns: "orders",
+            defaultValue: "Loading order form...",
+          })}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...methods}>
-      <div className="max-w-4xl mx-auto pb-12">
-        <div className="mb-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/orders">
-              <ArrowLeft className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-              {t("backToOrders", { ns: "orders" })}
-            </Link>
-          </Button>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("newOrder", { ns: "common" })}</CardTitle>
-            <CardDescription>
-              {t("newOrderDescription", { ns: "orders" })}
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <CardContent className="space-y-6">
-              {/* Customer Selection */}
-              <div className="grid gap-1.5">
-                <Label htmlFor="customer_id">
-                  {t("customer", { ns: "customers" })}{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Controller
-                  name="customer_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Combobox
-                      options={customerOptions}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder={
-                        isLoadingCustomers
-                          ? t("loading")
-                          : t("selectCustomer", { ns: "customers" })
-                      }
-                      searchPlaceholder={t("searchCustomer", {
-                        ns: "customers",
-                      })}
-                      emptyResultText={t("noCustomerFound", {
-                        ns: "customers",
-                      })}
-                      disabled={
-                        isLoadingDropdowns || createOrderMutation.isPending
-                      }
-                    />
-                  )}
-                />
-                {errors.customer_id && (
-                  <p className="text-sm text-destructive">
-                    {t(errors.customer_id.message as string)}
-                  </p>
-                )}
-              </div>
-
-              {/* Order Items Section */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center pt-4 border-t">
-                  <h3 className="text-xl font-semibold">
-                    {t("orderItems", { ns: "orders" })}
-                  </h3>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="default"
-                    onClick={addNewItem}
-                    disabled={
-                      createOrderMutation.isPending || !watchedCustomerId
-                    }
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                    {t("addItem", { ns: "orders" })}
-                  </Button>
-                </div>
-                {fields.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {t("noItemsAdded", { ns: "orders" })}
-                  </p>
-                )}
-
-                <div className="space-y-6">
-                  {fields.map((field, index) => {
-                    const currentItemFormState = getValues(`items.${index}`); // Get values for props
-                    return (
-                      <OrderItemFormLineComponent
-                        key={field.id}
-                        index={index}
-                        onRemove={remove}
-                        productTypes={productTypes}
-                        serviceActions={serviceActions}
-                        allServiceOfferings={allServiceOfferings}
-                        isSubmittingOrder={createOrderMutation.isPending}
-                        isLoadingDropdowns={isLoadingDropdowns}
-                        isQuotingItem={currentItemFormState._isQuoting || false}
-                        quotedSubtotal={currentItemFormState._quoted_sub_total}
-                        quotedPricePerUnit={
-                          currentItemFormState._quoted_price_per_unit_item
-                        }
-                        quotedAppliedUnit={
-                          currentItemFormState._quoted_applied_unit
-                        }
-                        quoteError={currentItemFormState._quoteError}
-                      />
-                    );
-                  })}
-                </div>
-                {errors.items && typeof errors.items.message === "string" && (
-                  <p className="text-sm text-destructive mt-2">
-                    {errors.items.message}
-                  </p>
-                )}
-                {errors.items &&
-                  Array.isArray(errors.items) &&
-                  errors.items.some((itemErr) => itemErr?.root) && (
-                    <p className="text-sm text-destructive mt-2">
-                      {t("checkItemErrors", { ns: "orders" })}
-                    </p>
-                  )}
-              </div>
-
-              {/* Overall Order Notes & Due Date */}
-              <div className="pt-4 border-t space-y-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="notes">
-                    {t("overallOrderNotesOptional", { ns: "orders" })}
-                  </Label>
-                  <Textarea
-                    id="notes"
-                    {...register("notes")}
-                    rows={3}
-                    disabled={createOrderMutation.isPending}
-                  />
-                </div>
-                <div className="grid gap-1.5 max-w-xs">
-                  <Label htmlFor="due_date">
-                    {t("dueDateOptional", { ns: "orders" })}
-                  </Label>
-                  <Input
-                    id="due_date"
-                    type="date"
-                    {...register("due_date")}
-                    disabled={createOrderMutation.isPending}
-                  />
-                  {errors.due_date && (
-                    <p className="text-sm text-destructive">
-                      {t(errors.due_date.message as string)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 mt-4 border-t">
-              <div className="text-xl font-bold">
-                {t("estimatedTotal", { ns: "orders" })}:
-                <span className="text-primary ml-2 rtl:mr-2">
-                  {new Intl.NumberFormat(i18n.language, {
-                    style: "currency",
-                    currency: "USD",
-                  }).format(orderTotal)}
+      <div className="max-w-4xl mx-auto pb-20">
+        {" "}
+        {/* Added more padding bottom */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" asChild className="h-9 w-9">
+              <Link to="/orders">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="sr-only">
+                  {t("backToOrders", { ns: "orders" })}
                 </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/orders")}
-                  disabled={
-                    createOrderMutation.isPending ||
-                    fields.some((item) => item._isQuoting)
-                  }
-                >
-                  {t("cancel", { ns: "common" })}
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    isLoadingDropdowns ||
-                    createOrderMutation.isPending ||
-                    fields.some((item) => item._isQuoting) ||
-                    !watchedCustomerId ||
-                    fields.length === 0
-                  }
-                >
-                  {(createOrderMutation.isPending ||
-                    fields.some((item) => item._isQuoting)) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />
-                  )}
-                  {t("createOrderCta", { ns: "orders" })}
-                </Button>
-              </div>
-            </CardFooter>
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {t("newOrder", { ns: "common" })}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {t("newOrderDescription", { ns: "orders" })}
+              </p>
+            </div>
+          </div>
+        </div>
+        <Card className="shadow-lg">
+          {/* Removed CardHeader as title is now above the card */}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <CardContent className="space-y-6 pt-6">
+              {" "}
+              {/* Added pt-6 */}
+              <CustomerSelection
+                control={control}
+                error={errors.customer_id}
+                disabled={
+                  createOrderMutation.isPending || quoteItemMutation.isPending
+                }
+              />
+              <OrderItemsManager
+                productTypes={productTypes as ProductType[]}
+                serviceActions={serviceActions as ServiceAction[]}
+                allServiceOfferings={allServiceOfferings as ServiceOffering[]}
+                isSubmittingOrder={createOrderMutation.isPending}
+                isLoadingDropdowns={isLoadingPagePrerequisites}
+                itemsArrayErrors={errors.items}
+              />
+              <OrderOverallDetails
+                disabled={createOrderMutation.isPending}
+                notesError={errors.notes}
+                dueDateError={errors.due_date}
+              />
+            </CardContent>
+
+            <OrderSummaryAndActions
+              orderTotal={orderTotal}
+              isSubmitting={createOrderMutation.isPending}
+              isQuotingAnyItem={
+                watchedAllItems?.some((item) => item._isQuoting) || false
+              }
+              isLoadingDropdowns={isLoadingPagePrerequisites} // General loading state for submit button
+              isCustomerSelected={!!watchedCustomerId}
+              hasItems={watchedAllItems?.length > 0}
+            />
           </form>
         </Card>
       </div>

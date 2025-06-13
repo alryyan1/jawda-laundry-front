@@ -55,5 +55,6 @@
   "deleting": "جار الحذف...",
   "description": "الوصف",
   "removeItem": "إزالة العنصر",
-  "subtotal": "المجموع الفرعي"
+  "subtotal": "المجموع الفرعي",
+  "item": "الصنف"
 }

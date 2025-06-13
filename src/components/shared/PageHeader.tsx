@@ -1,5 +1,6 @@
 // src/components/shared/PageHeader.tsx
 import React from 'react';
+import { Link } from 'react-router-dom'; // <--- ADD THIS IMPORT
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -9,15 +10,15 @@ interface PageHeaderProps {
   description?: string;
   actionButton?: {
     label: string;
-    icon?: React.ElementType; // e.g., PlusCircle
+    icon?: React.ElementType;
     onClick?: () => void;
-    to?: string; // For Link behavior with <Button asChild>
+    to?: string; // For Link behavior
     disabled?: boolean;
   };
   showRefreshButton?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  children?: React.ReactNode; // For additional actions or filters
+  children?: React.ReactNode;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
@@ -53,31 +54,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
           )}
-          {actionButton && (
-            <Button
-              onClick={actionButton.onClick}
-              asChild={!!actionButton.to}
-              disabled={actionButton.disabled || isRefreshing}
-            >
-              {actionButton.to ? (
-                // Assuming react-router-dom Link is used
-                // You'd need to import Link from 'react-router-dom' in the parent component
-                // and pass it like: <PageHeader actionButton={{ to: '/path', label: 'New', icon: Link }} />
-                // This is a bit tricky, simpler to handle Link outside or use onClick with navigate
-                // For simplicity, let's assume onClick handles navigation if 'to' is not directly supported by Button's asChild for Link easily
-                <>
-                  {ActionIcon && <ActionIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />}
-                  {actionButton.label}
-                </>
-              ) : (
-                <>
-                  {ActionIcon && <ActionIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />}
-                  {actionButton.label}
-                </>
-              )}
-            </Button>
+          {actionButton && ( // This logic should now work
+            actionButton.to ? (
+                <Button asChild disabled={actionButton.disabled || isRefreshing}>
+                    <Link to={actionButton.to}>
+                        {ActionIcon && <ActionIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />}
+                        {actionButton.label}
+                    </Link>
+                </Button>
+            ) : (
+                <Button onClick={actionButton.onClick} disabled={actionButton.disabled || isRefreshing}>
+                    {ActionIcon && <ActionIcon className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />}
+                    {actionButton.label}
+                </Button>
+            )
           )}
-          {children} {/* For extra buttons or filter components */}
+          {children}
         </div>
       </div>
     </div>

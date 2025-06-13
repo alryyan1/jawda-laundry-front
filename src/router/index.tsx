@@ -8,6 +8,15 @@ import AuthLayout from "@/layouts/AuthLayout";
 
 // Protected Route Wrapper
 import { ProtectedRoute } from "./ProtectedRoute"; // Assuming ProtectedRoute.tsx is in the same folder
+import EditOrderPage from "@/pages/orders/EditOrderPage";
+import { ApplicationSettingsAdmin } from "@/features/settings/components/ApplicationSettingsAdmin";
+import UsersListPage from "@/pages/admin/users/UsersListPage";
+import UserFormPage from "@/pages/admin/users/UserFormPage";
+import RolesListPage from "@/pages/admin/roles/RolesListPage";
+import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
+import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
+import { AccountSettings } from "@/features/settings/components/AccountSettings";
+import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -123,6 +132,7 @@ export const router = createBrowserRouter([
               </React.Suspense>
             ),
           },
+
           {
             path: "customers/:id/edit",
             element: (
@@ -160,6 +170,106 @@ export const router = createBrowserRouter([
           //   path: 'orders/:id/edit',
           //   element: <React.Suspense fallback={<RouteSuspenseFallback />}><EditOrderPage /></React.Suspense>,
           // },
+          // --- Settings Routes ---
+          {
+            path: "settings",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <SettingsPage />
+              </React.Suspense>
+            ),
+            children: [
+              // Default redirect handled within SettingsPage component
+              {
+                path: "profile", //  /settings/profile
+                element: (
+                  <React.Suspense fallback={<RouteSuspenseFallback />}>
+                    <ProfileSettings />
+                  </React.Suspense>
+                ),
+              },
+              {
+                path: "account", // /settings/account
+                element: (
+                  <React.Suspense fallback={<RouteSuspenseFallback />}>
+                    <AccountSettings />
+                  </React.Suspense>
+                ),
+              },
+              {
+                path: "appearance", // /settings/appearance
+                element: (
+                  <React.Suspense fallback={<RouteSuspenseFallback />}>
+                    <AppearanceSettings />
+                  </React.Suspense>
+                ),
+              },
+              {
+                // Admin only application settings, nested under settings for UI consistency
+                path: "application", // /settings/application
+                element: (
+                  // <AdminRoute> // If you implement a specific AdminRoute wrapper
+                  <React.Suspense fallback={<RouteSuspenseFallback />}>
+                    <ApplicationSettingsAdmin />
+                  </React.Suspense>
+                  // </AdminRoute>
+                ),
+              },
+            ],
+          },
+
+          // --- Admin Management Routes (linked from settings but can be separate top-level) ---
+          // These might already exist if you followed previous steps
+          {
+            path: "admin/users",
+            // element: <AdminRoute><React.Suspense fallback={<RouteSuspenseFallback />}><UsersListPage /></React.Suspense></AdminRoute>, // Example with AdminRoute
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <UsersListPage />
+              </React.Suspense>
+            ), // Assuming UsersListPage handles its own auth check or ProtectedRoute covers it
+          },
+          {
+            path: "admin/users/new",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <UserFormPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/users/:id/edit",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <UserFormPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/roles",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <RolesListPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/roles/new",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <RoleFormPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/roles/:id/edit",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <RoleFormPage />
+              </React.Suspense>
+            ),
+          },
+          // ... (other admin service management routes: product-categories, etc.)
 
           // Service Offerings (User-facing list of services)
           {
@@ -209,6 +319,14 @@ export const router = createBrowserRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <ServiceActionsListPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "orders/:id/edit",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <EditOrderPage />
               </React.Suspense>
             ),
           },

@@ -1,6 +1,6 @@
 // src/api/productTypeService.ts
 import apiClient from './apiClient';
-import { ProductType, PaginatedResponse } from '@/types'; // Assuming ProductType might be paginated for admin lists
+import { ProductType, PaginatedResponse, type ServiceAction } from '@/types'; // Assuming ProductType might be paginated for admin lists
 
 export interface ProductTypeFormData {
     name: string;
@@ -43,4 +43,13 @@ export const updateProductType = async (id: number | string, formData: Partial<P
 export const deleteProductType = async (id: number | string): Promise<{ message: string }> => {
     const { data } = await apiClient.delete<{ message: string }>(`/product-types/${id}`);
     return data;
+};
+
+// src/api/productTypeService.ts
+// ... (existing imports and functions)
+
+export const getAvailableServiceActionsForProductType = async (productTypeId: number | string): Promise<ServiceAction[]> => {
+    if (!productTypeId) return []; // Or throw error
+    const { data } = await apiClient.get<{ data: ServiceAction[] }>(`/product-types/${productTypeId}/available-service-actions`);
+    return data.data;
 };

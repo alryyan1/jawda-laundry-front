@@ -30,4 +30,22 @@
   "confirmDeleteDescription": "This action cannot be undone.",
   "delete": "Delete",
   "cancel": "Cancel"
+,
+
+  "customerListDescription": "View and manage your registered customers.",
+  "newCustomerTitle": "Add New Customer",
+  "newCustomerDescription": "Enter the details for the new customer.",
+  "searchByNameOrEmail": "Search by name, email, or phone...",
+  "customerCreatedSuccess": "Customer \"{{name}}\" created successfully.",
+  "customerCreationFailed": "Failed to create customer.",
+  "customerUpdatedSuccess": "Customer \"{{name}}\" updated successfully.",
+  "customerUpdateFailed": "Failed to update customer.",
+  "customerDeletedSuccess": "Customer \"{{name}}\" deleted successfully.",
+  "customerDeleteFailed": "Failed to delete customer.",
+  "theCustomer": "The customer",
+  "customerLC": "customer",
+  "customerNotesPlaceholder": "Any specific details about this customer...",
+  "selectCustomer": "Select a customer",
+  "loadingCustomerData": "Loading customer data...",
+  "customerNotFound": "Customer not found."
 }

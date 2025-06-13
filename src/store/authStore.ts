@@ -2,13 +2,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import apiClient from '@/lib/axios'; // Your configured axios instance
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  // Add other user properties you get from backend
-}
+import type { User } from '@/types/auth.types';
 
 interface AuthState {
   token: string | null;

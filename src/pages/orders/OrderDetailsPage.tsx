@@ -1,46 +1,30 @@
 // src/pages/orders/OrderDetailsPage.tsx
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, Link, useNavigate } from 'react-router-dom'; // Added useNavigate
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'; // Added useMutation, useQueryClient
+import { useParams, useNavigate, Link } from 'react-router-dom'; // Added useNavigate
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For payment status
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // For status update
+import { Label } from '@/components/ui/label';
 
-
-import { Order, OrderStatus, OrderItem as OrderItemType } from '@/types'; // Use OrderItemType alias
+import type { Order, OrderStatus, OrderItem as OrderItemType } from '@/types'; // Use OrderItemType alias
 import { getOrderById } from '@/api/orderService';
 // Assume an updateOrderStatus function exists in orderService
 // import { updateOrderStatus } from '@/api/orderService'; // TODO: Implement this
 
-import { ArrowLeft, Loader2, Edit3, Printer, FileText, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, AlertCircle, CheckCircle2, Info, Edit3 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader'; // Using PageHeader
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{ status: OrderStatus; className?: string }> = ({ status, className }) => {
   const { t } = useTranslation('orders');
-  let badgeVariant: "default" | "secondary" | "destructive" | "outline" | "warning" | "success" = "default";
-  // More distinct styling
-  switch (status) {
-    case 'pending': badgeVariant = 'warning'; break;
-    case 'processing': badgeVariant = 'default'; break; // Often blue using primary color
-    case 'ready_for_pickup': badgeVariant = 'success'; break;
-    case 'completed': badgeVariant = 'secondary'; break; // Often gray
-    case 'cancelled': badgeVariant = 'destructive'; break;
-    default: badgeVariant = 'outline';
-  }
-  // If using custom variants in Badge component via CVA:
-  // return <Badge variant={badgeVariant} className={className}>{t(`status_${status}`)}</Badge>;
-
-  // Manual class application if Badge variants are limited:
   let bgColor = 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   if (status === 'pending') bgColor = 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/50';
   if (status === 'processing') bgColor = 'bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50';
@@ -52,19 +36,20 @@ const OrderStatusBadgeComponent: React.FC<{ status: OrderStatus; className?: str
 };
 
 // Payment Status Display (Example)
-const PaymentStatusAlert: React.FC<{ order: Order, className?:string }> = ({ order, className }) => {
+const PaymentStatusAlert: React.FC<{ order: Order, className?:string, i18n: { language: string } }> = ({ order, className, i18n }) => {
     const { t } = useTranslation('orders');
     if (!order.payment_status) return null;
 
-    let variant: "default" | "destructive" | "success" = "default";
+    // Only use allowed variants: "default" | "destructive" | null | undefined
+    let variant: "default" | "destructive" | null | undefined = "default";
     let Icon = Info;
-    let title = t(`payment_status_${order.payment_status}`);
+    const title = t(`payment_status_${order.payment_status}`);
 
     switch(order.payment_status) {
-        case 'paid': variant = 'success'; Icon = CheckCircle2; break;
-        case 'pending': variant = 'default'; Icon = AlertCircle; break;
-        case 'partially_paid': variant = 'default'; Icon = Info; break;
-        case 'refunded': variant = 'destructive'; Icon = AlertCircle; break; // or some other variant
+        case 'paid': variant = null; Icon = CheckCircle2; break; // Use null for success
+        case 'pending': variant = "default"; Icon = AlertCircle; break;
+        case 'partially_paid': variant = "default"; Icon = Info; break;
+        case 'refunded': variant = "destructive"; Icon = AlertCircle; break;
     }
 
     return (
@@ -87,7 +72,6 @@ const OrderDetailsPage: React.FC = () => {
   const { t, i18n } = useTranslation(['common', 'orders', 'customers', 'services']);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const currentLocale = i18n.language.startsWith('ar') ? arSA : enUS;
 
   const { data: order, isLoading, error, refetch } = useQuery<Order, Error>({
@@ -116,11 +100,25 @@ const OrderDetailsPage: React.FC = () => {
   // };
 
 
-  if (isLoading) return ( /* ... Loader ... */ );
-  if (error) return ( /* ... Error display ... */ );
-  if (!order) return ( /* ... Not found display ... */ );
-
-  const orderStatusOptions: OrderStatus[] = ["pending", "processing", "ready_for_pickup", "completed", "cancelled"];
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <p className="ms-3 text-lg">{t("loadingOrder", { ns: "orders" })}</p>
+    </div>
+  );
+  if (error) return (
+    <div className="text-center py-10">
+      <p className="text-destructive text-lg">{t("errorLoading", { ns: "common" })}</p>
+      <p className="text-muted-foreground">{error.message}</p>
+      <Button onClick={() => refetch()} className="mt-4">{t("retry", { ns: "common" })}</Button>
+    </div>
+  );
+  if (!order) return (
+    <div className="text-center py-10">
+      <p className="text-destructive text-lg">{t("orderNotFound", { ns: "orders" })}</p>
+      <Button onClick={() => navigate("/orders")} className="mt-4">{t("backToOrders", { ns: "orders" })}</Button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -132,6 +130,13 @@ const OrderDetailsPage: React.FC = () => {
         <Button variant="outline" onClick={() => navigate('/orders')}>
             <ArrowLeft className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('backToOrders', { ns: 'orders' })}
         </Button>
+        // src/pages/orders/OrderDetailsPage.tsx
+// In the PageHeader actions or a separate button group:
+<Button asChild variant="secondary">
+    <Link to={`/orders/${order.id}/edit`}>
+        <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}
+    </Link>
+</Button>
         <Button variant="outline"><Printer className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('printInvoice', { ns: 'orders' })}</Button>
         {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
       </PageHeader>
@@ -191,7 +196,7 @@ const OrderDetailsPage: React.FC = () => {
                     */}
                 </div>
                 <Separator/>
-                <PaymentStatusAlert order={order} />
+                <PaymentStatusAlert order={order} i18n={i18n} />
             </CardContent>
             <CardFooter>
                  <Button className="w-full" onClick={() => {/* TODO: Open payment modal */}}>
@@ -217,6 +222,7 @@ const OrderDetailsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
+            {console.log(order,'order')}
               {order.items?.map((item: OrderItemType) => ( // Use alias
                 <TableRow key={item.id}>
                   <TableCell>
@@ -239,7 +245,7 @@ const OrderDetailsPage: React.FC = () => {
             </TableBody>
              <TableFooter>
                 <TableRow className="font-semibold bg-muted/50">
-                    <TableCell colSpan={className.includes('sm:table-cell') ? 4 : 3} className="text-right rtl:text-left">{t('grandTotal', {ns:'common'})}</TableCell>
+                    <TableCell colSpan={4} className="text-right rtl:text-left">{t('grandTotal', {ns:'common'})}</TableCell>
                     <TableCell className="text-right rtl:text-left text-lg">
                         {new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(order.total_amount)}
                     </TableCell>

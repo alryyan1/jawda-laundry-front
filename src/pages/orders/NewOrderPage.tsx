@@ -261,23 +261,20 @@ const NewOrderPage: React.FC = () => {
 
   // --- Mutation ---
   const createOrderMutation = useMutation<Order, Error, NewOrderFormData>({
+    
     mutationFn: (formData) => {
+      console.log(formData,'formData')
       // Transform items to match API shape
       const apiItems = formData.items.map((item) => {
         // Find the correct service offering for this item
-        const offering = allServiceOfferings.find((so: ServiceOffering) =>
-          so.productType?.id.toString() === item.product_type_id &&
-          so.serviceAction?.id.toString() === item.service_action_id
-        );
+      
         // Ensure length_meters and width_meters are numbers or undefined
-        const length_meters = typeof item.length_meters === 'number' ? item.length_meters : undefined;
-        const width_meters = typeof item.width_meters === 'number' ? item.width_meters : undefined;
         return {
-          service_offering_id: offering && offering.id !== undefined ? offering.id : '', // fallback to empty string if not found
+          service_offering_id: item.service_offering_id, // fallback to empty string if not found
           quantity: typeof item.quantity === 'string' ? Number(item.quantity) : item.quantity,
           product_description_custom: item.product_description_custom,
-          length_meters,
-          width_meters,
+          length_meters:item.length_meters,
+          width_meters:item.width_meters,
         };
       });
       return createOrder({
@@ -296,6 +293,7 @@ const NewOrderPage: React.FC = () => {
       navigate("/orders");
     },
     onError: (error) => {
+      console.log(error)
       toast.error(error.message || t("orderCreationFailed", { ns: "orders" }));
     },
   });
@@ -303,22 +301,29 @@ const NewOrderPage: React.FC = () => {
   const onSubmit: SubmitHandler<NewOrderFormData> = (data) => {
     // Transform items to match API shape
     const apiItems = data.items.map((item) => {
-      // Find the correct service offering for this item
-      const offering = allServiceOfferings.find((so: ServiceOffering) =>
-        so.productType?.id.toString() === item.product_type_id &&
-        so.serviceAction?.id.toString() === item.service_action_id
-      );
-      // Ensure length_meters and width_meters are numbers or undefined
-      const length_meters = typeof item.length_meters === 'number' ? item.length_meters : undefined;
-      const width_meters = typeof item.width_meters === 'number' ? item.width_meters : undefined;
+      if (!item._derivedServiceOffering) {
+        throw new Error('Service offering not found for item');
+      }
+
+      // Convert dimensions to numbers if they exist
+      const length_meters = item.length_meters ? 
+        (typeof item.length_meters === 'string' ? parseFloat(item.length_meters) : item.length_meters) : 
+        undefined;
+      
+      const width_meters = item.width_meters ? 
+        (typeof item.width_meters === 'string' ? parseFloat(item.width_meters) : item.width_meters) : 
+        undefined;
+
       return {
-        service_offering_id: offering && offering.id !== undefined ? offering.id : '', // fallback to empty string if not found
+        service_offering_id: item._derivedServiceOffering.id,
         quantity: typeof item.quantity === 'string' ? Number(item.quantity) : item.quantity,
-        product_description_custom: item.product_description_custom,
+        product_description_custom: item.product_description_custom || null,
         length_meters,
         width_meters,
+        notes: item.notes || null,
       };
     });
+
     // Call the mutation with transformed data
     createOrderMutation.mutate({
       ...data,

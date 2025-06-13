@@ -30,14 +30,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2, ArrowLeft } from "lucide-react";
 
-import type { ProductType, ServiceAction, PricingStrategy } from "@/types";
+import type { ProductType, ServiceAction, PricingStrategy, ServiceOffering } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { getServiceActions } from "@/api/serviceActionService";
 import {
   getServiceOfferingById,
   updateServiceOffering,
 } from "@/api/serviceOfferingService";
-import type { ServiceOfferingFormData } from "@/api/serviceOfferingService";
 import { serviceOfferingSchema } from "./NewServiceOfferingPage";
 
 // Define the form data type that matches the schema
@@ -60,12 +59,12 @@ const EditServiceOfferingPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   // --- Data Fetching for Form Selects ---
-  const { data: productTypes = [], isLoading: isLoadingPT } = useQuery({
+  const { data: productTypes = [], isLoading: isLoadingPT } = useQuery<ProductType[], Error>({
     queryKey: ["allProductTypesForSelect"],
     queryFn: () => getAllProductTypes(),
   });
 
-  const { data: serviceActions = [], isLoading: isLoadingSA } = useQuery({
+  const { data: serviceActions = [], isLoading: isLoadingSA } = useQuery<ServiceAction[], Error>({
     queryKey: ["serviceActionsForSelect"],
     queryFn: () => getServiceActions(),
   });
@@ -75,7 +74,7 @@ const EditServiceOfferingPage: React.FC = () => {
     data: existingOffering,
     isLoading: isLoadingExisting,
     error: loadingError,
-  } = useQuery({
+  } = useQuery<ServiceOffering, Error>({
     queryKey: ["serviceOffering", id],
     queryFn: () => getServiceOfferingById(id!),
     enabled: !!id,
@@ -122,10 +121,8 @@ const EditServiceOfferingPage: React.FC = () => {
 
   const watchedPricingStrategy = watch("pricing_strategy");
 
-  const mutation = useMutation({
-    mutationFn: (formData: FormData) => {
-      return updateServiceOffering(id!, formData);
-    },
+  const mutation = useMutation<ServiceOffering, Error, FormData>({
+    mutationFn: (formData) => updateServiceOffering(id!, formData),
     onSuccess: (data) => {
       toast.success(
         t("serviceOfferingUpdatedSuccess", {
