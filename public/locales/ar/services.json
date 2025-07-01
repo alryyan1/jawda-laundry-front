@@ -146,5 +146,6 @@
   "serviceAdmin": "إعدادات الخدمات",
   "productCategories": "فئات المنتجات",
   "productTypes": "أنواع المنتجات",
-  "serviceActions": "إجراءات الخدمة"
+  "serviceActions": "إجراءات الخدمة",
+  "goBack": "رجوع"
 }

@@ -7,7 +7,8 @@ export interface CustomerFormData {
     email?: string;
     phone?: string;
     address?: string;
-    customer_type_id?: number | string; // If you added this
+    notes?: string;
+    customer_type_id?: number | string | null;
 }
 
 export const getCustomers = async (page: number = 1, perPage: number = 10, search: string = ''): Promise<PaginatedResponse<Customer>> => {

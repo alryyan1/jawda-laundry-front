@@ -8,25 +8,10 @@ import type {
     NewOrderFormData as FrontendNewOrderFormData, // Alias to distinguish from backend payload if necessary
     OrderItemFormLine,
     ServiceOffering, // Needed for createOrder logic
-    PricingStrategy  // For QuoteItemResponse
+    PricingStrategy,  // For QuoteItemResponse
+    QuoteItemPayload,
+    QuoteItemResponse
 } from '@/types';
-
-// --- Quote Types ---
-export interface QuoteItemPayload {
-    service_offering_id: number | string; // string from form, number for API
-    customer_id: number | string;       // string from form, number for API
-    quantity: number;
-    length_meters?: number | null;
-    width_meters?: number | null;
-}
-
-export interface QuoteItemResponse {
-    calculated_price_per_unit_item: number;
-    sub_total: number;
-    applied_unit: string;
-    strategy_applied: PricingStrategy;
-    message?: string;
-}
 
 // --- Backend Payload Types for Order Creation/Update ---
 interface BackendOrderItemPayload {

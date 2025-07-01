@@ -6,6 +6,22 @@ import type { ServiceOffering, PricingStrategy } from './service.types';
 export type OrderStatus = "pending" | "processing" | "ready_for_pickup" | "completed" | "cancelled" | string;
 export const orderStatusOptions: OrderStatus[] = ["pending", "processing", "ready_for_pickup", "completed", "cancelled"];
 
+// --- Quote Types ---
+export interface QuoteItemPayload {
+    service_offering_id: number | string; // string from form, number for API
+    customer_id: number | string;       // string from form, number for API
+    quantity: number;
+    length_meters?: number | null;
+    width_meters?: number | null;
+}
+
+export interface QuoteItemResponse {
+    calculated_price_per_unit_item: number;
+    sub_total: number;
+    applied_unit: string;
+    strategy_applied: PricingStrategy;
+    message?: string;
+}
 
 export interface OrderItem {
     id: number;
@@ -47,6 +63,7 @@ export interface Order {
 // Form data types for NewOrderPage
 export interface OrderItemFormLine {
     id: string; // For useFieldArray key (client-side only)
+    service_offering_id: number | string; // Required by backend API
     product_type_id: string;
     service_action_id: string;
     product_description_custom?: string;

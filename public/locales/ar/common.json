@@ -56,5 +56,6 @@
   "description": "الوصف",
   "removeItem": "إزالة العنصر",
   "subtotal": "المجموع الفرعي",
-  "item": "الصنف"
+  "item": "الصنف",
+  "optional": "(اختياري)"
 }

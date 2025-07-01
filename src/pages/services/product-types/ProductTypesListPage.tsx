@@ -1,240 +1,332 @@
 // src/pages/services/product-types/ProductTypesListPage.tsx
-import React, { useState, useMemo, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ColumnDef } from '@tanstack/react-table';
-import { toast } from 'sonner';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
-import type { ProductType, ProductCategory, PaginatedResponse } from '@/types';
+import React, { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
-    getProductTypesPaginated,
-    createProductType,
-    updateProductType,
-    deleteProductType,
-} from '@/api/productTypeService';
-import type { ProductTypeFormData } from '@/api/productTypeService';
-import { getProductCategories } from '@/api/productCategoryService';
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
-import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable } from '@/components/shared/DataTable';
-import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Edit3, Trash2, Loader2, MoreHorizontal } from 'lucide-react';
+import type { ProductType, PaginatedResponse } from "@/types";
+import {
+  getProductTypesPaginated,
+  deleteProductType,
+} from "@/api/productTypeService";
+import { useDebounce } from "@/hooks/useDebounce";
+
+import { PageHeader } from "@/components/shared/PageHeader";
+import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { ProductTypeFormModal } from "./ProductTypeFormModal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCaption,
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-
-const measurementUnits = ['item', 'kg', 'sq_meter', 'set', 'piece']; // Example units
-
-const productTypeSchema = z.object({
-    name: z.string().nonempty({ message: "validation.nameRequired" }),
-    product_category_id: z.string().min(1, { message: "validation.categoryRequired" }), // String because select value
-    description: z.string().optional(),
-    base_measurement_unit: z.string().optional(),
-});
-
-type ProductTypeFormValues = z.infer<typeof productTypeSchema>;
-
+} from "@/components/ui/dropdown-menu";
+import {
+  PlusCircle,
+  Edit3,
+  Trash2,
+  MoreHorizontal,
+  Loader2,
+  Shirt,
+  Check,
+  X,
+} from "lucide-react";
 
 const ProductTypesListPage: React.FC = () => {
-    const { t, i18n } = useTranslation(['common', 'services', 'validation']);
-    const queryClient = useQueryClient();
+  const { t, i18n } = useTranslation(["common", "services", "validation"]);
+  const queryClient = useQueryClient();
 
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [editingProductType, setEditingProductType] = useState<ProductType | null>(null);
-    const [itemToDelete, setItemToDelete] = useState<ProductType | null>(null);
-    const [currentPage, setCurrentPage] = useState(1); // For paginated list
-    const itemsPerPage = 10;
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingProductType, setEditingProductType] =
+    useState<ProductType | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ProductType | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    const { data: paginatedProductTypes, isLoading, isFetching, refetch } = useQuery<PaginatedResponse<ProductType>, Error>({
-        queryKey: ['productTypes', currentPage, itemsPerPage],
-        queryFn: () => getProductTypesPaginated(currentPage, itemsPerPage),
-        placeholderData: (previousData) => previousData,
-    });
-    const productTypes = paginatedProductTypes?.data || [];
-    const totalPages = paginatedProductTypes?.meta?.last_page || 1;
+  const {
+    data: paginatedData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery<PaginatedResponse<ProductType>, Error>({
+    queryKey: ["productTypes", currentPage, itemsPerPage, debouncedSearchTerm],
+    queryFn: () =>
+      getProductTypesPaginated(currentPage, itemsPerPage, debouncedSearchTerm),
+    placeholderData: keepPreviousData,
+  });
 
-    const { data: categories = [] } = useQuery<ProductCategory[], Error>({
-        queryKey: ['productCategoriesForSelect'],
-        queryFn: getProductCategories,
-    });
+  const productTypes = paginatedData?.data || [];
+  const totalItems = paginatedData?.meta?.total || 0;
+  const totalPages = paginatedData?.meta?.last_page || 1;
 
-    const { control, register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ProductTypeFormValues>({
-        resolver: zodResolver(productTypeSchema),
-    });
+  const deleteMutation = useMutation<void, Error, number>({
+    mutationFn: (id) => deleteProductType(id).then(() => {}),
+    onSuccess: () => {
+      toast.success(
+        t("productTypeDeletedSuccess", {
+          ns: "services",
+          name: itemToDelete?.name || "",
+        })
+      );
+      queryClient.invalidateQueries({ queryKey: ["productTypes"] });
+      queryClient.invalidateQueries({ queryKey: ["allProductTypesForSelect"] });
+      setItemToDelete(null);
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("productTypeDeleteFailed", { ns: "services" })
+      );
+      setItemToDelete(null);
+    },
+  });
 
-    const formMutation = useMutation<ProductType, Error, { id?: number; data: ProductTypeFormValues }>({
-        mutationFn: ({ id, data }) => {
-            const payload: ProductTypeFormData = {
-                ...data,
-                product_category_id: parseInt(data.product_category_id, 10)
-            };
-            return id ? updateProductType(id, payload) : createProductType(payload);
-        },
-        onSuccess: (data, variables) => {
-            toast.success(variables.id ? t('productTypeUpdatedSuccess', { ns: 'services', name: data.name }) : t('productTypeCreatedSuccess', { ns: 'services', name: data.name }));
-            queryClient.invalidateQueries({ queryKey: ['productTypes'] });
-            setIsFormModalOpen(false);
-            setEditingProductType(null);
-            reset();
-        },
-        onError: (error, variables) => {
-            toast.error(error.message || (variables.id ? t('productTypeUpdateFailed', { ns: 'services' }) : t('productTypeCreationFailed', { ns: 'services' })));
-        }
-    });
+  const handleOpenAddModal = () => {
+    setEditingProductType(null);
+    setIsFormModalOpen(true);
+  };
 
-     const deleteMutation = useMutation<void, Error, number>({
-        mutationFn: (id) => deleteProductType(id).then(() => {}), // Adapt if deleteProductType returns more
-        onSuccess: () => {
-            toast.success(t('productTypeDeletedSuccess', { ns: 'services', name: itemToDelete?.name || '' }));
-            queryClient.invalidateQueries({ queryKey: ['productTypes'] });
-            setItemToDelete(null);
-        },
-        onError: (error) => {
-            toast.error(error.message || t('productTypeDeleteFailed', { ns: 'services' }));
-        }
-    });
+  const handleOpenEditModal = (pt: ProductType) => {
+    setEditingProductType(pt);
+    setIsFormModalOpen(true);
+  };
 
+  const MemoizedTableRow = React.memo(
+    ({ productType }: { productType: ProductType }) => {
+      return (
+        <TableRow key={productType.id}>
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 rounded-md">
+                <AvatarImage
+                  src={productType.image_url || undefined}
+                  alt={productType.name}
+                />
+                <AvatarFallback className="rounded-md bg-muted">
+                  <Shirt className="h-5 w-5 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium">{productType.name}</span>
+            </div>
+          </TableCell>
+          <TableCell>
+            {productType.category?.name ||
+              t("uncategorized", { ns: "services" })}
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center justify-center">
+              {productType.is_dimension_based ? (
+                <Check className="h-5 w-5 text-green-500" />
+              ) : (
+                <X className="h-5 w-5 text-slate-400" />
+              )}
+            </div>
+          </TableCell>
+          <TableCell className="text-right rtl:text-left">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">{t("openMenu")}</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align={i18n.dir() === "rtl" ? "start" : "end"}
+              >
+                <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => handleOpenEditModal(productType)}
+                >
+                  <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                  {t("edit")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  onClick={() => setItemToDelete(productType)}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <Trash2 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                  {t("delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        </TableRow>
+      );
+    }
+  );
 
-    const handleOpenAddModal = () => {
-        reset({ name: '', product_category_id: '', description: '', base_measurement_unit: '' });
-        setEditingProductType(null);
-        setIsFormModalOpen(true);
-    };
+  return (
+    <div>
+      <PageHeader
+        title={t("productTypesTitle", { ns: "services" })}
+        description={t("productTypesDescription", { ns: "services" })}
+        actionButton={{
+          label: t("newProductTypeBtn", { ns: "services" }),
+          icon: PlusCircle,
+          onClick: handleOpenAddModal,
+        }}
+        showRefreshButton
+        onRefresh={refetch}
+        isRefreshing={isFetching && !isLoading}
+      />
 
-    const handleOpenEditModal = (pt: ProductType) => {
-        setEditingProductType(pt);
-        setValue('name', pt.name);
-        setValue('product_category_id', pt.product_category_id.toString());
-        setValue('description', pt.description || '');
-        setValue('base_measurement_unit', pt.base_measurement_unit || '');
-        setIsFormModalOpen(true);
-    };
+      <div className="mb-4">
+        <Input
+          placeholder={t("searchProductTypes", {
+            ns: "services",
+            defaultValue: "Search by product or category name...",
+          })}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
 
-    const onSubmit = (formData: ProductTypeFormValues) => {
-        formMutation.mutate({ id: editingProductType?.id, data: formData });
-    };
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[250px]">{t("name")}</TableHead>
+              <TableHead>{t("category", { ns: "services" })}</TableHead>
+              <TableHead className="text-center">
+                {t("dimensionBased", {
+                  ns: "services",
+                  defaultValue: "Dimension Based",
+                })}
+              </TableHead>
+              <TableHead className="text-right rtl:text-left w-[80px]">
+                {t("actions")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && productTypes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-32 text-center">
+                  <div className="flex justify-center items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>
+                      {t("loadingProductTypes", {
+                        ns: "services",
+                        defaultValue: "Loading product types...",
+                      })}
+                    </span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : productTypes.length > 0 ? (
+              productTypes.map((pt) => (
+                <MemoizedTableRow key={pt.id} productType={pt} />
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="h-32 text-center text-muted-foreground"
+                >
+                  {t("noResults")}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-    const columns: ColumnDef<ProductType>[] = useMemo(() => [
-        { accessorKey: "name", header: t('name', { ns: 'common' }) },
-        {
-            accessorKey: "category.name", // Assuming category is eager loaded
-            header: t('category', { ns: 'services' }),
-            cell: ({ row }) => row.original.category?.name || t('uncategorized', {ns:'services'}),
-        },
-        { accessorKey: "base_measurement_unit", header: t('unit', {ns:'services'}), cell: ({row}) => row.original.base_measurement_unit || '-' },
-        {
-            id: "actions",
-            header: () => <div className="text-right rtl:text-left">{t('actions', { ns: 'common' })}</div>,
-             cell: ({ row }) => (
-                <div className="text-right rtl:text-left">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0"> <MoreHorizontal className="h-4 w-4" /> </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={i18n.dir() === 'rtl' ? 'start' : 'end'}>
-                            <DropdownMenuItem onClick={() => handleOpenEditModal(row.original)}>
-                                <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />{t('edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(row.original)}>
-                                <Trash2 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />{t('delete')}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            ),
-        },
-    ], [t, i18n.dir, handleOpenEditModal, setItemToDelete]);
-
-    return (
-        <div>
-            <PageHeader
-                title={t('productTypesTitle', { ns: 'services' })}
-                description={t('productTypesDescription', { ns: 'services' })}
-                actionButton={{ label: t('newProductTypeBtn', { ns: 'services' }), icon: PlusCircle, onClick: handleOpenAddModal }}
-                showRefreshButton onRefresh={refetch} isRefreshing={isFetching && !isLoading}
-            />
-            <DataTable
-                columns={columns} data={productTypes} isLoading={isLoading}
-                pageCount={totalPages} currentPage={currentPage} onPageChange={setCurrentPage}
-            />
-            <Dialog open={isFormModalOpen} onOpenChange={(isOpen) => { setIsFormModalOpen(isOpen); if (!isOpen) setEditingProductType(null); }}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingProductType ? t('editProductTypeTitle', {ns:'services'}) : t('newProductTypeTitle', { ns: 'services' })}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-                        <div>
-                            <Label htmlFor="name">{t('name', { ns: 'common' })} <span className="text-destructive">*</span></Label>
-                            <Input id="name" {...register('name')} />
-                            {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
-                        </div>
-                        <div>
-                            <Label htmlFor="product_category_id">{t('category', { ns: 'services' })} <span className="text-destructive">*</span></Label>
-                            <Controller
-                                name="product_category_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue placeholder={t('selectCategory', {ns:'services'})} /></SelectTrigger>
-                                        <SelectContent>
-                                            {categories.map(cat => <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.product_category_id && <p className="text-sm text-destructive">{t(errors.product_category_id.message as string)}</p>}
-                        </div>
-                        <div>
-                            <Label htmlFor="base_measurement_unit">{t('baseUnitOptional', {ns:'services', defaultValue:'Base Measurement Unit (Optional)'})}</Label>
-                             <Controller
-                                name="base_measurement_unit"
-                                control={control}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <SelectTrigger><SelectValue placeholder={t('selectUnitOptional', {ns:'services', defaultValue: 'Select unit (e.g., item, kg)...'})} /></SelectTrigger>
-                                        <SelectContent>
-                                            {measurementUnits.map(unit => <SelectItem key={unit} value={unit}>{t(`units.${unit}`, {ns:'services', defaultValue: unit})}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="description">{t('descriptionOptional', { ns: 'common' })}</Label>
-                            <Textarea id="description" {...register('description')} />
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="outline" disabled={formMutation.isPending}>{t('cancel')}</Button></DialogClose>
-                            <Button type="submit" disabled={formMutation.isPending}>
-                                {formMutation.isPending && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
-                                {editingProductType ? t('saveChanges', {ns:'common'}) : t('create', { ns: 'common' })}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-            <DeleteConfirmDialog
-                isOpen={!!itemToDelete}
-                onOpenChange={(open) => !open && setItemToDelete(null)}
-                onConfirm={() => { if (itemToDelete) deleteMutation.mutate(itemToDelete.id); }}
-                itemName={itemToDelete?.name}
-                itemType="productTypeLC" // from services.json
-                isPending={deleteMutation.isPending}
-            />
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {t("pagination.showingItems", {
+            ns: "common",
+            first: paginatedData?.meta.from || 0,
+            last: paginatedData?.meta.to || 0,
+            total: totalItems,
+          })}
         </div>
-    );
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1 || isFetching}
+          >
+            {" "}
+            {t("firstPage")}{" "}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1 || isFetching}
+          >
+            {" "}
+            {t("previous")}{" "}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages || isFetching}
+          >
+            {" "}
+            {t("next")}{" "}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages || isFetching}
+          >
+            {" "}
+            {t("lastPage")}{" "}
+          </Button>
+        </div>
+      </div>
+
+      {/* Modals are rendered here */}
+      <ProductTypeFormModal
+        isOpen={isFormModalOpen}
+        onOpenChange={(isOpen) => {
+          setIsFormModalOpen(isOpen);
+          if (!isOpen) setEditingProductType(null);
+        }}
+        editingProductType={editingProductType}
+      />
+      <DeleteConfirmDialog
+        isOpen={!!itemToDelete}
+        onOpenChange={(open) => !open && setItemToDelete(null)}
+        onConfirm={() => {
+          if (itemToDelete) deleteMutation.mutate(itemToDelete.id);
+        }}
+        itemName={itemToDelete?.name}
+        itemType="productTypeLC"
+        isPending={deleteMutation.isPending}
+      />
+    </div>
+  );
 };
 export default ProductTypesListPage;

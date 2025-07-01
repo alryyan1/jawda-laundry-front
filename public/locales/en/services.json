@@ -152,7 +152,34 @@
             "serviceAdmin": "Service Settings",
             "productCategories": "Product Categories",
             "productTypes": "Product Types",
-            "serviceActions": "Service Actions"
+            "serviceActions": "Service Actions",
+            "dimensionBased": "Dimension Based",
+            "egProductTypeName": "e.g., T-shirt, Carpet",
+            "productTypeImageOptional": "Product type image (optional)",
+            "isDimensionBased": "Is dimension based?",
+            "isDimensionBasedHint": "Select this option if pricing depends on length × width",
+            "offeringDeletedSuccess": "Service offering deleted successfully.",
+              "manageOfferingsFor": "Manage Offerings for",
+              "offeringUpdatedSuccess": "Service offering updated successfully.",
+              "manageOfferingsDescription": "Create and manage service offerings for this product type.",
+              "createAllMissingOfferings": "Create All Missing Offerings",
+              "pricePerItem": "Price Per Item",
+              "noOfferingsForProduct": "No offerings available for this product type.",
+              "allOfferingsCreatedSuccess": "All offerings were successfully created.",
+              "searchProductTypes": "Search product types",
+              "serviceOfferingsDescriptionNew": "Select a product type to manage its available services and prices.",
+              "manageOfferings": "Manage Offerings"
+            ,
+            "selectCategoryToViewProducts": "Select a category to view products",
+            "availableServices": "Available Services",
+            "selectProductToViewServices": "Select a product to view services",
+            "noServicesForProduct": "No services available for this product",
+             "loadingProductTypes": "Loading product types...",
+  "pricePerSqMeter": "Price per square meter",
+            "loadingServiceActions": "Loading service actions...",
+            "egServiceActionName": "e.g., Standard Wash, Dry Cleaning",
+            "goBack": "Go Back"
+            
           }
       
     

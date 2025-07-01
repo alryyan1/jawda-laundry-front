@@ -7,15 +7,7 @@ export interface ProductCategory {
     product_types_count?: number; // if counted
 }
 
-export interface ProductType {
-    id: number;
-    product_category_id: number;
-    category?: ProductCategory; // if eager loaded
-    name: string;
-    description?: string | null;
-    base_measurement_unit?: 'item' | 'kg' | 'sq_meter' | 'set' | 'piece' | string | null;
-    service_offerings_count?: number; // if counted
-}
+
 
 export interface ServiceAction {
     id: number;
@@ -39,7 +31,7 @@ export interface ServiceOffering {
     display_name: string; // Accessor from backend
     description_override?: string | null;
     default_price?: number | null;
-    pricing_strategy: PricingStrategy;
+    // pricing_strategy: PricingStrategy;
     default_price_per_sq_meter?: number | null;
     applicable_unit?: string | null;
     is_active: boolean;
@@ -66,14 +58,30 @@ export interface ProductCategoryFormData {
     name: string;
     description?: string;
 }
-export interface ProductTypeFormData {
-    name: string;
-    product_category_id: string; // From select
-    description?: string;
-    base_measurement_unit?: string;
-}
+
 export interface ServiceActionFormData {
     name: string;
     description?: string;
     base_duration_minutes?: number | string;
+}
+
+
+
+export interface ProductType {
+    id: number;
+    product_category_id: number;
+    category?: ProductCategory;
+    name: string;
+    description?: string | null;
+    is_dimension_based: boolean; // Changed from base_measurement_unit
+    is_active: boolean;
+    image_url?: string | null;
+}
+
+export interface ProductTypeFormData {
+    name: string;
+    product_category_id: string; // From select
+    description?: string;
+    is_dimension_based: boolean; // Changed from base_measurement_unit
+    image?: File | null;
 }

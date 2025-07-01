@@ -1,164 +1,85 @@
 // src/pages/orders/NewOrderPage.tsx
-import React, { useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, Link } from "react-router-dom";
-import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useNavigate } from "react-router-dom";
+import {
+  FormProvider,
+  useForm,
+  useFieldArray,
+} from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid"; // For unique keys for useFieldArray items
-// If you see a type error for 'uuid', run: npm install --save-dev @types/uuid
+import { v4 as uuidv4 } from "uuid";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
-import type { ComboboxOption } from "@/components/ui/combobox";
-import { Loader2, ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
-import type { SubmitHandler } from "react-hook-form";
+// Layout & Child Components
+import { OrderCart } from "@/features/orders/components/wizard/OrderCart";
+import { StepCustomer } from "@/features/orders/components/wizard/StepCustomer";
+import { StepCategory } from "@/features/orders/components/wizard/StepCategory";
+import { StepProductType } from "@/features/orders/components/wizard/StepProductType";
+import { StepServiceOffering } from "@/features/orders/components/wizard/StepServiceOffering";
 
+// Schema, Types, and Services
 import type {
-  Customer,
-  ProductType,
-  ServiceAction,
-  ServiceOffering,
   NewOrderFormData,
+  ServiceOffering,
   Order,
-  PricingStrategy,
-  PaginatedResponse as CustomerPaginatedResponse,
+  ProductType,
+  QuoteItemPayload,
+  QuoteItemResponse,
+  OrderItemFormLine,
 } from "@/types";
-import {
-  getCustomers,
-} from "@/api/customerService";
-import { getAllProductTypes } from "@/api/productTypeService";
-import { getServiceActions } from "@/api/serviceActionService";
-import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService"; // To find matching offering
-import { createOrder } from "@/api/orderService";
+import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
+import { createOrder, getOrderItemQuote } from "@/api/orderService";
+import { useDebounce } from "@/hooks/useDebounce";
 
-// Zod Schema
-const orderItemSchema = z.object({
-  id: z.string(), // For useFieldArray
-  product_type_id: z
-    .string()
-    .min(1, { message: "validation.productTypeRequired" }),
-  service_action_id: z
-    .string()
-    .min(1, { message: "validation.serviceActionRequired" }),
-  product_description_custom: z.string().optional().or(z.literal("")),
-  quantity: z.preprocess(
-    (val) => {
-      if (typeof val === 'number') return val;
-      if (typeof val === 'string') return val;
-      return '';
-    },
-    z.union([z.string(), z.number()]).refine((val) => {
-      const num = typeof val === 'string' ? Number(val) : val;
-      return !isNaN(num) && num >= 1;
-    }, { message: "validation.quantityMin" })
-  ),
-  length_meters: z.preprocess(
-    (val) =>
-      val === "" || val === null || val === undefined
-        ? undefined
-        : val,
-    z.union([z.string(), z.number()]).optional()
-  ),
-  width_meters: z.preprocess(
-    (val) =>
-      val === "" || val === null || val === undefined
-        ? undefined
-        : val,
-    z.union([z.string(), z.number()]).optional()
-  ),
-  notes: z.string().optional().or(z.literal("")),
-  // Temporary fields used for UI logic, not part of backend submission directly from this item schema
-  _derivedServiceOffering: z
-    .custom<ServiceOffering | null | undefined>((val) => val !== undefined, {
-      message: "validation.serviceOfferingRequired",
-    })
-    .optional(),
-  _pricingStrategy: z.custom<PricingStrategy | null | undefined>().optional(),
-});
-
-const newOrderFormSchema = z.object({
-  customer_id: z.string().min(1, { message: "validation.customerRequired" }),
-  items: z
-    .array(orderItemSchema)
-    .min(1, { message: "validation.atLeastOneItem" }),
-  notes: z.string().optional().or(z.literal("")),
-  due_date: z
-    .string()
-    .optional()
-    .refine((val) => !val || !isNaN(Date.parse(val)), {
-      message: "validation.invalidDate",
-    })
-    .or(z.literal("")),
-});
+export type WizardStep =
+  | "CUSTOMER"
+  | "CATEGORY"
+  | "PRODUCT"
+  | "SERVICE"
+  | "EDIT_ITEM";
 
 const NewOrderPage: React.FC = () => {
-  const { t } = useTranslation([
-    "common",
-    "orders",
-    "customers",
-    "services",
-    "validation",
-  ]);
+  const { t } = useTranslation(["common", "orders", "services", "validation"]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // --- Data Fetching ---
-  const { data: customersResponse, isLoading: isLoadingCustomers } = useQuery<
-    CustomerPaginatedResponse<Customer>,
-    Error
-  >({
-    queryKey: ["customersForSelect"],
-    queryFn: () => getCustomers(1, 1000), // Fetch more for combobox
-  });
-  const customerOptions: ComboboxOption[] = useMemo(
-    () =>
-      customersResponse?.data.map((cust) => ({
-        value: cust.id.toString(),
-        label: `${cust.name} (${cust.phone || cust.email || "N/A"})`,
-      })) || [],
-    [customersResponse]
+  // --- State Management for UI flow ---
+  const [currentStep, setCurrentStep] = useState<WizardStep>("CUSTOMER");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
   );
+  const [selectedProductType, setSelectedProductType] =
+    useState<ProductType | null>(null);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [lastQuotedInputs, setLastQuotedInputs] = useState<
+    Record<string, string>
+  >({}); // State to prevent re-quoting
 
-  const { data: productTypes = [], isLoading: isLoadingPT } = useQuery<
-    ProductType[],
-    Error
-  >({
-    queryKey: ["allProductTypesForSelect"],
-    queryFn: () => getAllProductTypes(),
+  // --- Form Setup ---
+  const methods = useForm<NewOrderFormData>({
+    defaultValues: { customer_id: "", items: [], notes: "", due_date: "" },
   });
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+    getValues,
+    reset,
+  } = methods;
 
-  const { data: serviceActions = [], isLoading: isLoadingSA } = useQuery<
-    ServiceAction[],
-    Error
-  >({
-    queryKey: ["serviceActionsForSelect"],
-    queryFn: getServiceActions,
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name: "items",
   });
+  const watchedAllItems = watch("items");
+  const watchedCustomerId = watch("customer_id");
+  const debouncedWatchedItems = useDebounce(watchedAllItems, 500);
 
-  // Fetch ALL service offerings to perform client-side matching or to pass to createOrder service
-  // This could be optimized if the list is huge, e.g., by fetching only relevant ones.
-  const { data: allServiceOfferings = [], isLoading: isLoadingSO } = useQuery<
+  // --- Data Fetching ---
+  const { data: allServiceOfferings = [] } = useQuery<
     ServiceOffering[],
     Error
   >({
@@ -166,625 +87,311 @@ const NewOrderPage: React.FC = () => {
     queryFn: () => getAllServiceOfferingsForSelect(),
   });
 
-  const isLoadingDropdowns =
-    isLoadingCustomers || isLoadingPT || isLoadingSA || isLoadingSO;
-
-  // --- Form Setup ---
-  const {
-    control,
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-    setValue,
-    getValues,
-  } = useForm<NewOrderFormData>({
-    resolver: zodResolver(newOrderFormSchema),
-    defaultValues: {
-      customer_id: "",
-      items: [
-        {
-          id: uuidv4(),
-          product_type_id: "",
-          service_action_id: "",
-          quantity: 1,
-          _derivedServiceOffering: null,
-          _pricingStrategy: null,
-        },
-      ],
-      notes: "",
-      due_date: "",
-    },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "items",
-  });
-
-  // Watch items to update derived service offering and pricing strategy
-  const watchedItems = useWatch({ control, name: "items" });
-
-  // Compute available service actions for each item at the top level
-  const availableServiceActionsList = useMemo(() => {
-    return watchedItems.map((currentItemValues) => {
-      if (!currentItemValues?.product_type_id || !allServiceOfferings.length) return [];
-      const relevantOfferings = allServiceOfferings.filter(
-        (so: ServiceOffering) => so.productType?.id.toString() === currentItemValues.product_type_id
-      );
-      const uniqueActionIds = [
-        ...new Set(relevantOfferings.map((so: ServiceOffering) => so.serviceAction?.id)),
-      ];
-      return serviceActions.filter((sa: ServiceAction) => uniqueActionIds.includes(sa.id));
-    });
-  }, [watchedItems, allServiceOfferings, serviceActions]);
-
-  useEffect(() => {
-    watchedItems.forEach((item, index) => {
-      if (
-        item.product_type_id &&
-        item.service_action_id &&
-        allServiceOfferings.length > 0
-      ) {
-        const foundOffering = allServiceOfferings.find(
-          (so) =>
-            so.productType?.id.toString() === item.product_type_id &&
-            so.serviceAction?.id.toString() === item.service_action_id
-        );
-        // Only update if different to avoid re-renders / infinite loops
-        if (
-          getValues(`items.${index}._derivedServiceOffering`)?.id !==
-          foundOffering?.id
-        ) {
-          setValue(
-            `items.${index}._derivedServiceOffering`,
-            foundOffering || null
-          );
-          setValue(
-            `items.${index}._pricingStrategy`,
-            foundOffering?.pricing_strategy || null
-          );
-
-          // Clear dimensions if strategy changes away from dimension_based
-          if (foundOffering?.pricing_strategy !== "dimension_based") {
-            setValue(`items.${index}.length_meters`, undefined);
-            setValue(`items.${index}.width_meters`, undefined);
-          }
-        }
-      } else if (getValues(`items.${index}._derivedServiceOffering`) !== null) {
-        // If selections are cleared
-        setValue(`items.${index}._derivedServiceOffering`, null);
-        setValue(`items.${index}._pricingStrategy`, null);
-      }
-    });
-  }, [watchedItems, allServiceOfferings, setValue, getValues]);
-
-  // --- Mutation ---
+  // --- Mutations ---
   const createOrderMutation = useMutation<Order, Error, NewOrderFormData>({
-    
-    mutationFn: (formData) => {
-      console.log(formData,'formData')
-      // Transform items to match API shape
-      const apiItems = formData.items.map((item) => {
-        // Find the correct service offering for this item
-      
-        // Ensure length_meters and width_meters are numbers or undefined
-        return {
-          service_offering_id: item.service_offering_id, // fallback to empty string if not found
-          quantity: typeof item.quantity === 'string' ? Number(item.quantity) : item.quantity,
-          product_description_custom: item.product_description_custom,
-          length_meters:item.length_meters,
-          width_meters:item.width_meters,
-        };
-      });
-      return createOrder({
-        ...formData,
-        items: apiItems,
-      }, allServiceOfferings);
-    },
+    mutationFn: (formData) => createOrder(formData, allServiceOfferings),
     onSuccess: (data) => {
-      toast.success(
-        t("orderCreatedSuccess", {
-          ns: "orders",
-          orderNumber: data.order_number,
-        })
-      );
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      navigate("/orders");
+      toast.success(t('orderCreatedSuccess', { ns: 'orders', orderNumber: data.order_number }));
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      navigate(`/orders/${data.id}`);
     },
-    onError: (error) => {
-      console.log(error)
-      toast.error(error.message || t("orderCreationFailed", { ns: "orders" }));
+    onError: (error) => { toast.error(error.message || t('orderCreationFailed', { ns: 'orders' })); }
+  });
+  
+  const quoteItemMutation = useMutation<
+    QuoteItemResponse,
+    Error,
+    { itemIndex: number; payload: QuoteItemPayload }
+  >({
+    mutationFn: async ({ payload }) => getOrderItemQuote(payload),
+    onSuccess: (data, variables) => {
+      setValue(
+        `items.${variables.itemIndex}._quoted_price_per_unit_item`,
+        data.calculated_price_per_unit_item
+      );
+      setValue(
+        `items.${variables.itemIndex}._quoted_sub_total`,
+        data.sub_total
+      );
+      setValue(
+        `items.${variables.itemIndex}._quoted_applied_unit`,
+        data.applied_unit
+      );
+      setValue(`items.${variables.itemIndex}._isQuoting`, false);
+      setValue(`items.${variables.itemIndex}._quoteError`, null);
+    },
+    onError: (error, variables) => {
+      setValue(`items.${variables.itemIndex}._isQuoting`, false);
+      setValue(`items.${variables.itemIndex}._quoted_sub_total`, null);
+      setValue(
+        `items.${variables.itemIndex}._quoteError`,
+        error.message || t("quoteFailedForItemGeneric", { ns: "orders" })
+      );
     },
   });
 
-  const onSubmit: SubmitHandler<NewOrderFormData> = (data) => {
-    // Transform items to match API shape
-    const apiItems = data.items.map((item) => {
-      if (!item._derivedServiceOffering) {
-        throw new Error('Service offering not found for item');
-      }
-
-      // Convert dimensions to numbers if they exist
-      const length_meters = item.length_meters ? 
-        (typeof item.length_meters === 'string' ? parseFloat(item.length_meters) : item.length_meters) : 
-        undefined;
-      
-      const width_meters = item.width_meters ? 
-        (typeof item.width_meters === 'string' ? parseFloat(item.width_meters) : item.width_meters) : 
-        undefined;
-
-      return {
-        service_offering_id: item._derivedServiceOffering.id,
-        quantity: typeof item.quantity === 'string' ? Number(item.quantity) : item.quantity,
-        product_description_custom: item.product_description_custom || null,
-        length_meters,
-        width_meters,
-        notes: item.notes || null,
-      };
-    });
-
-    // Call the mutation with transformed data
-    createOrderMutation.mutate({
-      ...data,
-      items: apiItems,
-    });
+  // --- Logic & Handlers ---
+  const resetSelectionFlow = () => {
+    setCurrentStep("CATEGORY");
+    setSelectedCategoryId(null);
+    setSelectedProductType(null);
+    setEditingItemIndex(null);
   };
 
-  const addNewItem = () => {
-    append({
-      id: uuidv4(),
-      product_type_id: "",
-      service_action_id: "",
-      quantity: 1,
-      _derivedServiceOffering: null,
-      _pricingStrategy: null,
-      product_description_custom: "",
-      length_meters: "",
-      width_meters: "",
-      notes: "",
+  // NEW: Handles adding a single item directly on click
+  const handleAddItemsToCart = (offeringIds: string[]) => {
+    const newItems: OrderItemFormLine[] = [];
+    offeringIds.forEach(id => {
+      const offering = allServiceOfferings.find(
+        (o) => o.id.toString() === id
+      );
+      if (!offering || !offering.productType) return;
+
+      const alreadyInCart = watchedAllItems.some(
+        (item) => item._derivedServiceOffering?.id === offering.id
+      );
+      if (alreadyInCart) {
+        toast.info(
+          `"${offering.display_name}" ${t("isAlreadyInOrder", { ns: "orders" })}`
+        );
+        return;
+      }
+
+      const newItem: OrderItemFormLine = {
+        id: uuidv4(),
+        service_offering_id: offering.id,
+        product_type_id: offering.product_type_id.toString(),
+        service_action_id: offering.service_action_id.toString(),
+        quantity: 1,
+        _derivedServiceOffering: offering,
+        _pricingStrategy: offering.productType.is_dimension_based
+          ? "dimension_based"
+          : "fixed",
+        product_description_custom: "",
+        length_meters: "",
+        width_meters: "",
+        notes: "",
+        _isQuoting: false,
+        _quoteError: null,
+        _quoted_price_per_unit_item: null,
+        _quoted_sub_total: null,
+        _quoted_applied_unit: null,
+      };
+
+      newItems.push(newItem);
     });
+
+    if (newItems.length > 0) {
+      append(newItems);
+      toast.success(
+        `${newItems.length} item(s) ${t("addedToOrder", {
+          ns: "orders",
+          defaultValue: "added to order.",
+        })}`
+      );
+    }
+    // We no longer reset the flow, so user can add more services for the same product.
+  };
+
+  // Other handlers remain the same
+  const handleCustomerSelected = (customerId: string) => {
+    if (customerId) setCurrentStep("CATEGORY");
+  };
+  const handleCategorySelected = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setCurrentStep("PRODUCT");
+  };
+  const handleProductTypeSelected = (productType: ProductType) => {
+    setSelectedProductType(productType);
+    setCurrentStep("SERVICE");
+  };
+  const handleEditItem = (index: number) => {
+    const item = getValues(`items.${index}`);
+    if (!item || !item._derivedServiceOffering?.productType) return;
+    setEditingItemIndex(index);
+    setSelectedCategoryId(item._derivedServiceOffering.productType.product_category_id.toString());
+    setSelectedProductType(item._derivedServiceOffering.productType);
+    setCurrentStep('EDIT_ITEM');
+  };
+  const handleUpdateItem = (
+    index: number,
+    updatedItemData: Partial<OrderItemFormLine>
+  ) => {
+    update(index, { ...getValues(`items.${index}`), ...updatedItemData });
+    resetSelectionFlow();
+  };
+  const handleResetOrder = () => {
+    reset();
+    setCurrentStep('CUSTOMER');
+    setSelectedCategoryId(null);
+    setSelectedProductType(null);
+    setEditingItemIndex(null);
+    toast.info(t('newOrderFormCleared', { ns: 'orders' }));
+  };
+  const onSubmit = (data: NewOrderFormData) => {
+    createOrderMutation.mutate(data);
+  };
+
+  // --- Side Effects ---
+  // CORRECTED: useEffect for quoting with infinite loop fix
+  useEffect(() => {
+    if (
+      !debouncedWatchedItems ||
+      debouncedWatchedItems.length === 0 ||
+      !watchedCustomerId
+    )
+      return;
+
+    debouncedWatchedItems.forEach((item, index) => {
+      const currentFormItem = getValues(`items.${index}`);
+      if (!currentFormItem) return;
+
+      const offeringToQuote = currentFormItem._derivedServiceOffering;
+      const quantityNum = Number(item.quantity) || 0;
+
+      if (offeringToQuote && watchedCustomerId && quantityNum > 0) {
+        let readyToQuote = true;
+        const quotePayload: QuoteItemPayload = {
+          service_offering_id: offeringToQuote.id,
+          customer_id: watchedCustomerId,
+          quantity: quantityNum,
+        };
+
+        if (offeringToQuote.productType?.is_dimension_based) {
+          const lengthNum = Number(item.length_meters) || 0;
+          const widthNum = Number(item.width_meters) || 0;
+          if (lengthNum > 0 && widthNum > 0) {
+            quotePayload.length_meters = lengthNum;
+            quotePayload.width_meters = widthNum;
+          } else {
+            readyToQuote = false;
+          }
+        }
+
+        const currentQuoteInputSignature = JSON.stringify(quotePayload);
+
+        if (
+          readyToQuote &&
+          !currentFormItem._isQuoting &&
+          lastQuotedInputs[item.id] !== currentQuoteInputSignature
+        ) {
+          setLastQuotedInputs((prev) => ({
+            ...prev,
+            [item.id]: currentQuoteInputSignature,
+          }));
+          setValue(`items.${index}._isQuoting`, true);
+          setValue(`items.${index}._quoteError`, null);
+          quoteItemMutation.mutate({ itemIndex: index, payload: quotePayload });
+        }
+      }
+    });
+  }, [
+    debouncedWatchedItems,
+    watchedCustomerId,
+    getValues,
+    setValue,
+    quoteItemMutation,
+    lastQuotedInputs,
+  ]);
+
+  // Effect to manage wizard flow based on customer selection
+  useEffect(() => {
+    if (!watchedCustomerId) setCurrentStep("CUSTOMER");
+    else if (currentStep === "CUSTOMER" && watchedCustomerId)
+      setCurrentStep("CATEGORY");
+  }, [watchedCustomerId, currentStep]);
+
+  const renderCurrentStep = () => {
+    if (!watchedCustomerId) {
+      return (
+        <StepCustomer
+          onCustomerSelected={handleCustomerSelected}
+          control={control}
+          error={errors.customer_id}
+        />
+      );
+    }
+
+    switch (currentStep) {
+      case "CATEGORY":
+        return (
+          <StepCategory
+            onSelectCategory={handleCategorySelected}
+            selectedCategoryId={selectedCategoryId}
+          />
+        );
+      case "PRODUCT":
+        return (
+          <StepProductType
+            categoryId={selectedCategoryId!}
+            onSelectProductType={handleProductTypeSelected}
+            onBack={() => {
+              setSelectedProductType(null);
+              setCurrentStep("CATEGORY");
+            }}
+          />
+        );
+      case "SERVICE":
+        return (
+          <StepServiceOffering
+            productType={selectedProductType!}
+            onAddItemsToCart={handleAddItemsToCart}
+            onBack={() => setCurrentStep("PRODUCT")}
+          />
+        );
+      case "EDIT_ITEM": {
+        // This logic remains for editing an item's service offering from the cart
+        const itemToEdit = getValues(`items.${editingItemIndex!}`);
+        return itemToEdit?._derivedServiceOffering?.productType ? (
+          <StepServiceOffering
+            productType={itemToEdit._derivedServiceOffering.productType}
+            onAddItemsToCart={() => {}} // Not used
+            onBack={resetSelectionFlow}
+            isEditing={true}
+            itemToEdit={itemToEdit}
+            onItemUpdate={(updatedData) =>
+              handleUpdateItem(editingItemIndex!, updatedData)
+            }
+          />
+        ) : (
+          <div className="p-4">
+            {t("itemDataMissingError", { ns: "orders" })}
+          </div>
+        );
+      }
+      default:
+        return (
+          <StepCategory
+            onSelectCategory={handleCategorySelected}
+            selectedCategoryId={selectedCategoryId}
+          />
+        );
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {" "}
-      {/* Increased max-width for more complex form */}
-      <div className="mb-4">
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/orders">
-            <ArrowLeft className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-            {t("backToOrders", { ns: "orders" })}
-          </Link>
-        </Button>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("newOrder", { ns: "common" })}</CardTitle>
-          <CardDescription>
-            {t("newOrderDescription", { ns: "orders" })}
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
-            {/* Customer Selection */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="customer_id">
-                {t("customer", { ns: "customers" })}{" "}
-                <span className="text-destructive">*</span>
-              </Label>
-              <Controller
-                name="customer_id"
-                control={control}
-                render={({ field }) => (
-                  <Combobox
-                    options={customerOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder={
-                      isLoadingCustomers
-                        ? t("loading")
-                        : t("selectCustomer", { ns: "customers" })
-                    }
-                    searchPlaceholder={t("searchCustomer", { ns: "customers" })}
-                    emptyResultText={t("noCustomerFound", { ns: "customers" })}
-                    disabled={
-                      isLoadingDropdowns || createOrderMutation.isPending
-                    }
-                  />
-                )}
-              />
-              {errors.customer_id && (
-                <p className="text-sm text-destructive">
-                  {t(errors.customer_id.message as string)}
-                </p>
-              )}
-            </div>
-
-            {/* Order Items Section */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">
-                  {t("orderItems", { ns: "orders" })}
-                </h3>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={addNewItem}
-                  disabled={createOrderMutation.isPending}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                  {t("addItem", { ns: "orders" })}
-                </Button>
-              </div>
-              {fields.map((field, index) => {
-                const currentItemValues = watch(`items.${index}`); // Get current values for this specific item
-                const selectedOffering = currentItemValues?._derivedServiceOffering;
-                const pricingStrategy = currentItemValues?._pricingStrategy;
-
-                // Use the precomputed availableServiceActions for this index
-                const availableServiceActions = availableServiceActionsList[index] || [];
-
-                return (
-                  <div
-                    key={field.id}
-                    className="p-4 border rounded-md space-y-3 bg-muted/30"
-                  >
-                    <div className="flex justify-between items-start">
-                      <p className="font-medium text-sm">
-                        {t("item", { ns: "common" })} #{index + 1}
-                      </p>
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          disabled={createOrderMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Product Type */}
-                      <div className="grid gap-1.5">
-                        <Label htmlFor={`items.${index}.product_type_id`}>
-                          {t("productType", { ns: "services" })}{" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Controller
-                          name={`items.${index}.product_type_id`}
-                          control={control}
-                          render={({ field: controllerField }) => (
-                            <Select
-                              onValueChange={(value) => {
-                                controllerField.onChange(value);
-                                setValue(
-                                  `items.${index}.service_action_id`,
-                                  ""
-                                ); // Reset action on PT change
-                                setValue(
-                                  `items.${index}._derivedServiceOffering`,
-                                  null
-                                );
-                              }}
-                              value={controllerField.value}
-                              disabled={
-                                isLoadingDropdowns ||
-                                createOrderMutation.isPending
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={
-                                    isLoadingPT
-                                      ? t("loading")
-                                      : t("selectProductType", {
-                                          ns: "services",
-                                        })
-                                  }
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {productTypes.map((pt) => (
-                                  <SelectItem
-                                    key={pt.id}
-                                    value={pt.id.toString()}
-                                  >
-                                    {pt.name} ({pt.category?.name})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {errors.items?.[index]?.product_type_id && (
-                          <p className="text-sm text-destructive">
-                            {t(
-                              errors.items[index]?.product_type_id
-                                ?.message as string
-                            )}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Service Action */}
-                      <div className="grid gap-1.5">
-                        <Label htmlFor={`items.${index}.service_action_id`}>
-                          {t("serviceAction", { ns: "services" })}{" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Controller
-                          name={`items.${index}.service_action_id`}
-                          control={control}
-                          render={({ field: controllerField }) => (
-                            <Select
-                              onValueChange={controllerField.onChange}
-                              value={controllerField.value}
-                              disabled={
-                                isLoadingDropdowns ||
-                                createOrderMutation.isPending ||
-                                !currentItemValues?.product_type_id ||
-                                availableServiceActions.length === 0
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={
-                                    !currentItemValues?.product_type_id
-                                      ? t("selectProductTypeFirst", {
-                                          ns: "services",
-                                        })
-                                      : isLoadingSA
-                                      ? t("loading")
-                                      : t("selectServiceAction", {
-                                          ns: "services",
-                                        })
-                                  }
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableServiceActions.map((sa) => (
-                                  <SelectItem
-                                    key={sa.id}
-                                    value={sa.id.toString()}
-                                  >
-                                    {sa.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {errors.items?.[index]?.service_action_id && (
-                          <p className="text-sm text-destructive">
-                            {t(
-                              errors.items[index]?.service_action_id
-                                ?.message as string
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {selectedOffering && (
-                      <div className="p-2 text-xs bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700">
-                        Selected Offering:{" "}
-                        <strong>{selectedOffering.display_name}</strong> (
-                        {t(`strategy.${selectedOffering.pricing_strategy}`, {
-                          ns: "services",
-                        })}
-                        )
-                        {selectedOffering.default_price &&
-                          ` - Default Price: ${selectedOffering.default_price}`}
-                        {selectedOffering.default_price_per_sq_meter &&
-                          ` - Price/sq.m: ${selectedOffering.default_price_per_sq_meter}`}
-                      </div>
-                    )}
-                    {errors.items?.[index]?._derivedServiceOffering && (
-                      <p className="text-sm text-destructive">
-                        {t(
-                          errors.items[index]?._derivedServiceOffering
-                            ?.message as string
-                        )}
-                      </p>
-                    )}
-
-                    <div className="grid gap-1.5">
-                      <Label
-                        htmlFor={`items.${index}.product_description_custom`}
-                      >
-                        {t("itemDescriptionOptional", {
-                          ns: "orders",
-                          defaultValue: "Specific Item Description (Optional)",
-                        })}
-                      </Label>
-                      <Input
-                        id={`items.${index}.product_description_custom`}
-                        {...register(
-                          `items.${index}.product_description_custom`
-                        )}
-                        placeholder={t("itemDescriptionPlaceholder", {
-                          ns: "orders",
-                          defaultValue:
-                            "e.g., Brand X, Blue Cotton Shirt, Size M",
-                        })}
-                        disabled={createOrderMutation.isPending}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {/* Quantity */}
-                      <div className="grid gap-1.5">
-                        <Label htmlFor={`items.${index}.quantity`}>
-                          {t("quantity", { ns: "services" })}{" "}
-                          <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          id={`items.${index}.quantity`}
-                          type="number"
-                          {...register(`items.${index}.quantity`)}
-                          min="1"
-                          disabled={createOrderMutation.isPending}
-                        />
-                        {errors.items?.[index]?.quantity && (
-                          <p className="text-sm text-destructive">
-                            {t(
-                              errors.items[index]?.quantity?.message as string
-                            )}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Conditional Dimension Inputs */}
-                      {pricingStrategy === "dimension_based" && (
-                        <>
-                          <div className="grid gap-1.5">
-                            <Label htmlFor={`items.${index}.length_meters`}>
-                              {t("lengthMeters", { ns: "orders" })}{" "}
-                              {selectedOffering?.applicable_unit ===
-                              "sq_meter" ? (
-                                <span className="text-destructive">*</span>
-                              ) : (
-                                ""
-                              )}
-                            </Label>
-                            <Input
-                              id={`items.${index}.length_meters`}
-                              type="number"
-                              step="0.01"
-                              {...register(`items.${index}.length_meters`)}
-                              placeholder="e.g., 2.5"
-                              disabled={createOrderMutation.isPending}
-                            />
-                            {errors.items?.[index]?.length_meters && (
-                              <p className="text-sm text-destructive">
-                                {t(
-                                  errors.items[index]?.length_meters
-                                    ?.message as string
-                                )}
-                              </p>
-                            )}
-                          </div>
-                          <div className="grid gap-1.5">
-                            <Label htmlFor={`items.${index}.width_meters`}>
-                              {t("widthMeters", { ns: "orders" })}{" "}
-                              {selectedOffering?.applicable_unit ===
-                              "sq_meter" ? (
-                                <span className="text-destructive">*</span>
-                              ) : (
-                                ""
-                              )}
-                            </Label>
-                            <Input
-                              id={`items.${index}.width_meters`}
-                              type="number"
-                              step="0.01"
-                              {...register(`items.${index}.width_meters`)}
-                              placeholder="e.g., 1.8"
-                              disabled={createOrderMutation.isPending}
-                            />
-                            {errors.items?.[index]?.width_meters && (
-                              <p className="text-sm text-destructive">
-                                {t(
-                                  errors.items[index]?.width_meters
-                                    ?.message as string
-                                )}
-                              </p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label htmlFor={`items.${index}.notes`}>
-                        {t("itemNotesOptional", {
-                          ns: "orders",
-                          defaultValue: "Notes for this item (Optional)",
-                        })}
-                      </Label>
-                      <Textarea
-                        id={`items.${index}.notes`}
-                        {...register(`items.${index}.notes`)}
-                        rows={2}
-                        disabled={createOrderMutation.isPending}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              {errors.items && typeof errors.items.message === "string" && (
-                <p className="text-sm text-destructive mt-2">
-                  {errors.items.message}
-                </p>
-              )}{" "}
-              {/* For array-level error */}
-            </div>
-
-            {/* Overall Order Notes & Due Date */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="notes">
-                {t("overallOrderNotesOptional", {
-                  ns: "orders",
-                  defaultValue: "Overall Order Notes (Optional)",
-                })}
-              </Label>
-              <Textarea
-                id="notes"
-                {...register("notes")}
-                rows={3}
-                disabled={createOrderMutation.isPending}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="due_date">
-                {t("dueDateOptional", {
-                  ns: "orders",
-                  defaultValue: "Due Date (Optional)",
-                })}
-              </Label>
-              <Input
-                id="due_date"
-                type="date"
-                {...register("due_date")}
-                className="max-w-xs"
-                disabled={createOrderMutation.isPending}
-              />
-              {errors.due_date && (
-                <p className="text-sm text-destructive">
-                  {t(errors.due_date.message as string)}
-                </p>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row justify-end gap-2 items-stretch sm:items-center">
-            {/* TODO: Display calculated total quote here if implementing quoting service */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/orders")}
-              disabled={createOrderMutation.isPending}
-            >
-              {t("cancel", { ns: "common" })}
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoadingDropdowns || createOrderMutation.isPending}
-            >
-              {createOrderMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />
-              )}
-              {t("createOrderCta", { ns: "orders" })}
-            </Button>
-          </CardFooter>
+    <FormProvider {...methods}>
+      <div className="h-screen w-screen bg-muted/30 fixed inset-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full">
+          {/* Left Panel: Order Cart */}
+          <div className="w-full lg:w-2/5 xl:w-1/3 flex-shrink-0 border-r bg-background h-full shadow-lg">
+            <OrderCart
+              control={control}
+              errors={errors}
+              fields={fields}
+              remove={remove}
+              onEditItem={handleEditItem}
+              onNewOrderClick={handleResetOrder}
+              isSubmitting={createOrderMutation.isPending}
+            />
+          </div>
+          {/* Right Panel: Dynamic Selection Area */}
+          <div className="hidden lg:block lg:w-3/5 xl:w-2/3 h-full flex-col">
+            {renderCurrentStep()}
+          </div>
         </form>
-      </Card>
-    </div>
+      </div>
+    </FormProvider>
   );
 };
-
 export default NewOrderPage;
