@@ -24,5 +24,13 @@
     "atLeastOneItem": "At least one item must be added to the order.",
     "invalidDate": "Invalid date format.",
     "durationMustBeNumber": "Duration must be a valid number.",
-    "durationNonNegative": "Duration must be zero or positive."
+    "durationNonNegative": "Duration must be zero or positive.",
+    "expenseNameRequired": "Expense name is required.",
+    "amountRequired": "Amount is required.",
+    "amountMustBePositive": "Amount must be greater than zero.",
+    "dateRequired": "Date is required.",
+    "supplierRequired": "Supplier is required.",
+    "itemNameRequired": "Item name is required.",
+    "quantityMustBeNumber": "Quantity must be a valid number.",
+    "unitPriceRequired": "Unit price is required."
   }

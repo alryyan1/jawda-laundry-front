@@ -5,17 +5,17 @@ export interface DashboardSummary {
     processingOrders: number;
     readyForPickupOrders: number;
     completedTodayOrders: number;
-    cancelledOrders?: number; // Optional
+    cancelledOrders?: number;
     totalActiveCustomers: number;
     monthlyRevenue: number;
 }
 
 export interface OrderTrendItem {
-    date: string; // e.g., "2023-10-27"
+    date: string; // YYYY-MM-DD
     count: number;
 }
 
 export interface RevenueBreakdownItem {
-    name: string; // e.g., "Apparel", "Household Linens"
+    name: string; // Category Name
     total_revenue: number;
 }

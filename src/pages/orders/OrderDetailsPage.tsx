@@ -19,7 +19,7 @@ import { getOrderById } from '@/api/orderService';
 // Assume an updateOrderStatus function exists in orderService
 // import { updateOrderStatus } from '@/api/orderService'; // TODO: Implement this
 
-import { ArrowLeft, Loader2, Printer, AlertCircle, CheckCircle2, Info, Edit3 } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, AlertCircle, CheckCircle2, Info, Edit3, FileText } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader'; // Using PageHeader
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
@@ -119,7 +119,7 @@ const OrderDetailsPage: React.FC = () => {
       <Button onClick={() => navigate("/orders")} className="mt-4">{t("backToOrders", { ns: "orders" })}</Button>
     </div>
   );
-
+  const invoiceUrl = `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}/orders/${order.id}/invoice/download`;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -137,8 +137,13 @@ const OrderDetailsPage: React.FC = () => {
         <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}
     </Link>
 </Button>
-        <Button variant="outline"><Printer className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('printInvoice', { ns: 'orders' })}</Button>
-        {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
+<Button asChild>
+  {/* target="_blank" opens it in a new tab */}
+  <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
+    <FileText className="mr-2 h-4 w-4" />
+    {t('downloadPdf', { ns: 'orders' })}
+  </a>
+</Button>        {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
       </PageHeader>
 
       <div className="grid md:grid-cols-3 gap-6">

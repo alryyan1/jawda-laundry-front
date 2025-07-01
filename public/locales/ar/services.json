@@ -147,5 +147,10 @@
   "productCategories": "فئات المنتجات",
   "productTypes": "أنواع المنتجات",
   "serviceActions": "إجراءات الخدمة",
-  "goBack": "رجوع"
+  "goBack": "رجوع",
+  "clickServiceToAdd": "انقر على الخدمات لإضافتها إلى طلبك",
+  "chooseAnotherCategory": "اختر فئة أخرى",
+  "noProductsInCategory": "لا توجد منتجات متاحة في هذه الفئة",
+  "chooseAnotherProduct": "اختر منتجاً آخر",
+  "noServicesForProduct": "لا توجد خدمات متاحة لهذا المنتج"
 }

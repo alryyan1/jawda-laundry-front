@@ -1,25 +1,25 @@
 // src/types/customer.types.ts
-import type { User } from './auth.types'; // Import if User type is needed here
+import type { User } from './auth.types';
 
 export interface CustomerType {
     id: number;
     name: string;
-    description?: string;
+    description?: string | null;
 }
 
 export interface Customer {
   id: number;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
+  name:string;
+  phone: string; // Now required
+  email?: string | null; // Now optional
   address?: string | null;
   notes?: string | null;
   customer_type_id?: number | null;
-  customerType?: CustomerType; // If eager loaded
-  user_id?: number | null; // Staff who created/manages
-  user?: User;           // If eager loaded
-  registered_date: string; // from created_at
-  total_orders?: number;    // from withCount
+  customerType?: CustomerType;
+  user_id?: number | null;
+  managedBy?: User; // The staff member who manages them
+  registered_date: string;
+  total_orders?: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,9 +27,8 @@ export interface Customer {
 // Form data for creating/editing customers
 export interface CustomerFormData {
     name: string;
-    email?: string;
-    phone?: string;
+    phone: string;
     address?: string;
     notes?: string;
-    customer_type_id?: number | string | null; // string for form select
+    customer_type_id?: number | string | null; // string from form select
 }

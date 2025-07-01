@@ -3,31 +3,14 @@ import type { User } from './auth.types';
 import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
 
-export type OrderStatus = "pending" | "processing" | "ready_for_pickup" | "completed" | "cancelled" | string;
+export type OrderStatus = "pending" | "processing" | "ready_for_pickup" | "completed" | "cancelled";
 export const orderStatusOptions: OrderStatus[] = ["pending", "processing", "ready_for_pickup", "completed", "cancelled"];
-
-// --- Quote Types ---
-export interface QuoteItemPayload {
-    service_offering_id: number | string; // string from form, number for API
-    customer_id: number | string;       // string from form, number for API
-    quantity: number;
-    length_meters?: number | null;
-    width_meters?: number | null;
-}
-
-export interface QuoteItemResponse {
-    calculated_price_per_unit_item: number;
-    sub_total: number;
-    applied_unit: string;
-    strategy_applied: PricingStrategy;
-    message?: string;
-}
 
 export interface OrderItem {
     id: number;
     order_id: number;
     service_offering_id: number;
-    serviceOffering?: ServiceOffering; // if eager loaded from backend
+    serviceOffering?: ServiceOffering;
     product_description_custom?: string | null;
     quantity: number;
     length_meters?: number | null;
@@ -35,46 +18,44 @@ export interface OrderItem {
     calculated_price_per_unit_item: number;
     sub_total: number;
     notes?: string | null;
+    // New fields if you implement them
+    brand?: string | null;
+    color?: string | null;
+    defects?: string | null;
 }
+
+export type BackendOrderItem = Omit<OrderItem, 'serviceOffering'> & { serviceOffering: ServiceOffering };
 
 export interface Order {
     id: number;
     order_number: string;
-    customer_id: number;
-    customer: Customer; // Assuming customer is always eager loaded
-    user_id?: number | null; // Staff user ID
-    staff_user?: User;       // Eager loaded staff user details
+    customer: Customer;
+    staff_user?: User;
     status: OrderStatus;
     total_amount: number;
     paid_amount: number;
-    payment_method?: string | null;
+    amount_due?: number;
     payment_status?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | string | null;
+    payment_method?: string | null;
     notes?: string | null;
-    order_date: string;      // ISO date string
-    due_date?: string | null;   // ISO date string
-    pickup_date?: string | null;// ISO date string
-    delivery_address?: string | null;
+    order_date: string;
+    due_date?: string | null;
     items: OrderItem[];
     created_at: string;
     updated_at: string;
-    amount_due?: number; // Accessor from backend
 }
 
-// Form data types for NewOrderPage
 export interface OrderItemFormLine {
-    id: string; // For useFieldArray key (client-side only)
-    service_offering_id: number | string; // Required by backend API
+    id: string; // Client-side UUID
     product_type_id: string;
     service_action_id: string;
-    product_description_custom?: string;
     quantity: number | string;
-    length_meters?: number | string | null; // Allow null for reset
-    width_meters?: number | string | null;  // Allow null for reset
+    product_description_custom?: string;
+    length_meters?: number | string;
+    width_meters?: number | string;
     notes?: string;
-
-    // Client-side derived/temporary fields for UI logic
     _derivedServiceOffering?: ServiceOffering | null;
-    _pricingStrategy?: PricingStrategy | null;
+    _pricingStrategy?: PricingStrategy | null; // 'fixed' or 'dimension_based'
     _quoted_price_per_unit_item?: number | null;
     _quoted_sub_total?: number | null;
     _quoted_applied_unit?: string | null;
@@ -86,5 +67,6 @@ export interface NewOrderFormData {
     customer_id: string;
     items: OrderItemFormLine[];
     notes?: string;
-    due_date?: string; // yyyy-mm-dd
+    due_date?: string;
+    status?: OrderStatus; // Added for edit page
 }

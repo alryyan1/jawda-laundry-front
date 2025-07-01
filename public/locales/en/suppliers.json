@@ -1,0 +1,21 @@
+{
+  "title": "Suppliers",
+  "description": "Manage your suppliers and vendor information",
+  "newSupplier": "New Supplier",
+  "supplierName": "Supplier Name",
+  "contactPerson": "Contact Person",
+  "phoneNumber": "Phone Number",
+  "emailAddress": "Email Address",
+  "address": "Address",
+  "searchSuppliers": "Search suppliers...",
+  "supplierCreatedSuccess": "Supplier '{{name}}' created successfully",
+  "supplierUpdatedSuccess": "Supplier '{{name}}' updated successfully",
+  "supplierDeletedSuccess": "Supplier deleted successfully",
+  "supplierDeleteFailed": "Failed to delete supplier",
+  "noSuppliersFound": "No suppliers found",
+  "editSupplier": "Edit Supplier",
+  "newSupplierTitle": "New Supplier",
+  "editSupplierTitle": "Edit Supplier",
+  "supplierDetails": "Supplier Details",
+  "totalPurchases": "Total Purchases"
+} 

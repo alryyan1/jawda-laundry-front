@@ -25,24 +25,26 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-import {
-  Home,
-  Package,
-  Users,
-  Settings as SettingsIcon,
-  LogOut,
-  Menu,
-  Shirt,
-  Layers,
-  Box,
-  Wand2,
-  ChevronDown,
-  ChevronRight,
-  Languages,
-  ShirtIcon,
-  User2,
-  Lock,
-} from "lucide-react";
+  import {
+    Home,
+    Package,
+    Users,
+    Settings as SettingsIcon,
+    LogOut,
+    Menu,
+    Shirt,
+    Layers,
+    Box,
+    Wand2,
+    ChevronDown,
+    ChevronRight,
+    Languages,
+    ShirtIcon,
+    User2,
+    Lock,
+    DollarSign,
+    ShoppingCart,
+  } from "lucide-react";
 
 // MainLayout Component
 const MainLayout: React.FC = () => {
@@ -184,6 +186,27 @@ const MainLayout: React.FC = () => {
       type: "link" as const,
     },
     {
+      to: "/expenses",
+      labelKey: "title",
+      namespace: "expenses",
+      icon: DollarSign,
+      type: "link" as const,
+    },
+    {
+      to: "/purchases",
+      labelKey: "title",
+      namespace: "purchases",
+      icon: ShoppingCart,
+      type: "link" as const,
+    },
+    {
+      to: "/suppliers",
+      labelKey: "title",
+      namespace: "suppliers",
+      icon: Users,
+      type: "link" as const,
+    },
+    {
       labelKey: "serviceAdmin",
       icon: SettingsIcon,
       type: "collapsible" as const,
@@ -255,7 +278,7 @@ const MainLayout: React.FC = () => {
                 }`}
               />
               {t(item.labelKey, {
-                ns: item.labelKey.includes("settings") ? "settings" : "common",
+                ns: item.namespace || (item.labelKey.includes("settings") ? "settings" : "common"),
               })}
             </Link>
           </Button>

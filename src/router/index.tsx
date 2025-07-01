@@ -22,9 +22,15 @@ import { ProfileSettings } from "@/features/settings/components/ProfileSettings"
 
 // General Pages
 const DashboardPage = React.lazy(() => import("@/pages/DashboardPage"));
+const SuppliersListPage = React.lazy(() => import('@/pages/suppliers/SuppliersListPage'));
 const SettingsPage = React.lazy(() => import("@/pages/SettingsPage"));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage"));
+const ExpensesListPage = React.lazy(() => import('@/pages/expenses/ExpensesListPage'));
 
+// Purchase Pages
+const PurchasesListPage = React.lazy(() => import('@/pages/purchases/PurchasesListPage'));
+const NewPurchasePage = React.lazy(() => import('@/pages/purchases/NewPurchasePage'));
+const PurchaseDetailsPage = React.lazy(() => import('@/pages/purchases/PurchaseDetailsPage'));
 // Auth Pages
 const LoginPage = React.lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = React.lazy(() => import("@/pages/auth/RegisterPage"));
@@ -114,6 +120,28 @@ export const router = createBrowserRouter([
                 <DashboardPage />
               </React.Suspense>
             ),
+          },
+          {
+            path: 'expenses',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpensesListPage /></React.Suspense>,
+          },
+          // Suppliers
+          {
+            path: 'suppliers',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><SuppliersListPage /></React.Suspense>,
+          },
+          // Purchases
+          {
+            path: 'purchases',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><PurchasesListPage /></React.Suspense>,
+          },
+          {
+            path: 'purchases/new',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><NewPurchasePage /></React.Suspense>,
+          },
+          {
+            path: 'purchases/:id',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><PurchaseDetailsPage /></React.Suspense>,
           },
           // Customers
           {

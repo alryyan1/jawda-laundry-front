@@ -5,8 +5,8 @@ export * from './auth.types';
 export * from './customer.types';
 export * from './service.types';
 export * from './order.types';
-// src/types/index.ts
-// ... other exports
+export * from './expense.types';
+export * from './purchase.types';
+export * from './supplier.types';
 export * from './dashboard.types';
-// You can also export specific utility types or enums if they don't fit neatly elsewhere
-// export type Theme = "light" | "dark" | "system";
+export * from './admin.types'; // For User/Role/Permission management pages

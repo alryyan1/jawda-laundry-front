@@ -1,0 +1,21 @@
+{
+  "title": "الموردين",
+  "description": "إدارة الموردين ومعلومات البائعين",
+  "newSupplier": "مورد جديد",
+  "supplierName": "اسم المورد",
+  "contactPerson": "الشخص المسؤول",
+  "phoneNumber": "رقم الهاتف",
+  "emailAddress": "عنوان البريد الإلكتروني",
+  "address": "العنوان",
+  "searchSuppliers": "البحث في الموردين...",
+  "supplierCreatedSuccess": "تم إنشاء المورد '{{name}}' بنجاح",
+  "supplierUpdatedSuccess": "تم تحديث المورد '{{name}}' بنجاح",
+  "supplierDeletedSuccess": "تم حذف المورد بنجاح",
+  "supplierDeleteFailed": "فشل في حذف المورد",
+  "noSuppliersFound": "لم يتم العثور على موردين",
+  "editSupplier": "تعديل المورد",
+  "newSupplierTitle": "مورد جديد",
+  "editSupplierTitle": "تعديل المورد",
+  "supplierDetails": "تفاصيل المورد",
+  "totalPurchases": "إجمالي المشتريات"
+} 

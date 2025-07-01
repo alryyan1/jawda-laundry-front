@@ -3,13 +3,12 @@
 
 import * as React from "react"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-import type { DateRange } from "react-day-picker"
-import { arSA, enUS } from 'date-fns/locale';
-import { useTranslation } from "react-i18next";
+import { CalendarIcon } from "lucide-react"
+import { DateRange } from "react-day-picker"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
-import { Button,  ButtonProps } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -17,26 +16,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
-  date: DateRange | undefined;
-  onDateChange: (date: DateRange | undefined) => void;
-  align?: "start" | "center" | "end";
-  buttonSize?: ButtonProps["size"];
-  buttonVariant?: ButtonProps["variant"];
-  disabled?: boolean;
+interface DatePickerWithRangeProps {
+  date?: DateRange
+  onDateChange: (date: DateRange | undefined) => void
+  placeholder?: string
+  className?: string
 }
 
 export function DatePickerWithRange({
-  className,
   date,
   onDateChange,
-  align = "start",
-  buttonSize = "sm",
-  buttonVariant = "outline",
-  disabled = false,
+  placeholder,
+  className,
 }: DatePickerWithRangeProps) {
-  const { t, i18n } = useTranslation("common");
-  const dateLocale = i18n.language.startsWith('ar') ? arSA : enUS;
+  const { t } = useTranslation("common")
+
+  const defaultPlaceholder = placeholder || t("pickDateRange", "Pick a date range")
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -44,30 +39,28 @@ export function DatePickerWithRange({
         <PopoverTrigger asChild>
           <Button
             id="date"
-            variant={buttonVariant}
-            size={buttonSize}
-            disabled={disabled}
+            variant={"outline"}
             className={cn(
-              "w-auto justify-start text-left font-normal h-7 px-2", // Adjusted for smaller size
+              "w-[300px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="ltr:mr-1 rtl:ml-1 h-3.5 w-3.5" />
+            <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y", { locale: dateLocale })} -{" "}
-                  {format(date.to, "LLL dd, y", { locale: dateLocale })}
+                  {format(date.from, "LLL dd, y")} -{" "}
+                  {format(date.to, "LLL dd, y")}
                 </>
               ) : (
-                format(date.from, "LLL dd, y", { locale: dateLocale })
+                format(date.from, "LLL dd, y")
               )
             ) : (
-              <span>{t('datePicker.pickDateRange', 'Pick a date range')}</span>
+              <span>{defaultPlaceholder}</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align={align}>
+        <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             initialFocus
             mode="range"
@@ -75,8 +68,6 @@ export function DatePickerWithRange({
             selected={date}
             onSelect={onDateChange}
             numberOfMonths={2}
-            locale={dateLocale}
-            dir={i18n.dir()}
           />
         </PopoverContent>
       </Popover>

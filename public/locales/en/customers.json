@@ -49,5 +49,8 @@
   "customerNotesPlaceholder": "Any specific details about this customer...",
   "selectCustomer": "Select a customer",
   "loadingCustomerData": "Loading customer data...",
-  "customerNotFound": "Customer not found."
+  "customerNotFound": "Customer not found.",
+  "searchCustomerByNameOrPhone": "Search by name or phone...",
+  "createNewCustomer": "Create New Customer",
+  "customerDetails": "Customer Details"
 }
