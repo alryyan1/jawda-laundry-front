@@ -5,17 +5,17 @@ import { useFormContext } from 'react-hook-form';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 import type { SettingsFormData } from '@/types';
 
 export const GeneralSettings: React.FC = () => {
     const { t } = useTranslation(['settings', 'common', 'validation']);
-    const { register, watch, formState: { errors } } = useFormContext<SettingsFormData>();
+    const { control } = useFormContext<SettingsFormData>();
 
-    const currencyOptions = ['USD', 'EUR', 'SAR', 'INR']; // Example currencies
+    const currencyOptions = ['USD', 'EUR', 'SAR', 'INR', '$', '€', '₹', 'ر.س']; // Example currencies
 
     return (
         <Card>
@@ -24,30 +24,69 @@ export const GeneralSettings: React.FC = () => {
                 <CardDescription>{t('generalSettingsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid gap-1.5">
-                    <Label htmlFor="general.company_name">{t('companyName')}</Label>
-                    <Input id="general.company_name" {...register('general.company_name')} />
-                    {errors.general?.company_name && <p className="text-sm text-destructive">{t(errors.general.company_name.message as string)}</p>}
-                </div>
+                <FormField
+                    control={control}
+                    name="general.company_name"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('companyName')}</FormLabel>
+                            <FormControl>
+                                <Input {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="grid gap-1.5">
-                        <Label htmlFor="general.company_phone">{t('companyPhone')}</Label>
-                        <Input id="general.company_phone" {...register('general.company_phone')} />
-                    </div>
-                     <div className="grid gap-1.5">
-                        <Label htmlFor="general.default_currency">{t('defaultCurrency')}</Label>
-                        <Select onValueChange={(value) => register('general.default_currency').onChange({ target: { value } })} defaultValue={watch('general.default_currency')}>
-                            <SelectTrigger><SelectValue placeholder={t('selectCurrency')} /></SelectTrigger>
-                            <SelectContent>{currencyOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
+                    <FormField
+                        control={control}
+                        name="general.company_phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('companyPhone')}</FormLabel>
+                                <FormControl>
+                                    <Input {...field} value={field.value || ""} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={control}
+                        name="general.currency_symbol"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('currencySymbol')}</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={t('selectCurrency')} />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {currencyOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
 
-                <div className="grid gap-1.5">
-                    <Label htmlFor="general.company_address">{t('companyAddress')}</Label>
-                    <Textarea id="general.company_address" {...register('general.company_address')} rows={3}/>
-                </div>
+                <FormField
+                    control={control}
+                    name="general.company_address"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{t('companyAddress')}</FormLabel>
+                            <FormControl>
+                                <Textarea {...field} value={field.value || ""} rows={3} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </CardContent>
         </Card>
     );

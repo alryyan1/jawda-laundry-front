@@ -18,13 +18,14 @@ import { AppearanceSettings } from "@/features/settings/components/AppearanceSet
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
 import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
+import KanbanPage from "@/pages/orders/KanbanPage";
 
 // --- Page Imports (Lazy Loaded) ---
 
 // General Pages
 const DashboardPage = React.lazy(() => import("@/pages/DashboardPage"));
 const SuppliersListPage = React.lazy(() => import('@/pages/suppliers/SuppliersListPage'));
-const SettingsPage = React.lazy(() => import("@/pages/SettingsPage"));
+const SettingsPage = React.lazy(() => import("@/pages/admin/SettingsPage"));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage"));
 const ExpensesListPage = React.lazy(() => import('@/pages/expenses/ExpensesListPage'));
 
@@ -333,6 +334,7 @@ export const router = createBrowserRouter([
               </React.Suspense>
             ),
           },
+          { path: 'orders/kanban', element: <React.Suspense fallback={<RouteSuspenseFallback />}><KanbanPage /></React.Suspense> },
 
           // Admin Service Management (could be further nested under an /admin path if desired)
           {

@@ -202,11 +202,19 @@ const MainLayout: React.FC = () => {
       icon: ShoppingCart,
       type: "link" as const,
     },
+
     {
       to: "/suppliers",
       labelKey: "suppliers",
       namespace: "suppliers",
       icon: Users,
+      type: "link" as const,
+    },
+    {
+      to: "/orders/kanban",
+      labelKey: "kanban",
+      namespace: "orders",
+      icon: FolderKanban,
       type: "link" as const,
     },
     {

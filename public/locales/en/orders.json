@@ -145,5 +145,11 @@
   "payment_type_refund": "Refund",
   "totalPaid": "Total Paid",
   "type": "Type",
-  "method": "Method"
+  "method": "Method",
+  "kanbanBoardTitle": "Kanban Board",
+  "kanbanBoardDescription": "Drag and drop orders to update their status.",
+  "noOrdersInStatus": "No orders in this status.",
+  "itemCount": "{{count}} item",
+  "itemCount_plural": "{{count}} items",
+  "due": "Due"
 }

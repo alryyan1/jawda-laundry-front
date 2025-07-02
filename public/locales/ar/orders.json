@@ -140,5 +140,11 @@
   "payment_type_refund": "استرداد",
   "totalPaid": "إجمالي المدفوع",
   "type": "النوع",
-  "method": "الطريقة"
+  "method": "الطريقة",
+  "kanbanBoardTitle": "لوحة كانبان",
+  "kanbanBoardDescription": "اسحب وأسقط الطلبات لتحديث حالتها.",
+  "noOrdersInStatus": "لا توجد طلبات في هذه الحالة.",
+  "itemCount": "{{count}} عنصر",
+  "itemCount_plural": "{{count}} عناصر",
+  "due": "تاريخ الاستحقاق"
 }
