@@ -10,3 +10,4 @@ export * from './purchase.types';
 export * from './supplier.types';
 export * from './dashboard.types';
 export * from './admin.types'; // For User/Role/Permission management pages
+export * from './expenseCategory.types';

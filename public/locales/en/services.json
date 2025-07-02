@@ -169,7 +169,7 @@
               "searchProductTypes": "Search product types",
               "serviceOfferingsDescriptionNew": "Select a product type to manage its available services and prices.",
               "manageOfferings": "Manage Offerings"
-            ,
+            ,  "expenseCategories": "Expense Categories",
             "selectCategoryToViewProducts": "Select a category to view products",
             "availableServices": "Available Services",
             "selectProductToViewServices": "Select a product to view services",

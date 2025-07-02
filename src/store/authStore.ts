@@ -44,7 +44,7 @@ export const useAuthStore = create(
         if (get().token && !get().user) {
           try {
             const response = await apiClient.get('/user');
-            get().setUser(response.data); // Assuming response.data is the user object
+            get().setUser(response.data.data); // Assuming response.data is the user object
           } catch (error) {
             console.error("Failed to fetch user, logging out:", error);
             get().logout(); // Token might be invalid, so log out

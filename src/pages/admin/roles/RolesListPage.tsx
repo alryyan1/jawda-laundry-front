@@ -38,7 +38,7 @@ type Role = {
 };
 
 const RolesListPage: React.FC = () => {
-    const { t, i18n } = useTranslation(['common', 'admin']);
+    const { t, i18n } = useTranslation(['common', 'admin', 'permissions']);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -83,7 +83,7 @@ const RolesListPage: React.FC = () => {
                 <div className="flex flex-wrap gap-1 max-w-md">
                     {row.original.permissions?.slice(0, 5).map((perm: Permission) => ( // Show first 5 permissions
                         <Badge key={perm.id} variant="outline" className="text-xs">
-                            {t(`permissions.${perm.name}`, {ns:'admin', defaultValue: perm.name.replace(/_/g, ' ')})}
+                            {t(`${perm.name.replace(':', '.')}`, {ns:'permissions', defaultValue: perm.name.replace(/_/g, ' ')})}
                         </Badge>
                     ))}
                     {(row.original.permissions?.length || 0) > 5 && (

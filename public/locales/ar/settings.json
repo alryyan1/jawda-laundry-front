@@ -6,5 +6,20 @@
     "updateProfileBtn": "تحديث الملف الشخصي",
     "applicationSettings": "إعدادات التطبيق",
     "customizeAppExperience": "تخصيص مظهر وسلوك التطبيق.",
-    "selectThemeDescription": "اضبط شكل ومظهر التطبيق."
+    "selectThemeDescription": "اضبط شكل ومظهر التطبيق.",
+    "settingsPageTitle": "الإعدادات",
+    "theme": "المظهر",
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "security": "الأمان",
+    "privacy": "الخصوصية",
+    "help": "المساعدة والدعم",
+    "about": "حول",
+    "version": "الإصدار",
+    "terms": "شروط الخدمة",
+    "privacyPolicy": "سياسة الخصوصية",
+    "contactSupport": "اتصل بالدعم",
+    "feedback": "إرسال تعليق",
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي"
   }

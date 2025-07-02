@@ -31,5 +31,11 @@
   "activateUser": "تفعيل المستخدم",
   "deactivateUser": "إلغاء تفعيل المستخدم",
   "resetPassword": "إعادة تعيين كلمة المرور",
-  "sendWelcomeEmail": "إرسال بريد ترحيبي"
+  "sendWelcomeEmail": "إرسال بريد ترحيبي",
+  "roleName": "اسم الدور",
+  "permissions": "الصلاحيات",
+  "manageRoles": "إدارة الأدوار",
+  "newRole": "دور جديد",
+  "searchRolesPlaceholder": "البحث باسم الدور...",
+  "noPermissionsAssigned": "لم يتم تعيين صلاحيات"
 } 

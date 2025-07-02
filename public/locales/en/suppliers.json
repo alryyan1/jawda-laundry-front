@@ -1,4 +1,5 @@
 {
+  "suppliers": "Suppliers",
   "title": "Suppliers",
   "description": "Manage your suppliers and vendor information",
   "newSupplier": "New Supplier",
@@ -17,5 +18,12 @@
   "newSupplierTitle": "New Supplier",
   "editSupplierTitle": "Edit Supplier",
   "supplierDetails": "Supplier Details",
-  "totalPurchases": "Total Purchases"
+  "totalPurchases": "Total Purchases",
+  "contactInfo": "Contact Info",
+  "purchases": "Purchases",
+  "newSupplierDescription": "Add a new supplier to your laundry management system",
+  "supplierNamePlaceholder": "Enter supplier name...",
+  "createSupplierBtn": "Create Supplier",
+  "noSuppliersFoundHint": "Start by adding your first supplier",
+  "addFirstSupplier": "Add First Supplier"
 } 

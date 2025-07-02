@@ -31,5 +31,11 @@
   "activateUser": "Activate User",
   "deactivateUser": "Deactivate User",
   "resetPassword": "Reset Password",
-  "sendWelcomeEmail": "Send Welcome Email"
+  "sendWelcomeEmail": "Send Welcome Email",
+  "roleName": "Role Name",
+  "permissions": "Permissions",
+  "manageRoles": "Manage Roles",
+  "newRole": "New Role",
+  "searchRolesPlaceholder": "Search by role name...",
+  "noPermissionsAssigned": "No permissions assigned"
 } 

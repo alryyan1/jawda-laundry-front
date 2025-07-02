@@ -17,6 +17,7 @@ import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
 import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
+import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -124,6 +125,10 @@ export const router = createBrowserRouter([
           {
             path: 'expenses',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpensesListPage /></React.Suspense>,
+          },
+          { // --- ADD THE NEW EXPENSE CATEGORIES ROUTE HERE ---
+            path: 'admin/expense-categories',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpenseCategoriesListPage /></React.Suspense>,
           },
           // Suppliers
           {

@@ -1,4 +1,5 @@
 {
+  "suppliers": "الموردين",
   "title": "الموردين",
   "description": "إدارة الموردين ومعلومات البائعين",
   "newSupplier": "مورد جديد",
@@ -17,5 +18,12 @@
   "newSupplierTitle": "مورد جديد",
   "editSupplierTitle": "تعديل المورد",
   "supplierDetails": "تفاصيل المورد",
-  "totalPurchases": "إجمالي المشتريات"
+  "totalPurchases": "إجمالي المشتريات",
+  "contactInfo": "معلومات الاتصال",
+  "purchases": "المشتريات",
+  "newSupplierDescription": "إضافة مورد جديد لنظام إدارة المغسلة",
+  "supplierNamePlaceholder": "أدخل اسم المورد...",
+  "createSupplierBtn": "إنشاء مورد",
+  "noSuppliersFoundHint": "ابدأ بإضافة أول مورد لك",
+  "addFirstSupplier": "إضافة أول مورد"
 } 

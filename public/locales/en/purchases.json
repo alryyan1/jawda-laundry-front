@@ -1,4 +1,5 @@
 {
+  "purchases": "Purchases",
   "title": "Purchases",
   "description": "Manage and track your inventory purchases",
   "newPurchase": "New Purchase",

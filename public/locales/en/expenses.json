@@ -1,4 +1,5 @@
 {
+  "expenses": "Expenses",
   "title": "Expenses",
   "description": "Manage and track your business expenses",
   "newExpense": "New Expense",

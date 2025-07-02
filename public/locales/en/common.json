@@ -50,6 +50,8 @@
   "tableHeaders.phone": "Phone",
   "tableHeaders.registeredDate": "Registered",
   "tableHeaders.totalOrders": "Total Orders",
+  "tableHeaders.permissions": "Permissions", 
+  "tableHeaders.created_at": "Created At",
   "edit": "Edit",
   "delete": "Delete",
   "saving": "Saving...",
@@ -180,6 +182,7 @@
     "descriptionOptional": "Description (Optional)",
     "notes": "Notes",
   "userLC": "user",
+  "customerLC": "customer",
   "expenseLC": "expense",
   "purchaseLC": "purchase",
   "supplierLC": "supplier",
@@ -228,7 +231,10 @@
     "deleteConfirmationTitle": "Are you absolutely sure you want to delete this {{item}}?",
     "deleteConfirmationMessage": "This action cannot be undone. This will permanently delete \"{{itemName}}\".",
     "irreversibleAction": "This action is irreversible.",
-    "allRightsReserved": "All rights reserved.",
-    "namePlaceholder": "e.g., John Doe",
-    "via": "via"
-  }
+      "allRightsReserved": "All rights reserved.",
+  "namePlaceholder": "e.g., John Doe",
+  "via": "via",
+  "validation.categoryRequired": "Category is required",
+  "roleLC": "role",
+  "more": "More"
+}

@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/authStore";
 import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
-import type { User } from "@/types/auth.types";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,6 +43,7 @@ import {
     Lock,
     DollarSign,
     ShoppingCart,
+    FolderKanban,
   } from "lucide-react";
 
 // MainLayout Component
@@ -185,23 +185,25 @@ const MainLayout: React.FC = () => {
       icon: Shirt,
       type: "link" as const,
     },
+    // --- THE NEW LINK ---
+    { to: '/admin/expense-categories', labelKey: 'expenseCategories', ns: 'admin', icon: FolderKanban, permission: 'expense-category:manage' },
     {
       to: "/expenses",
-      labelKey: "title",
+      labelKey: "expenses",
       namespace: "expenses",
       icon: DollarSign,
       type: "link" as const,
     },
     {
       to: "/purchases",
-      labelKey: "title",
+      labelKey: "purchases",
       namespace: "purchases",
       icon: ShoppingCart,
       type: "link" as const,
     },
     {
       to: "/suppliers",
-      labelKey: "title",
+      labelKey: "suppliers",
       namespace: "suppliers",
       icon: Users,
       type: "link" as const,

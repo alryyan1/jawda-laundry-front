@@ -11,7 +11,7 @@ i18n
     supportedLngs: ['en', 'ar'],
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
-    ns: ['common', 'orders', 'customers', 'services', 'auth'],
+    ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions'],
     defaultNS: 'common',
     interpolation: {
       escapeValue: false, // React already safes from xss

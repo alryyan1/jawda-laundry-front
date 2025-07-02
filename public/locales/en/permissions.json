@@ -1,0 +1,103 @@
+{
+  "user": {
+    "list": "List Users",
+    "view": "View Users",
+    "create": "Create Users", 
+    "update": "Update Users",
+    "delete": "Delete Users",
+    "assign-roles": "Assign Roles"
+  },
+  "order": {
+    "list": "List Orders",
+    "view": "View Orders",
+    "create": "Create Orders",
+    "update": "Update Orders",
+    "delete": "Delete Orders",
+    "update-status": "Update Order Status",
+    "cancel": "Cancel Orders",
+    "record-payment": "Record Payments"
+  },
+  "customer": {
+    "list": "List Customers",
+    "view": "View Customers", 
+    "create": "Create Customers",
+    "update": "Update Customers",
+    "delete": "Delete Customers"
+  },
+  "dashboard": {
+    "view": "View Dashboard"
+  },
+  "settings": {
+    "view-profile": "View Profile",
+    "edit-profile": "Edit Profile",
+    "update-profile": "Update Profile",
+    "change-password": "Change Password",
+    "manage-application": "Manage Application"
+  },
+  "role": {
+    "list": "List Roles",
+    "view": "View Roles",
+    "create": "Create Roles",
+    "update": "Update Roles", 
+    "delete": "Delete Roles"
+  },
+  "service": {
+    "list": "List Services",
+    "view": "View Services",
+    "create": "Create Services",
+    "update": "Update Services",
+    "delete": "Delete Services"
+  },
+  "expense": {
+    "list": "List Expenses",
+    "view": "View Expenses",
+    "create": "Create Expenses",
+    "update": "Update Expenses",
+    "delete": "Delete Expenses"
+  },
+  "purchase": {
+    "list": "List Purchases",
+    "view": "View Purchases",
+    "create": "Create Purchases",
+    "update": "Update Purchases",
+    "delete": "Delete Purchases"
+  },
+  "supplier": {
+    "list": "List Suppliers",
+    "view": "View Suppliers",
+    "create": "Create Suppliers",
+    "update": "Update Suppliers",
+    "delete": "Delete Suppliers"
+  },
+  "permission": {
+    "list": "List Permissions"
+  },
+  "product-type": {
+    "list": "List Product Types",
+    "view": "View Product Types",
+    "create": "Create Product Types",
+    "update": "Update Product Types",
+    "delete": "Delete Product Types"
+  },
+  "report": {
+    "view-financial": "View Financial Reports",
+    "view-operational": "View Operational Reports"
+  },
+  "service-action": {
+    "list": "List Service Actions",
+    "view": "View Service Actions",
+    "create": "Create Service Actions",
+    "update": "Update Service Actions",
+    "delete": "Delete Service Actions"
+  },
+  "service-admin": {
+    "manage": "Manage Services"
+  },
+  "service-offering": {
+    "list": "List Service Offerings",
+    "view": "View Service Offerings",
+    "create": "Create Service Offerings",
+    "update": "Update Service Offerings",
+    "delete": "Delete Service Offerings"
+  }
+} 

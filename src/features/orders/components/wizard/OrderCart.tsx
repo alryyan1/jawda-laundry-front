@@ -78,7 +78,7 @@ export const OrderCart: React.FC<OrderCartProps> = ({
         </Button>
       </header>
 
-      <ScrollArea className="flex-grow">
+      <ScrollArea className="flex-grow h-[500px]">
         <div className="p-4 space-y-4">
           {fields.length === 0 ? (
             <div className="flex items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
