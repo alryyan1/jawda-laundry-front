@@ -1,6 +1,6 @@
 // src/api/customerService.ts
 import apiClient from './apiClient';
-import { Customer, PaginatedResponse } from '@/types'; // Ensure PaginatedResponse is correctly defined/imported
+import type { Customer, PaginatedResponse } from '@/types'; // Ensure PaginatedResponse is correctly defined/imported
 
 export interface CustomerFormData {
     name: string;
@@ -18,6 +18,11 @@ export const getCustomers = async (page: number = 1, perPage: number = 10, searc
   }
   const { data } = await apiClient.get<PaginatedResponse<Customer>>('/customers', { params });
   return data;
+};
+
+export const getAllCustomers = async (): Promise<Customer[]> => {
+  const { data } = await apiClient.get<{data: Customer[]}>('/customers');
+  return data.data;
 };
 
 export const getCustomerById = async (id: string | number): Promise<Customer> => {

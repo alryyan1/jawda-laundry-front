@@ -1,5 +1,5 @@
 // src/pages/services/product-types/ProductTypesListPage.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useQuery,
@@ -8,7 +8,6 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 import type { ProductType, PaginatedResponse } from "@/types";
 import {
@@ -22,7 +21,6 @@ import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { ProductTypeFormModal } from "./ProductTypeFormModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
@@ -31,7 +29,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableCaption,
 } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -50,6 +47,8 @@ import {
   Shirt,
   Check,
   X,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 const ProductTypesListPage: React.FC = () => {
@@ -63,7 +62,14 @@ const ProductTypesListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
 
   const {
     data: paginatedData,
@@ -71,15 +77,30 @@ const ProductTypesListPage: React.FC = () => {
     isFetching,
     refetch,
   } = useQuery<PaginatedResponse<ProductType>, Error>({
-    queryKey: ["productTypes", currentPage, itemsPerPage, debouncedSearchTerm],
+    queryKey: ["productTypes", currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder],
     queryFn: () =>
-      getProductTypesPaginated(currentPage, itemsPerPage, debouncedSearchTerm),
+      getProductTypesPaginated(currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder),
     placeholderData: keepPreviousData,
   });
 
   const productTypes = paginatedData?.data || [];
   const totalItems = paginatedData?.meta?.total || 0;
   const totalPages = paginatedData?.meta?.last_page || 1;
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortBy !== field) return null;
+    return sortOrder === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+  };
 
   const deleteMutation = useMutation<void, Error, number>({
     mutationFn: (id) => deleteProductType(id).then(() => {}),
@@ -116,6 +137,9 @@ const ProductTypesListPage: React.FC = () => {
     ({ productType }: { productType: ProductType }) => {
       return (
         <TableRow key={productType.id}>
+          <TableCell>
+            {productType.id}
+          </TableCell>
           <TableCell>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 rounded-md">
@@ -209,7 +233,24 @@ const ProductTypesListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[250px]">{t("name")}</TableHead>
+              <TableHead 
+                className="min-w-[250px] cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort("id")}
+              >
+                <div className="flex items-center gap-1">
+                  {t("id")}
+                  {getSortIcon("id")}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="min-w-[250px] cursor-pointer hover:bg-muted/50"
+                onClick={() => handleSort("name")}
+              >
+                <div className="flex items-center gap-1">
+                  {t("name")}
+                  {getSortIcon("name")}
+                </div>
+              </TableHead>
               <TableHead>{t("category", { ns: "services" })}</TableHead>
               <TableHead className="text-center">
                 {t("dimensionBased", {

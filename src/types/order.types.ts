@@ -3,6 +3,44 @@ import type { User } from './auth.types';
 import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
 
+export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'bank_transfer';
+
+export interface Payment {
+    id: number;
+    order_id: number;
+    amount: number;
+    method: PaymentMethod;
+    type: 'payment' | 'refund';
+    payment_date: string;
+    transaction_id?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface RecordPaymentFormData {
+    amount: number;
+    method: PaymentMethod;
+    type: 'payment' | 'refund';
+    payment_date: string;
+    transaction_id?: string;
+    notes?: string;
+}
+
+export interface QuoteItemPayload {
+    service_offering_id: number;
+    customer_id: string;
+    quantity: number;
+    length_meters?: number;
+    width_meters?: number;
+}
+
+export interface QuoteItemResponse {
+    calculated_price_per_unit_item: number;
+    sub_total: number;
+    applied_unit: string;
+}
+
 export type OrderStatus = "pending" | "processing" | "ready_for_pickup" | "completed" | "cancelled";
 export const orderStatusOptions: OrderStatus[] = ["pending", "processing", "ready_for_pickup", "completed", "cancelled"];
 
@@ -40,13 +78,16 @@ export interface Order {
     notes?: string | null;
     order_date: string;
     due_date?: string | null;
+    pickup_date?: string | null;
     items: OrderItem[];
+    payments?: Payment[];
     created_at: string;
     updated_at: string;
 }
 
 export interface OrderItemFormLine {
     id: string; // Client-side UUID
+    service_offering_id: number;
     product_type_id: string;
     service_action_id: string;
     quantity: number | string;

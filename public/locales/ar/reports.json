@@ -1,0 +1,12 @@
+{
+  "salesSummaryTitle": "تقرير ملخص المبيعات",
+  "salesSummaryDescription": "عرض تحليلات المبيعات التفصيلية ومقاييس الأداء",
+  "totalRevenue": "إجمالي الإيرادات",
+  "totalOrders": "إجمالي الطلبات",
+  "averageOrderValue": "متوسط قيمة الطلب",
+  "topServicesByRevenue": "أفضل الخدمات حسب الإيرادات",
+  "topServicesDescription": "الخدمات الأكثر ربحية من {{dateFrom}} إلى {{dateTo}}",
+  "service": "الخدمة",
+  "quantitySold": "الكمية المباعة",
+  "revenue": "الإيرادات"
+} 

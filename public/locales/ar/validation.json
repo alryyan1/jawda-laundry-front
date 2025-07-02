@@ -21,6 +21,7 @@
     "serviceOfferingRequired": "يجب تحديد عرض خدمة صالح.",
     "serviceOfferingInvalidForItem": "اختيار خدمة غير صالح أو غير مكتمل لـ {{itemDesc}}.",
     "customerRequired": "العميل مطلوب.",
+    "paymentMethodRequired": "طريقة الدفع مطلوبة.",
     "atLeastOneItem": "يجب إضافة عنصر واحد على الأقل إلى الطلب.",
     "invalidDate": "تنسيق تاريخ غير صالح.",
     "durationMustBeNumber": "يجب أن تكون المدة رقمًا صالحًا.",

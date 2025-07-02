@@ -44,6 +44,7 @@ import {
     DollarSign,
     ShoppingCart,
     FolderKanban,
+    ChartBar,
   } from "lucide-react";
 
 // MainLayout Component
@@ -206,6 +207,13 @@ const MainLayout: React.FC = () => {
       labelKey: "suppliers",
       namespace: "suppliers",
       icon: Users,
+      type: "link" as const,
+    },
+    {
+      to: "/reports",
+      labelKey: "reports",
+      namespace: "reports",
+      icon: ChartBar,
       type: "link" as const,
     },
     {

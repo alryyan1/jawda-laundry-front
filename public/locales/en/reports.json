@@ -1,0 +1,12 @@
+{
+  "salesSummaryTitle": "Sales Summary Report",
+  "salesSummaryDescription": "View detailed sales analytics and performance metrics",
+  "totalRevenue": "Total Revenue",
+  "totalOrders": "Total Orders",
+  "averageOrderValue": "Average Order Value",
+  "topServicesByRevenue": "Top Services by Revenue",
+  "topServicesDescription": "Most profitable services from {{dateFrom}} to {{dateTo}}",
+  "service": "Service",
+  "quantitySold": "Quantity Sold",
+  "revenue": "Revenue"
+} 

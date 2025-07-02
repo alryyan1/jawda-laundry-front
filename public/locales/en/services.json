@@ -178,6 +178,7 @@
   "pricePerSqMeter": "Price per square meter",
             "loadingServiceActions": "Loading service actions...",
             "egServiceActionName": "e.g., Standard Wash, Dry Cleaning",
+            "allProducts": "All Products",
             "goBack": "Go Back",
             "clickServiceToAdd": "Click on services to add them to your order",
             "chooseAnotherCategory": "Choose Another Category",

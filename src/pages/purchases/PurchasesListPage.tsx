@@ -156,20 +156,20 @@ const PurchasesListPage: React.FC = () => {
   const MemoizedTableRow = React.memo(
     ({ purchase }: { purchase: Purchase }) => (
       <TableRow key={purchase.id}>
-        <TableCell>{format(new Date(purchase.purchase_date), "PPP")}</TableCell>
-        <TableCell className="font-medium">
+        <TableCell className="text-center">{format(new Date(purchase.purchase_date), "PPP")}</TableCell>
+        <TableCell className="font-medium text-center">
           {purchase.supplier?.name || "-"}
         </TableCell>
-        <TableCell className="font-mono text-xs">
+        <TableCell className="font-mono text-xs text-center">
           {purchase.reference_number || "-"}
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center">
           <PurchaseStatusBadge status={purchase.status} />
         </TableCell>
-        <TableCell className="text-right rtl:text-left font-semibold">
+        <TableCell className="text-center font-semibold">
           {formatCurrency(purchase.total_amount, "USD", i18n.language)}
         </TableCell>
-        <TableCell className="text-right rtl:text-left">
+        <TableCell className="text-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -293,16 +293,16 @@ const PurchasesListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("purchaseDate", { ns: "purchases" })}</TableHead>
-              <TableHead className="min-w-[200px]">
+              <TableHead className="text-center">{t("purchaseDate", { ns: "purchases" })}</TableHead>
+              <TableHead className="min-w-[200px] text-center">
                 {t("supplier", { ns: "purchases" })}
               </TableHead>
-              <TableHead>{t("reference", { ns: "purchases" })}</TableHead>
-              <TableHead>{t("status")}</TableHead>
-              <TableHead className="text-right">
+              <TableHead className="text-center">{t("reference", { ns: "purchases" })}</TableHead>
+              <TableHead className="text-center">{t("status")}</TableHead>
+              <TableHead className="text-center">
                 {t("totalAmount", { ns: "purchases" })}
               </TableHead>
-              <TableHead className="text-right w-[80px]">
+              <TableHead className="text-center w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>

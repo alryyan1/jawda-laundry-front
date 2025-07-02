@@ -78,7 +78,7 @@ const ProductTypesListPage = React.lazy(
 const ServiceActionsListPage = React.lazy(
   () => import("@/pages/services/service-actions/ServiceActionsListPage")
 );
-
+const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
 // Loading fallback component for Suspense
 const RouteSuspenseFallback = () => (
   <div className="flex items-center justify-center h-screen w-screen">
@@ -129,6 +129,10 @@ export const router = createBrowserRouter([
           { // --- ADD THE NEW EXPENSE CATEGORIES ROUTE HERE ---
             path: 'admin/expense-categories',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpenseCategoriesListPage /></React.Suspense>,
+          },
+          {
+            path: 'reports',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><SalesSummaryPage /></React.Suspense>,
           },
           // Suppliers
           {

@@ -22,6 +22,7 @@
     "serviceOfferingInvalidForItem": "Invalid or incomplete service selection for {{itemDesc}}.",
     "customerRequired": "Customer is required.",
     "atLeastOneItem": "At least one item must be added to the order.",
+    "paymentMethodRequired": "Payment method is required.",
     "invalidDate": "Invalid date format.",
     "durationMustBeNumber": "Duration must be a valid number.",
     "durationNonNegative": "Duration must be zero or positive.",

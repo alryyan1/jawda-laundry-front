@@ -1,5 +1,5 @@
 // src/pages/orders/OrderDetailsPage.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom'; // Added useNavigate
 import { useQuery } from '@tanstack/react-query';
@@ -19,8 +19,12 @@ import { getOrderById } from '@/api/orderService';
 // Assume an updateOrderStatus function exists in orderService
 // import { updateOrderStatus } from '@/api/orderService'; // TODO: Implement this
 
-import { ArrowLeft, Loader2, Printer, AlertCircle, CheckCircle2, Info, Edit3, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, Info, Edit3, FileText, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader'; // Using PageHeader
+import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
+import { OrderPaymentsList } from '@/features/orders/components/OrderPaymentsList';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { printPosPdfReceipt } from '@/lib/printUtils';
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{ status: OrderStatus; className?: string }> = ({ status, className }) => {
@@ -73,7 +77,8 @@ const OrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const currentLocale = i18n.language.startsWith('ar') ? arSA : enUS;
-
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const { can } = useAuth();
   const { data: order, isLoading, error, refetch } = useQuery<Order, Error>({
     queryKey: ['order', id],
     queryFn: () => getOrderById(id!),
@@ -130,8 +135,7 @@ const OrderDetailsPage: React.FC = () => {
         <Button variant="outline" onClick={() => navigate('/orders')}>
             <ArrowLeft className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('backToOrders', { ns: 'orders' })}
         </Button>
-        // src/pages/orders/OrderDetailsPage.tsx
-// In the PageHeader actions or a separate button group:
+
 <Button asChild variant="secondary">
     <Link to={`/orders/${order.id}/edit`}>
         <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}
@@ -143,7 +147,13 @@ const OrderDetailsPage: React.FC = () => {
     <FileText className="mr-2 h-4 w-4" />
     {t('downloadPdf', { ns: 'orders' })}
   </a>
-</Button>        {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
+  
+</Button>   
+<Button variant="outline" onClick={() => printPosPdfReceipt(order.id)}>
+  <Printer className="mr-2 h-4 w-4" />
+  {t('printReceipt', { ns: 'orders' })}
+</Button>
+     {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
       </PageHeader>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -204,7 +214,7 @@ const OrderDetailsPage: React.FC = () => {
                 <PaymentStatusAlert order={order} i18n={i18n} />
             </CardContent>
             <CardFooter>
-                 <Button className="w-full" onClick={() => {/* TODO: Open payment modal */}}>
+                 <Button className="w-full" onClick={() => setIsPaymentModalOpen(true)}>
                     {t('recordOrUpdatePayment', {ns:'orders', defaultValue:'Record/Update Payment'})}
                  </Button>
             </CardFooter>
@@ -227,7 +237,6 @@ const OrderDetailsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-            {console.log(order,'order')}
               {order.items?.map((item: OrderItemType) => ( // Use alias
                 <TableRow key={item.id}>
                   <TableCell>
@@ -259,7 +268,17 @@ const OrderDetailsPage: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
-    </div>
+ {/* NEW: Payment History Card */}
+ <OrderPaymentsList payments={order.payments || []} />
+
+{/* The Modal itself, rendered but hidden */}
+{can('order:record-payment') && (
+     <RecordPaymentModal
+        order={order}
+        isOpen={isPaymentModalOpen}
+        onOpenChange={setIsPaymentModalOpen}
+    />
+)}    </div>
   );
 };
 export default OrderDetailsPage;

@@ -15,7 +15,7 @@
   "email": "Email",
   "address": "Address",
   "selectOrSearchCustomer": "Select or search a customer...",
-
+  "allCustomers": "All customers",
   "actions": "Actions",
   "backToCustomers": "Back to Customers",
   "editCustomerTitle": "Edit Customer",

@@ -37,6 +37,7 @@ export const StepServiceOffering: React.FC<StepServiceOfferingProps> = ({
     Record<string, boolean>
   >({});
 
+  console.log("productType", productType);
   const { data: offerings = [], isLoading } = useQuery<
     ServiceOffering[],
     Error

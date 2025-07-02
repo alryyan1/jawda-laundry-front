@@ -117,13 +117,13 @@ const SuppliersListPage: React.FC = () => {
   const MemoizedTableRow = React.memo(
     ({ supplier }: { supplier: Supplier }) => (
       <TableRow key={supplier.id}>
-        <TableCell>
+        <TableCell className="text-center">
           <div className="font-medium">{supplier.name}</div>
           <div className="text-xs text-muted-foreground">
             {supplier.contact_person}
           </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="text-center">
           <div className="text-sm">{supplier.email || "-"}</div>
           <div className="text-sm text-muted-foreground">
             {supplier.phone || "-"}
@@ -132,7 +132,7 @@ const SuppliersListPage: React.FC = () => {
         <TableCell className="text-center">
           {supplier.purchases_count ?? 0}
         </TableCell>
-        <TableCell className="text-right rtl:text-left">
+        <TableCell className="text-center">
           {(can("supplier:update") || can("supplier:delete")) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -208,16 +208,16 @@ const SuppliersListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[250px]">
+              <TableHead className="min-w-[250px] text-center">
                 {t("supplierName", { ns: "suppliers" })}
               </TableHead>
-              <TableHead className="min-w-[250px]">
+              <TableHead className="min-w-[250px] text-center">
                 {t("contactInfo", { ns: "suppliers" })}
               </TableHead>
               <TableHead className="text-center">
                 {t("purchases", { ns: "suppliers" })}
               </TableHead>
-              <TableHead className="text-right w-[80px]">
+              <TableHead className="text-center w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>

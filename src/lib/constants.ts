@@ -54,3 +54,19 @@ export const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*
 // - Default settings values
 // - Magic strings used in multiple places
 // - Feature flags (if simple)
+
+
+
+
+
+// --- Application-Specific Constants for UI Generation ---
+
+// Use `as const` to get a readonly tuple with literal types
+// Then derive the type from it in your types file. This is a very robust pattern.
+
+export const PAYMENT_METHODS = ['cash', 'card', 'online', 'credit'] as const;
+
+export const ORDER_STATUSES = ['pending', 'processing', 'ready_for_pickup', 'completed', 'cancelled'] as const;
+
+export const PURCHASE_STATUSES = ['ordered', 'received', 'paid', 'partially_paid', 'cancelled'] as const;
+

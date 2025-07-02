@@ -6,9 +6,26 @@ import { type ProductType, type PaginatedResponse, type ServiceAction, type Prod
 // Remove pricing_strategy from the preparePayload helper function.
 
 // For admin listing product types
-export const getProductTypesPaginated = async (page: number = 1, perPage: number = 10): Promise<PaginatedResponse<ProductType>> => {
+export const getProductTypesPaginated = async (
+    page: number = 1, 
+    perPage: number = 10, 
+    search?: string,
+    sortBy: string = 'id',
+    sortOrder: 'asc' | 'desc' = 'desc'
+): Promise<PaginatedResponse<ProductType>> => {
+    const params: Record<string, any> = { 
+        page, 
+        per_page: perPage,
+        sort_by: sortBy,
+        sort_order: sortOrder
+    };
+    
+    if (search) {
+        params.search = search;
+    }
+    
     const { data } = await apiClient.get<PaginatedResponse<ProductType>>('/product-types', {
-        params: { page, per_page: perPage }
+        params
     });
     return data;
 };

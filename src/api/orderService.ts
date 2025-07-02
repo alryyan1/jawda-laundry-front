@@ -56,18 +56,22 @@ export interface RecordPaymentPayload {
 export const getOrders = async (
     page: number = 1,
     perPage: number = 10,
-    status?: OrderStatus | '',
-    search?: string,
-    customerId?: number | string,
-    dateFrom?: string, // YYYY-MM-DD
-    dateTo?: string    // YYYY-MM-DD
+    filters?: {
+        status?: OrderStatus | '';
+        search?: string;
+        customerId?: string;
+        productTypeId?: string;
+        dateFrom?: string; // YYYY-MM-DD
+        dateTo?: string;   // YYYY-MM-DD
+    }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
-    if (status) params.status = status;
-    if (search) params.search = search;
-    if (customerId) params.customer_id = customerId;
-    if (dateFrom) params.date_from = dateFrom;
-    if (dateTo) params.date_to = dateTo;
+    if (filters?.status) params.status = filters.status;
+    if (filters?.search) params.search = filters.search;
+    if (filters?.customerId) params.customer_id = filters.customerId;
+    if (filters?.productTypeId) params.product_type_id = filters.productTypeId;
+    if (filters?.dateFrom) params.date_from = filters.dateFrom;
+    if (filters?.dateTo) params.date_to = filters.dateTo;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;

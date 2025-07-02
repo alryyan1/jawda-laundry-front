@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
@@ -20,25 +20,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { updateUserProfile, UserProfileUpdateData } from "@/api/profileService";
-import { User } from "@/types";
+import { updateUserProfile } from "@/api/profileService";
+import type { UserProfileUpdateData } from "@/api/profileService";
+import type { User } from "@/types";
 
+// Zod schema for this specific form's validation
 const profileSchema = z.object({
   name: z
     .string()
     .nonempty({ message: "validation.nameRequired" })
     .min(2, { message: "validation.nameMin" }),
-  email: z.string().email({ message: "validation.emailInvalid" }),
+  email: z.string().email(), // Email is read-only, but kept in form state for context
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export const ProfileSettings: React.FC = () => {
   const { t } = useTranslation(["settings", "common", "validation"]);
-  const { user, setUser: setAuthUser } = useAuth();
-  const queryClient = useQueryClient();
+  const { user, setUser: setAuthUser, fetchUser } = useAuth();
 
   const {
     register,
@@ -47,20 +49,31 @@ export const ProfileSettings: React.FC = () => {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: "", email: "" },
+    defaultValues: {
+      name: user?.name || "",
+      email: user?.email || "",
+    },
   });
 
+  // Effect to pre-fill the form once the user object is available from the auth store
   useEffect(() => {
     if (user) {
-      reset({ name: user.name, email: user.email });
+      reset({
+        name: user.name,
+        email: user.email,
+      });
+    } else {
+      // If the page loads and user isn't in the store yet (e.g., from a deep link/refresh)
+      // trigger a fetch. The useAuth hook will eventually update `user` and re-run this effect.
+      fetchUser();
     }
-  }, [user, reset]);
+  }, [user, reset, fetchUser]);
 
   const mutation = useMutation<User, Error, UserProfileUpdateData>({
     mutationFn: updateUserProfile,
     onSuccess: (updatedUser) => {
       toast.success(t("profileUpdatedSuccess"));
-      setAuthUser(updatedUser); // Update user in global auth store
+      setAuthUser(updatedUser); // Update user in global Zustand store
       reset(updatedUser); // Reset form with new data to clear isDirty state
     },
     onError: (error) => {
@@ -69,16 +82,35 @@ export const ProfileSettings: React.FC = () => {
   });
 
   const onSubmit = (data: ProfileFormValues) => {
+    // We only send the fields that can actually be changed
     const updateData: UserProfileUpdateData = { name: data.name };
     mutation.mutate(updateData);
   };
 
+  // Show a loading skeleton while the initial user object is being fetched
   if (!user) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <Skeleton className="h-20 w-full" />
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="h-20 w-20 rounded-full" />
+          </div>
+          <div className="grid gap-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="grid gap-1.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </CardContent>
+        <CardFooter>
+          <Skeleton className="h-10 w-32" />
+        </CardFooter>
       </Card>
     );
   }
@@ -106,10 +138,15 @@ export const ProfileSettings: React.FC = () => {
                 {user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {/* <div>
-              <Button type="button" variant="outline" disabled>{t('changeAvatar')}</Button>
-              <p className="text-xs text-muted-foreground mt-1">{t('avatarUploadHint')}</p>
-            </div> */}
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {t("avatarHint", {
+                  defaultValue: "Avatars are generated automatically.",
+                })}
+              </p>
+              {/* <Button type="button" variant="outline" disabled>{t('changeAvatar')}</Button>
+              <p className="text-xs text-muted-foreground mt-1">{t('avatarUploadHint')}</p> */}
+            </div>
           </div>
 
           <div className="grid gap-1.5">
@@ -141,7 +178,7 @@ export const ProfileSettings: React.FC = () => {
             {isSubmitting && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />
             )}
-            {t("saveChanges", { ns: "common" })}
+            {t("updateProfileBtn", { defaultValue: "Update Profile" })}
           </Button>
         </CardFooter>
       </form>
