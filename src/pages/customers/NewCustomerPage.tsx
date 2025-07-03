@@ -47,10 +47,15 @@ const NewCustomerPage: React.FC = () => {
     const queryClient = useQueryClient();
     const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
 
-    const { data: customerTypes = [], isLoading: isLoadingTypes } = useQuery<CustomerType[], Error>({
+    const { data: customerTypes, isLoading: isLoadingTypes, error: customerTypesError } = useQuery<CustomerType[], Error>({
         queryKey: ['customerTypesForSelect'],
         queryFn: getCustomerTypes,
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
+
+    // Ensure customerTypes is always an array
+    const customerTypesArray = customerTypes || [];
 
     const { control, register, handleSubmit, formState: { errors }, setValue } = useForm<CustomerFormData>({
         resolver: zodResolver(customerSchema),
@@ -80,7 +85,7 @@ const NewCustomerPage: React.FC = () => {
 
     return (
         <>
-            <div className="max-w-2xl mx-auto">
+            <div className="container mx-auto px-4 py-6 max-w-4xl">
                 <div className="mb-4">
                     <Button variant="outline" size="sm" asChild>
                         <Link to="/customers">
@@ -95,14 +100,14 @@ const NewCustomerPage: React.FC = () => {
                         <CardDescription>{t('newCustomerDescription', { ns: 'customers' })}</CardDescription>
                     </CardHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        <CardContent className="space-y-4">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="grid gap-1.5">
+                        <CardContent className="space-y-6">
+                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid gap-2">
                                     <Label htmlFor="name">{t('name')}<span className="text-destructive">*</span></Label>
                                     <Input id="name" {...register('name')} />
                                     {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
                                 </div>
-                                <div className="grid gap-1.5">
+                                <div className="grid gap-2">
                                     <Label htmlFor="phone">{t('phone', {ns:'customers'})}<span className="text-destructive">*</span></Label>
                                     <Input id="phone" type="tel" {...register('phone')} />
                                     {errors.phone && <p className="text-sm text-destructive">{t(errors.phone.message as string)}</p>}
@@ -110,8 +115,13 @@ const NewCustomerPage: React.FC = () => {
                             </div>
                             
                             {/* Customer Type Field with Quick Add Button */}
-                            <div className="grid gap-1.5">
+                            <div className="grid gap-2">
                                 <Label htmlFor="customer_type_id">{t('customerTypeOptional', {ns:'customers'})}</Label>
+                                {customerTypesError && (
+                                    <p className="text-sm text-destructive">
+                                        {t('errorLoading', { ns: 'common' })}: {customerTypesError.message}
+                                    </p>
+                                )}
                                 <div className="flex items-center gap-2">
                                     <Controller
                                         name="customer_type_id"
@@ -123,7 +133,7 @@ const NewCustomerPage: React.FC = () => {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value=" ">{t('noneUnit', {ns:'services'})}</SelectItem>
-                                                    {customerTypes.map(type => (
+                                                    {customerTypesArray && customerTypesArray.length > 0 && customerTypesArray.map(type => (
                                                         <SelectItem key={type.id} value={type.id.toString()}>{type.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -143,13 +153,13 @@ const NewCustomerPage: React.FC = () => {
                                 {errors.customer_type_id && <p className="text-sm text-destructive">{t(errors.customer_type_id.message as string)}</p>}
                             </div>
 
-                            <div className="grid gap-1.5">
+                            <div className="grid gap-2">
                                 <Label htmlFor="address">{t('addressOptional', { ns: 'customers' })}</Label>
-                                <Textarea id="address" {...register('address')} rows={2} />
+                                <Textarea id="address" {...register('address')} rows={3} />
                             </div>
-                            <div className="grid gap-1.5">
+                            <div className="grid gap-2">
                                 <Label htmlFor="notes">{t('notesOptional')}</Label>
-                                <Textarea id="notes" {...register('notes')} rows={2} placeholder={t('customerNotesPlaceholder', {ns: 'customers'})} />
+                                <Textarea id="notes" {...register('notes')} rows={3} placeholder={t('customerNotesPlaceholder', {ns: 'customers'})} />
                             </div>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2">

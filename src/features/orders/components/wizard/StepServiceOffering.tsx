@@ -110,8 +110,8 @@ export const StepServiceOffering: React.FC<StepServiceOfferingProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <header className="p-4 border-b shrink-0 flex items-center gap-4">
+    <div className="flex flex-col  bg-background">
+      <header className="p-4 border-b shrink-0 flex items-center gap-4 ">
         <Button
           variant="outline"
           size="icon"

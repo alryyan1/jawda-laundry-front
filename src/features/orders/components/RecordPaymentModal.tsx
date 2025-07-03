@@ -1,12 +1,12 @@
 // src/features/orders/components/RecordPaymentModal.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 import {
     Dialog,
@@ -29,31 +29,35 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Loader2, CalendarIcon } from 'lucide-react';
+import { Loader2, CalendarIcon, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 
-import type { Order, Payment, RecordPaymentFormData } from '@/types';
-import { PAYMENT_METHODS } from '@/lib/constants'; // <-- Correct import location
-import { recordOrderPayment } from '@/api/paymentService';
 
-// Zod schema for form validation
+import type { Order, Payment, RecordPaymentFormData, PaymentMethod } from '@/types';
+import { recordOrderPayment } from '@/api/paymentService';
+import type { AxiosError } from 'axios';
+
 const paymentSchema = z.object({
   amount: z.preprocess(
-    (val) => parseFloat(String(val).replace(/,/g, '')), // Handle potential commas
+    (val) => parseFloat(String(val).replace(/,/g, '')),
     z.number({ required_error: "validation.amountRequired", invalid_type_error: "validation.amountMustBeNumber" })
      .positive({ message: "validation.amountMustBePositive" })
   ),
-  method: z.enum(['cash', 'card', 'online', 'credit', 'bank_transfer'], { 
-    required_error: "validation.paymentMethodRequired" 
-  }),
+  method: z.enum(['cash', 'card', 'online', 'credit', 'bank_transfer'] as const, { required_error: "validation.paymentMethodRequired" }),
   payment_date: z.string().nonempty({ message: "validation.dateRequired" }),
   transaction_id: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
 });
 
-// We only handle 'payment' type in this modal for simplicity. Refunds could be a separate modal.
-type PaymentFormValues = z.infer<typeof paymentSchema>;
+// We only handle 'payment' type in this modal for simplicity. Refunds could be a separate feature.
+type PaymentFormValues = {
+  amount: number;
+  method: PaymentMethod;
+  payment_date: string;
+  transaction_id?: string;
+  notes?: string;
+};
 
 interface RecordPaymentModalProps {
     order: Order | null;
@@ -75,23 +79,31 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
         resolver: zodResolver(paymentSchema),
         defaultValues: {
             amount: 0,
-            method: 'cash' as const,
+            method: 'cash' as PaymentMethod,
             payment_date: format(new Date(), 'yyyy-MM-dd'),
             transaction_id: '',
             notes: '',
         }
     });
 
-    // Effect to pre-fill the amount with the amount due when the modal opens
+    const paymentMethodOptions = useMemo(() => {
+        // Use default payment methods since settings don't have payment_methods_ar
+        return [
+            { key: 'cash' as PaymentMethod, value: t('payment_method_cash', {ns:'orders'}) },
+            { key: 'card' as PaymentMethod, value: t('payment_method_card', {ns:'orders'}) },
+            { key: 'online' as PaymentMethod, value: t('payment_method_online', {ns:'orders'}) },
+            { key: 'credit' as PaymentMethod, value: t('payment_method_credit', {ns:'orders'}) },
+            { key: 'bank_transfer' as PaymentMethod, value: t('payment_method_bank_transfer', {ns:'orders'}) },
+        ];
+    }, [t]);
+
     useEffect(() => {
         if (order && isOpen) {
             const amountDue = order.amount_due && order.amount_due > 0 ? order.amount_due : 0;
             reset({
                 amount: amountDue,
-                method: 'cash' as const,
+                method: 'cash' as PaymentMethod,
                 payment_date: format(new Date(), 'yyyy-MM-dd'),
-                transaction_id: '',
-                notes: '',
             });
         }
     }, [order, isOpen, reset]);
@@ -101,21 +113,17 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
         mutationFn: (data) => recordOrderPayment(order!.id, data),
         onSuccess: () => {
             toast.success(t('paymentRecordedSuccess', {ns:'orders'}));
-            // Invalidate queries to refetch data on the OrderDetailsPage and OrdersListPage
             queryClient.invalidateQueries({ queryKey: ['order', String(order!.id)] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            onOpenChange(false); // Close the modal
+            onOpenChange(false);
         },
-        onError: (error) => {
-            toast.error(error.message || t('paymentRecordFailed', {ns:'orders'}));
+        onError: (error:AxiosError) => {
+            toast.error(error.response?.data.message || t('paymentRecordFailed', {ns:'orders'}));
         }
     });
 
     const onSubmit = (data: PaymentFormValues) => {
-        const payload: RecordPaymentFormData = {
-            ...data,
-            type: 'payment', // Set the type to 'payment' for this modal
-        };
+        const payload: RecordPaymentFormData = { ...data, type: 'payment' };
         mutation.mutate(payload);
     };
 
@@ -125,7 +133,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{t('recordPaymentForOrder', {ns:'orders', orderNumber: order.order_number})}</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Wallet className="h-5 w-5 text-primary" />
+                        {t('recordPaymentForOrder', {ns:'orders', orderNumber: order.order_number})}
+                    </DialogTitle>
                     <DialogDescription>
                         {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, 'USD', i18n.language)}</span>
                     </DialogDescription>
@@ -137,19 +148,27 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                             <Input id="amount" type="number" step="0.01" {...register('amount')} />
                             {errors.amount && <p className="text-sm text-destructive">{t(errors.amount.message as string)}</p>}
                         </div>
-                         <div className="grid gap-1.5">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="method">{t('paymentMethod', {ns:'orders'})}<span className="text-destructive">*</span></Label>
-                            <Controller name="method" control={control} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id="method"><SelectValue placeholder={t('selectPaymentMethod', {ns:'orders'})} /></SelectTrigger>
-                                    <SelectContent>
-                                        {PAYMENT_METHODS.map(opt => (
-                                            <SelectItem key={opt} value={opt}>{t(`payment_method_${opt}`, {ns:'orders', defaultValue: opt.charAt(0).toUpperCase() + opt.slice(1)})}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )} />
-                             {errors.method && <p className="text-sm text-destructive">{t(errors.method.message as string)}</p>}
+                            <Controller
+                                name="method"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                                        <SelectTrigger id="method"><SelectValue placeholder={t('selectPaymentMethod', {ns:'orders'})} /></SelectTrigger>
+                                        <SelectContent>
+                                            {paymentMethodOptions.length > 0 ? (
+                                                paymentMethodOptions.map(opt => (
+                                                    <SelectItem key={opt.key} value={opt.key}>{opt.value}</SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="cash">{t('payment_method_cash', {ns:'orders'})}</SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.method && <p className="text-sm text-destructive">{t(errors.method.message as string)}</p>}
                         </div>
                     </div>
 
@@ -158,26 +177,20 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                             <Label htmlFor="payment_date">{t('paymentDate', {ns:'orders'})}</Label>
                             <Controller name="payment_date" control={control} render={({ field }) => (
                                 <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {field.value ? format(new Date(field.value), 'PPP') : <span>{t('pickADate', {ns:'common'})}</span>}
-                                        </Button>
-                                    </PopoverTrigger>
+                                    <PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(parse(field.value, 'yyyy-MM-dd', new Date()), 'PPP') : <span>{t('pickADate')}</span>}</Button></PopoverTrigger>
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} initialFocus /></PopoverContent>
                                 </Popover>
                             )} />
-                            {errors.payment_date && <p className="text-sm text-destructive">{t(errors.payment_date.message as string)}</p>}
                         </div>
                          <div className="grid gap-1.5">
-                            <Label htmlFor="transaction_id">{t('transactionIdOptional', {ns:'orders', defaultValue:'Transaction ID (Optional)'})}</Label>
+                            <Label htmlFor="transaction_id">{t('transactionIdOptional')}</Label>
                             <Input id="transaction_id" {...register('transaction_id')} />
                         </div>
                     </div>
 
                     <div className="grid gap-1.5">
-                        <Label htmlFor="notes">{t('notesOptional', {ns:'common'})}</Label>
-                        <Textarea id="notes" {...register('notes')} rows={2} placeholder={t('paymentNotesPlaceholder', {ns:'orders', defaultValue:'e.g., Paid by customer\'s spouse'})}/>
+                        <Label htmlFor="notes">{t('notesOptional')}</Label>
+                        <Textarea id="notes" {...register('notes')} rows={2} placeholder={t('paymentNotesPlaceholder', {ns:'orders'})}/>
                     </div>
 
                     <DialogFooter>

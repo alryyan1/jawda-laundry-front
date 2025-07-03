@@ -192,10 +192,7 @@ interface BackendOrderUpdatePayload { // More specific for update
     // IMPORTANT: Do NOT include 'items' if only updating order details
 }
 
-export const updateOrderDetails = async (orderId: string | number, orderUpdateData: BackendOrderUpdatePayload): Promise<Order> => {
-    const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, orderUpdateData);
-    return data.data;
-};
+
 // src/api/orderService.ts
 
 // Helper to prepare item payload (can be used by create and update)
@@ -249,3 +246,17 @@ export const updateOrder = async (
     const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, payload);
     return data.data;
 };
+
+
+// This type can be used for any partial update of order details
+export interface OrderDetailsUpdatePayload {
+    notes?: string | null;
+    due_date?: string | null;
+    status?: OrderStatus;
+    pickup_date?: string | null; // e.g., "YYYY-MM-DD HH:mm:ss" UTC
+}
+
+export const updateOrderDetails = async (orderId: string | number, payload: OrderDetailsUpdatePayload): Promise<Order> => {
+    const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, payload);
+    return data.data;
+}

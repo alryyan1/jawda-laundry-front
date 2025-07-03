@@ -52,5 +52,12 @@
   "customerNotFound": "Customer not found.",
   "searchCustomerByNameOrPhone": "Search by name or phone...",
   "createNewCustomer": "Create New Customer",
-  "customerDetails": "Customer Details"
+  "customerDetails": "Customer Details",
+  "customerTypeOptional": "Customer Type (Optional)",
+  "newCustomerTypeTitle": "New Customer Type",
+  "newCustomerTypeDescription": "Create a new customer type for categorization.",
+  "createCustomerBtn": "Create Customer",
+  "selectCustomerType": "Select Customer Type",
+  "customerTypeCreatedSuccess": "Customer type \"{{name}}\" created successfully.",
+  "customerTypeCreationFailed": "Failed to create customer type."
 }

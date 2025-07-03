@@ -19,6 +19,7 @@ import { AccountSettings } from "@/features/settings/components/AccountSettings"
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
 import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
 import KanbanPage from "@/pages/orders/KanbanPage";
+import POSPage from '@/pages/pos/POSPage';
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -204,10 +205,15 @@ export const router = createBrowserRouter([
               </React.Suspense>
             ),
           },
-          // { // Future Edit Order Page
-          //   path: 'orders/:id/edit',
-          //   element: <React.Suspense fallback={<RouteSuspenseFallback />}><EditOrderPage /></React.Suspense>,
-          // },
+          // POS Route
+          {
+            path: "pos",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <POSPage />
+              </React.Suspense>
+            ),
+          },
           // --- Settings Routes ---
           {
             path: "settings",

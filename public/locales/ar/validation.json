@@ -33,5 +33,8 @@
     "supplierRequired": "المورد مطلوب.",
     "itemNameRequired": "اسم الصنف مطلوب.",
     "quantityMustBeNumber": "يجب أن تكون الكمية رقماً صالحاً.",
-    "unitPriceRequired": "سعر الوحدة مطلوب."
+    "unitPriceRequired": "سعر الوحدة مطلوب.",
+    "url": "الرجاء إدخال رابط صالح.",
+    "required": "هذا الحقل مطلوب.",
+    "phoneNumber": "الرجاء إدخال رقم هاتف صالح (أرقام فقط)."
   }

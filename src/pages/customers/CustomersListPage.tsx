@@ -129,7 +129,7 @@ const CustomersListPage: React.FC = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="container mx-auto px-4 py-6">
             <PageHeader
                 title={t('title', { ns: 'customers' })}
                 description={t('customerListDescription', { ns: 'customers' })}
@@ -138,19 +138,24 @@ const CustomersListPage: React.FC = () => {
             />
 
             {/* --- Filter Bar --- */}
-            <div className="flex items-center py-4">
-                <Input
-                    placeholder={t('searchByNameOrEmail', { ns: 'customers' })}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                />
-                {/* Column visibility toggle is removed as it's a feature of table libraries */}
+            <div className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-4">
+                    <Input
+                        placeholder={t('searchByNameOrEmail', { ns: 'customers' })}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-80"
+                    />
+                </div>
+                {selectedRowCount > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                        {t('selectedRows', { count: selectedRowCount, total: totalItems })}
+                    </div>
+                )}
             </div>
 
             {/* --- Table Container --- */}
-            <div className="flex justify-center">
-                <div className="w-full max-w-6xl">
+            <div className="w-full">
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>
@@ -227,15 +232,14 @@ const CustomersListPage: React.FC = () => {
                             </TableBody>
                         </Table>
                     </div>
-                </div>
             </div>
 
             {/* --- Pagination --- */}
-            <div className="flex items-center justify-between space-x-2 py-4">
-                <div className="flex-1 text-sm text-muted-foreground">
-                    {t('selectedRows', { count: selectedRowCount, total: totalItems })}
+            <div className="flex items-center justify-between py-4">
+                <div className="text-sm text-muted-foreground">
+                    {t('showingResults', { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, totalItems), total: totalItems })}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
                         {t('pageWithTotal', { currentPage, totalPages })}
                     </span>

@@ -386,7 +386,7 @@ const NewOrderPage: React.FC = () => {
             />
           </div>
           {/* Right Panel: Dynamic Selection Area */}
-          <div className="hidden lg:block lg:w-3/5 xl:w-2/3 h-full flex-col">
+          <div className="hidden lg:block lg:w-3/5 xl:w-2/3 h-full flex-col mt-10">
             {renderCurrentStep()}
           </div>
         </form>

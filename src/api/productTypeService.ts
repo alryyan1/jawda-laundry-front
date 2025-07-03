@@ -13,7 +13,7 @@ export const getProductTypesPaginated = async (
     sortBy: string = 'id',
     sortOrder: 'asc' | 'desc' = 'desc'
 ): Promise<PaginatedResponse<ProductType>> => {
-    const params: Record<string, any> = { 
+    const params: Record<string, string | number> = { 
         page, 
         per_page: perPage,
         sort_by: sortBy,
@@ -28,13 +28,6 @@ export const getProductTypesPaginated = async (
         params
     });
     return data;
-};
-
-// For dropdowns, usually not paginated
-export const getAllProductTypes = async (categoryId?: number | string): Promise<ProductType[]> => {
-    const params = categoryId ? { product_category_id: categoryId } : {};
-    const { data } = await apiClient.get<{data: ProductType[]}>('/product-types/all-for-select', { params }); // Assuming an endpoint for this
-    return data.data;
 };
 
 
@@ -102,4 +95,16 @@ export const updateProductType = async (id: number | string, formData: Partial<P
 export const createAllOfferingsForProductType = async (productTypeId: number | string): Promise<ServiceOffering[]> => {
     const { data } = await apiClient.post<{ data: ServiceOffering[] }>(`/product-types/${productTypeId}/create-all-service-offerings`);
     return data.data; // Assuming backend returns the full updated list
+};
+
+export const getAllProductTypes = async (categoryId?: number | string, search?: string): Promise<ProductType[]> => {
+    const params: Record<string, string | number> = {};
+    if (categoryId) {
+        params.product_category_id = categoryId;
+    }
+    if (search) {
+        params.search = search;
+    }
+    const { data } = await apiClient.get<{data: ProductType[]}>('/product-types/all-for-select', { params });
+    return data.data;
 };

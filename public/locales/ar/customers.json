@@ -50,5 +50,12 @@
   "customerNotFound": "العميل غير موجود.",
   "searchCustomerByNameOrPhone": "البحث بالاسم أو الهاتف...",
   "createNewCustomer": "إنشاء عميل جديد",
-  "customerDetails": "تفاصيل العميل"
+  "customerDetails": "تفاصيل العميل",
+  "customerTypeOptional": "نوع العميل (اختياري)",
+  "newCustomerTypeTitle": "نوع عميل جديد",
+  "newCustomerTypeDescription": "إنشاء نوع عميل جديد للتصنيف.",
+  "createCustomerBtn": "إنشاء العميل",
+  "selectCustomerType": "اختر نوع العميل",
+  "customerTypeCreatedSuccess": "تم إنشاء نوع العميل \"{{name}}\" بنجاح.",
+  "customerTypeCreationFailed": "فشل إنشاء نوع العميل."
 } 

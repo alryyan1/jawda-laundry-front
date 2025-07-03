@@ -65,7 +65,7 @@ export const OrderCart: React.FC<OrderCartProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-card">
-      <header className="p-4 border-b shrink-0 flex items-center justify-between">
+      <header className="p-4 border-b shrink-0 flex items-center justify-between mt-10">
         <div className="flex items-center gap-3">
           <ShoppingCart className="h-6 w-6 text-primary" />
           <h2 className="text-lg font-semibold">
