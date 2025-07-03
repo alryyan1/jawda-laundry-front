@@ -80,7 +80,13 @@ const ProductTypesListPage = React.lazy(
 const ServiceActionsListPage = React.lazy(
   () => import("@/pages/services/service-actions/ServiceActionsListPage")
 );
+const CustomerLedgerPage = React.lazy(() => import('@/pages/customers/CustomerLedgerPage'));
 const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
+const CostSummaryPage = React.lazy(() => import('@/pages/reports/CostSummaryPage'));
+const ReportsMainPage = React.lazy(() => import('@/pages/reports/ReportsMainPage'));
+const DetailedReportsMainPage = React.lazy(() => import('@/pages/reports/DetailedReportsMainPage'));
+const DetailedOrdersReport = React.lazy(() => import('@/pages/reports/DetailedOrdersReport'));
+const OverduePickupsReport = React.lazy(() => import('@/pages/reports/OverduePickupsReport'));
 // Loading fallback component for Suspense
 const RouteSuspenseFallback = () => (
   <div className="flex items-center justify-center h-screen w-screen">
@@ -134,7 +140,27 @@ export const router = createBrowserRouter([
           },
           {
             path: 'reports',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ReportsMainPage /></React.Suspense>,
+          },
+          {
+            path: 'reports/detailed',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DetailedReportsMainPage /></React.Suspense>,
+          },
+          {
+            path: 'reports/sales',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><SalesSummaryPage /></React.Suspense>,
+          },
+          {
+            path: 'reports/costs',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><CostSummaryPage /></React.Suspense>,
+          },
+          {
+            path: 'reports/detailed/overdue-pickups',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><OverduePickupsReport /></React.Suspense>,
+          },
+          {
+            path: 'reports/detailed-orders',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DetailedOrdersReport /></React.Suspense>,
           },
           // Suppliers
           {
@@ -179,6 +205,10 @@ export const router = createBrowserRouter([
                 <EditCustomerPage />
               </React.Suspense>
             ),
+          },
+          {
+            path: "customers/:id/ledger",
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><CustomerLedgerPage /></React.Suspense>,
           },
           // Orders
           {

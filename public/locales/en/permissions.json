@@ -99,5 +99,8 @@
     "create": "Create Service Offerings",
     "update": "Update Service Offerings",
     "delete": "Delete Service Offerings"
+  },
+  "admin": {
+    "view-menu": "View Admin Menu"
   }
 } 

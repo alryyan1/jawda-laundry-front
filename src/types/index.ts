@@ -13,5 +13,5 @@ export * from './admin.types'; // For User/Role/Permission management pages
 export * from './expenseCategory.types';
 export * from './payment.types';
 export * from './settings.types';
+export * from './report.types';
 
- 

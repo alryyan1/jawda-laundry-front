@@ -57,5 +57,6 @@
   "createCustomerBtn": "إنشاء العميل",
   "selectCustomerType": "اختر نوع العميل",
   "customerTypeCreatedSuccess": "تم إنشاء نوع العميل \"{{name}}\" بنجاح.",
-  "customerTypeCreationFailed": "فشل إنشاء نوع العميل."
+  "customerTypeCreationFailed": "فشل إنشاء نوع العميل.",
+  "customerPhone": "هاتف العميل"
 } 

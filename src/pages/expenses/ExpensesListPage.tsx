@@ -1,10 +1,9 @@
 // src/pages/expenses/ExpensesListPage.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useQuery,
   useMutation,
-  useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -22,6 +21,7 @@ import {
 import type { Expense, PaginatedResponse } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatCurrency } from "@/lib/formatters";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 import {
   Table,
@@ -33,12 +33,14 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -47,21 +49,21 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker"; // Assuming you create this reusable component
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import {
   PlusCircle,
   MoreHorizontal,
   Edit3,
   Trash2,
   Loader2,
+  Landmark,
+  Banknote,
+  FolderOpen,
 } from "lucide-react";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 const ExpensesListPage: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "expenses"]);
-  const queryClient = useQueryClient();
-  const { can } = useAuth(); // For permission checks
+  const { can } = useAuth();
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -76,10 +78,12 @@ const ExpensesListPage: React.FC = () => {
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
 
-  const { data: categories = [] } = useQuery<string[], Error>({
+  const { data: categoriesData } = useQuery<{ id: number; name: string; description?: string }[], Error>({
     queryKey: ["expenseCategories"],
     queryFn: getExpenseCategories,
   });
+
+
 
   const queryKey = useMemo(
     () => [
@@ -139,6 +143,12 @@ const ExpensesListPage: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch, filters.category, filters.dateRange]);
+
   const handleOpenAddModal = () => {
     setEditingExpense(null);
     setIsFormModalOpen(true);
@@ -158,7 +168,24 @@ const ExpensesListPage: React.FC = () => {
       </TableCell>
       <TableCell>
         <div className="font-mono text-xs p-1 px-2 rounded-full bg-muted w-fit">
-          {expense.category || "-"}
+          {expense.expense_category_id ? 
+            categoriesData?.find(cat => cat.id === expense.expense_category_id)?.name || "-" 
+            : "-"}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2 text-sm capitalize">
+          {expense.payment_method === "cash" ? (
+            <Banknote className="h-4 w-4 text-green-600" />
+          ) : (
+            <Landmark className="h-4 w-4 text-blue-600" />
+          )}
+          <span>
+            {t(`method_${expense.payment_method}`, {
+              ns: "expenses",
+              defaultValue: expense.payment_method,
+            })}
+          </span>
         </div>
       </TableCell>
       <TableCell>{format(new Date(expense.expense_date), "PPP")}</TableCell>
@@ -169,7 +196,7 @@ const ExpensesListPage: React.FC = () => {
         {expense.user?.name || "-"}
       </TableCell>
       <TableCell className="text-right rtl:text-left">
-        {(can("expense:update") || can("expense:delete")) && (
+        {can("expense:update") || can("expense:delete") ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -185,17 +212,20 @@ const ExpensesListPage: React.FC = () => {
                 </DropdownMenuItem>
               )}
               {can("expense:delete") && (
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => setItemToDelete(expense)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t("delete")}
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setItemToDelete(expense)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t("delete")}
+                  </DropdownMenuItem>
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
+        ) : null}
       </TableCell>
     </TableRow>
   ));
@@ -205,11 +235,15 @@ const ExpensesListPage: React.FC = () => {
       <PageHeader
         title={t("title", { ns: "expenses" })}
         description={t("description", { ns: "expenses" })}
-        actionButton={{
-          label: t("newExpense", { ns: "expenses" }),
-          icon: PlusCircle,
-          onClick: handleOpenAddModal,
-        }}
+        actionButton={
+          can("expense:create")
+            ? {
+                label: t("newExpense", { ns: "expenses" }),
+                icon: PlusCircle,
+                onClick: handleOpenAddModal,
+              }
+            : undefined
+        }
         showRefreshButton
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
@@ -217,31 +251,27 @@ const ExpensesListPage: React.FC = () => {
 
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle className="text-lg">
-            {t("filters", { ns: "common" })}
-          </CardTitle>
+          <CardTitle className="text-lg">{t("filters")}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-4">
+        <CardContent className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
           <Input
             placeholder={t("searchExpenses", { ns: "expenses" })}
             value={filters.search || ""}
-            onChange={(e) => {
-              setFilters((prev) => ({ ...prev, search: e.target.value }));
-              setCurrentPage(1);
-            }}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
             className="max-w-sm"
           />
           <Select
             value={filters.category || ""}
-            onValueChange={(value) => {
+            onValueChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
                 category: value === "all" ? undefined : value,
-              }));
-              setCurrentPage(1);
-            }}
+              }))
+            }
           >
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue
                 placeholder={t("filterByCategory", { ns: "expenses" })}
               />
@@ -250,25 +280,23 @@ const ExpensesListPage: React.FC = () => {
               <SelectItem value="all">
                 {t("allCategories", { ns: "expenses" })}
               </SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
+              {categoriesData?.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {cat.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <DatePickerWithRange
             date={filters.dateRange}
-            onDateChange={(range) => {
-              setFilters((prev) => ({ ...prev, dateRange: range }));
-              setCurrentPage(1);
-            }}
-            className="w-full sm:w-auto"
+            onDateChange={(range) =>
+              setFilters((prev) => ({ ...prev, dateRange: range }))
+            }
           />
         </CardContent>
       </Card>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -276,12 +304,11 @@ const ExpensesListPage: React.FC = () => {
                 {t("expenseName", { ns: "expenses" })}
               </TableHead>
               <TableHead>{t("category")}</TableHead>
+              <TableHead>{t("paymentMethod", { ns: "expenses" })}</TableHead>
               <TableHead>{t("expenseDate", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-right rtl:text-left">
-                {t("amount")}
-              </TableHead>
+              <TableHead className="text-right">{t("amount")}</TableHead>
               <TableHead>{t("recordedBy", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-right rtl:text-left w-[80px]">
+              <TableHead className="text-right w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>
@@ -289,7 +316,7 @@ const ExpensesListPage: React.FC = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
@@ -299,8 +326,26 @@ const ExpensesListPage: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
-                  {t("noResults")}
+                <TableCell colSpan={7} className="h-48 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <FolderOpen className="h-10 w-10" />
+                    <h3 className="font-semibold">
+                      {t("noExpensesFound", { ns: "expenses" })}
+                    </h3>
+                    <p className="text-sm">
+                      {t("noExpensesFoundHint", { ns: "expenses" })}
+                    </p>
+                    {can("expense:create") && (
+                      <Button
+                        size="sm"
+                        className="mt-4"
+                        onClick={handleOpenAddModal}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        {t("addFirstExpense", { ns: "expenses" })}
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -312,7 +357,6 @@ const ExpensesListPage: React.FC = () => {
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
             {t("pagination.showingItems", {
-              ns: "common",
               first: paginatedData?.meta.from || 0,
               last: paginatedData?.meta.to || 0,
               total: totalItems,
@@ -325,8 +369,8 @@ const ExpensesListPage: React.FC = () => {
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1 || isFetching}
             >
-              
-              {t("firstPage")}
+              {" "}
+              {t("firstPage")}{" "}
             </Button>
             <Button
               variant="outline"
@@ -334,8 +378,8 @@ const ExpensesListPage: React.FC = () => {
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1 || isFetching}
             >
-              
-              {t("previous")}
+              {" "}
+              {t("previous")}{" "}
             </Button>
             <span className="text-sm font-medium">
               {t("pageWithTotal", { currentPage, totalPages })}
@@ -348,8 +392,8 @@ const ExpensesListPage: React.FC = () => {
               }
               disabled={currentPage === totalPages || isFetching}
             >
-              
-              {t("next")}
+              {" "}
+              {t("next")}{" "}
             </Button>
             <Button
               variant="outline"
@@ -357,28 +401,32 @@ const ExpensesListPage: React.FC = () => {
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages || isFetching}
             >
-              
-              {t("lastPage")}
+              {" "}
+              {t("lastPage")}{" "}
             </Button>
           </div>
         </div>
       )}
 
-      <ExpenseFormModal
-        isOpen={isFormModalOpen}
-        onOpenChange={setIsFormModalOpen}
-        editingExpense={editingExpense}
-      />
-      <DeleteConfirmDialog
-        isOpen={!!itemToDelete}
-        onOpenChange={(open) => !open && setItemToDelete(null)}
-        onConfirm={() => {
-          if (itemToDelete) deleteMutation.mutate(itemToDelete.id);
-        }}
-        itemName={itemToDelete?.name}
-        itemType="expenseLC"
-        isPending={deleteMutation.isPending}
-      />
+      {(can("expense:create") || can("expense:update")) && (
+        <ExpenseFormModal
+          isOpen={isFormModalOpen}
+          onOpenChange={setIsFormModalOpen}
+          editingExpense={editingExpense}
+        />
+      )}
+      {can("expense:delete") && (
+        <DeleteConfirmDialog
+          isOpen={!!itemToDelete}
+          onOpenChange={(open) => !open && setItemToDelete(null)}
+          onConfirm={() => {
+            if (itemToDelete) deleteMutation.mutate(itemToDelete.id);
+          }}
+          itemName={itemToDelete?.name}
+          itemType="expenseLC"
+          isPending={deleteMutation.isPending}
+        />
+      )}
     </div>
   );
 };

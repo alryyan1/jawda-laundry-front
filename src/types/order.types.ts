@@ -66,6 +66,8 @@ export type BackendOrderItem = Omit<OrderItem, 'serviceOffering'> & { serviceOff
 
 export interface Order {
     id: number;
+    overdue_days?: number; // <-- أضف هذا الحقل الاختياري
+
     order_number: string;
     customer: Customer;
     staff_user?: User;

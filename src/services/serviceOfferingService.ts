@@ -1,6 +1,6 @@
 // src/services/serviceOfferingService.ts
 import apiClient from "@/lib/axios";
-import { ServiceOffering, PaginatedResponse, PricingStrategy } from "@/types";
+import type { ServiceOffering, PaginatedResponse, PricingStrategy } from "@/types";
 
 export interface ServiceOfferingFormData {
   product_type_id: number | string;

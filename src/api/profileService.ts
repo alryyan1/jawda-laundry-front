@@ -1,6 +1,6 @@
 // src/api/profileService.ts
 import apiClient from './apiClient';
-import { User } from '@/types';
+import type { User } from '@/types';
 
 export interface UserProfileUpdateData {
     name: string;

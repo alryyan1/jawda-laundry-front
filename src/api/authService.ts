@@ -1,6 +1,6 @@
 // src/api/authService.ts
 import apiClient from './apiClient';
-import { User } from '@/types'; // Assuming User type is defined
+import type { User } from '@/types'; // Assuming User type is defined
 
 export interface LoginCredentials {
   email: string;

@@ -37,5 +37,18 @@
   "manageRoles": "Manage Roles",
   "newRole": "New Role",
   "searchRolesPlaceholder": "Search by role name...",
-  "noPermissionsAssigned": "No permissions assigned"
+  "noPermissionsAssigned": "No permissions assigned",
+  "name": "Name",
+  "email": "Email",
+  "usersTitle": "Users Management",
+  "usersDescription": "Manage system users and their permissions",
+  "newUserBtn": "New User",
+  "searchUsers": "Search users...",
+  "newUserTitle": "Create New User",
+  "newUserDescription": "Add a new user to the system",
+  "setPassword": "Set Password",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "cancel": "Cancel",
+  "createUserBtn": "Create User"
 } 

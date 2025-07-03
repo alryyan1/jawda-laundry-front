@@ -184,8 +184,10 @@
             "chooseAnotherCategory": "Choose Another Category",
             "noProductsInCategory": "No products available in this category",
             "chooseAnotherProduct": "Choose Another Product",
-            "noServicesForProduct": "No services available for this product"
-            
+            "noServicesForProduct": "No services available for this product",
+            "searchProductsByNameOrId": "Search products by name or ID...",
+            "selectCategoryFirst": "Please select a category first",
+            "selectProductFirst": "Please select a product first"
           }
       
     

@@ -1,5 +1,6 @@
 // src/context/SettingsContext.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import settingService, { type AppSettings, type UpdateAppSettingsData } from '@/services/settingService'; // Adjust path
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -20,12 +21,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
     const fetchSettings = useCallback(async () => {
-        console.log("SettingsProvider: Fetching settings...");
         setIsLoadingSettings(true);
         try {
             const fetchedSettings = await settingService.getSettings();
             setSettings(fetchedSettings);
-            console.log("SettingsProvider: Settings loaded", fetchedSettings);
         } catch (error) {
             console.error("SettingsProvider: Failed to fetch settings", error);
             // Optionally show a toast, but be careful not to annoy on every app load if API is down

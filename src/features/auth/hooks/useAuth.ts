@@ -30,12 +30,10 @@ export const useAuth = () => {
    * @returns `true` if the user has at least one of the specified roles, otherwise `false`.
    */
   const hasRole = (targetRole: string | string[]): boolean => {
-    console.log(user,'user roles',targetRole,'target role',isAuthenticated,'is authenticated')
     if (!isAuthenticated || !user?.roles) {
       return false;
     }
 
-console.log('jskdfjldsfjdkslfjksldfjkd')
     if (Array.isArray(targetRole)) {
       // Check if the user's roles array has any intersection with the target roles array.
       return user.roles.some(userRole => targetRole.includes(userRole));

@@ -41,5 +41,7 @@
     "todaysOverview": "Today's Overview",
     "thisMonthsOverview": "This Month's Overview",
     "performanceMetrics": "Performance Metrics",
-    "businessInsights": "Business Insights"
+    "businessInsights": "Business Insights",
+    "ordersLast7Days": "Orders Last 7 Days",
+    "orderStatusOverview": "Order Status Overview"
 }

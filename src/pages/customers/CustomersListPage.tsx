@@ -37,6 +37,7 @@ import {
     MoreHorizontal,
     Edit3,
     Loader2,
+    FileText,
 } from 'lucide-react';
 
 const CustomersListPage: React.FC = () => {
@@ -216,8 +217,12 @@ const CustomersListPage: React.FC = () => {
                                                             {t('edit')}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                     
+                                                        <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/ledger`)}>
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            {t('ledger')}
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
+
                                                 </DropdownMenu>
                                             </TableCell>
                                         </TableRow>

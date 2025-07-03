@@ -27,7 +27,14 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { Loader2, CalendarIcon } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, CalendarIcon, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import type { Expense, ExpenseFormData } from "@/types";
@@ -36,14 +43,23 @@ import {
   updateExpense,
   getExpenseCategories,
 } from "@/api/expenseService";
+import { EXPENSE_PAYMENT_METHODS } from "@/lib/constants";
+import { ExpenseCategoryFormModal } from "./ExpenseCategoryFormModal";
 
 // Zod schema for form validation
 const expenseSchema = z.object({
-  name: z.string().min(1, { message: "validation.expenseNameRequired" }),
-  category: z.string().min(1, { message: "validation.categoryRequired" }),
+  name: z.string().nonempty({ message: "validation.expenseNameRequired" }),
+  expense_category_id: z.coerce.number({ invalid_type_error: "validation.categoryRequired" }).positive({ message: "validation.categoryRequired" }),
   amount: z.coerce.number({ invalid_type_error: "validation.amountRequired" }).positive({ message: "validation.amountMustBePositive" }),
-  expense_date: z.string().min(1, { message: "validation.dateRequired" }),
-  description: z.string().optional(),
+  payment_method: z
+    .string()
+    .min(1, { message: "validation.paymentMethodRequired" }),
+  expense_date: z.string().nonempty({ message: "validation.dateRequired" }),
+  description: z
+    .string()
+    .max(1000, { message: "validation.descriptionTooLong" })
+    .optional()
+    .or(z.literal("")),
 });
 
 type ExpenseFormValues = z.infer<typeof expenseSchema>;
@@ -61,18 +77,18 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
 }) => {
   const { t } = useTranslation(["common", "expenses", "validation"]);
   const queryClient = useQueryClient();
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
 
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<
-    string[],
+    { id: number; name: string; description?: string }[],
     Error
   >({
     queryKey: ["expenseCategories"],
-    queryFn: getExpenseCategories,
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => getExpenseCategories().then(cats => Array.isArray(cats) ? cats : []),
   });
 
   const categoryOptions: ComboboxOption[] = useMemo(
-    () => categories.map((cat) => ({ value: cat, label: cat })),
+    () => categories.map((cat) => ({ value: cat.id.toString(), label: cat.name })),
     [categories]
   );
 
@@ -81,30 +97,41 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       name: "",
-      category: "",
-      amount: 0,
-      expense_date: "",
+      expense_category_id: undefined,
+      amount: undefined,
+      payment_method: "cash",
+      expense_date: format(new Date(), "yyyy-MM-dd"),
       description: "",
     },
   });
 
-  // Effect to pre-fill the form when in "edit" mode
   useEffect(() => {
-    if (editingExpense && isOpen) {
-      reset({
-        name: editingExpense.name,
-        category: editingExpense.category || "",
-        amount: editingExpense.amount,
-        expense_date: editingExpense.expense_date, // Assumes YYYY-MM-DD format from API
-        description: editingExpense.description || "",
-      });
-    } else if (!isOpen) {
-      reset(); // Clear form when modal is closed
+    if (isOpen) {
+      if (editingExpense) {
+        reset({
+          name: editingExpense.name,
+          expense_category_id: editingExpense.expense_category_id || undefined,
+          amount: editingExpense.amount,
+          payment_method: editingExpense.payment_method || "cash",
+          expense_date: editingExpense.expense_date,
+          description: editingExpense.description || "",
+        });
+      } else {
+        reset({
+          name: "",
+          expense_category_id: undefined,
+          amount: undefined,
+          payment_method: "cash",
+          expense_date: format(new Date(), "yyyy-MM-dd"),
+          description: "",
+        });
+      }
     }
   }, [editingExpense, isOpen, reset]);
 
@@ -119,29 +146,29 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           ? t("expenseUpdatedSuccess", { ns: "expenses", name: data.name })
           : t("expenseCreatedSuccess", { ns: "expenses", name: data.name })
       );
-      // Invalidate queries to refetch data on the list page
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] }); // In case a new category was added
-      onOpenChange(false); // Close the modal
+      queryClient.invalidateQueries({ queryKey: ["expenseCategories"] });
+      onOpenChange(false);
     },
     onError: (error) => {
       toast.error(
-        error.message ||
-          t("expenseActionFailed", {
-            ns: "expenses",
-            defaultValue: "The action failed. Please try again.",
-          })
+        error.message || t("expenseActionFailed", { ns: "expenses" })
       );
     },
   });
 
   const onSubmit = (formData: ExpenseFormValues) => {
-    mutation.mutate(formData);
+    mutation.mutate(formData as ExpenseFormData);
+  };
+
+  const handleCategoryCreated = (categoryId: number) => {
+    // Update the category field with the newly created category ID
+    setValue("expense_category_id", categoryId);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {editingExpense
@@ -155,7 +182,6 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-          {/* Name Field */}
           <div className="grid gap-1.5">
             <Label htmlFor="expense-name">
               {t("expenseName", { ns: "expenses" })}
@@ -173,37 +199,48 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             )}
           </div>
 
-          {/* Category & Amount */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="expense-category">
-                {t("category", { ns: "common" })}
-                <span className="text-destructive">*</span>
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="expense-category">
+                  {t("category", { ns: "common" })}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="h-8 px-2"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  {t("newCategory", { ns: "expenses", defaultValue: "New" })}
+                </Button>
+              </div>
               <Controller
-                name="category"
+                name="expense_category_id"
                 control={control}
                 render={({ field }) => (
                   <Combobox
                     options={categoryOptions}
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={field.value?.toString() || ""}
+                    onChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
                     placeholder={
                       isLoadingCategories
                         ? t("loading")
-                        : t("selectCategory", { ns: "expenses" })
+                        : t("selectOrAddCategory", { ns: "expenses" })
                     }
                     searchPlaceholder={t("searchCategories", {
                       ns: "expenses",
                     })}
                     emptyResultText={t("noCategoriesFound", { ns: "expenses" })}
-                    allowCustomValue={true} // Allow user to type a new category
+                    allowCustomValue={false} // Don't allow custom values since we need valid IDs
                   />
                 )}
               />
-              {errors.category && (
+              {errors.expense_category_id && (
                 <p className="text-sm text-destructive">
-                  {t(errors.category.message as string)}
+                  {t(errors.expense_category_id.message as string)}
                 </p>
               )}
             </div>
@@ -227,57 +264,90 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             </div>
           </div>
 
-          {/* Expense Date */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="expense-date">
-              {t("expenseDate", { ns: "expenses" })}
-              <span className="text-destructive">*</span>
-            </Label>
-            <Controller
-              name="expense_date"
-              control={control}
-              render={({ field }) => (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? (
-                        format(
-                          parse(field.value, "yyyy-MM-dd", new Date()),
-                          "PPP"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="payment_method">
+                {t("paymentMethod", { ns: "expenses" })}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Controller
+                name="payment_method"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger id="payment_method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(EXPENSE_PAYMENT_METHODS as readonly string[]).map(
+                        (opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {t(`method_${opt}`, { ns: "expenses" })}
+                          </SelectItem>
                         )
-                      ) : (
-                        <span>{t("pickADate", { ns: "common" })}</span>
                       )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) =>
-                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.payment_method && (
+                <p className="text-sm text-destructive">
+                  {t(errors.payment_method.message as string)}
+                </p>
               )}
-            />
-            {errors.expense_date && (
-              <p className="text-sm text-destructive">
-                {t(errors.expense_date.message as string)}
-              </p>
-            )}
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="expense-date">
+                {t("expenseDate", { ns: "expenses" })}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Controller
+                name="expense_date"
+                control={control}
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(
+                            parse(field.value, "yyyy-MM-dd", new Date()),
+                            "PPP"
+                          )
+                        ) : (
+                          <span>{t("pickADate")}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          field.value ? new Date(field.value) : undefined
+                        }
+                        onSelect={(date) =>
+                          field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {errors.expense_date && (
+                <p className="text-sm text-destructive">
+                  {t(errors.expense_date.message as string)}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Description */}
           <div className="grid gap-1.5">
             <Label htmlFor="expense-description">
               {t("descriptionOptional")}
@@ -286,7 +356,15 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
               id="expense-description"
               {...register("description")}
               rows={3}
+              placeholder={t("expenseDescriptionPlaceholder", {
+                ns: "expenses",
+              })}
             />
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {t(errors.description.message as string)}
+              </p>
+            )}
           </div>
 
           <DialogFooter>
@@ -312,6 +390,13 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
           </DialogFooter>
         </form>
       </DialogContent>
+      
+      {/* Category Creation Modal */}
+      <ExpenseCategoryFormModal
+        isOpen={isCategoryModalOpen}
+        onOpenChange={setIsCategoryModalOpen}
+        onCategoryCreated={handleCategoryCreated}
+      />
     </Dialog>
   );
 };

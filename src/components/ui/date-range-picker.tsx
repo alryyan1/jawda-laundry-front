@@ -4,7 +4,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
-import { DateRange } from "react-day-picker"
+import type { DateRange } from "react-day-picker"
 import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"

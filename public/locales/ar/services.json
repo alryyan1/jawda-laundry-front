@@ -182,5 +182,8 @@
   "quoteFailedForItem": "فشل في إنشاء عرض السعر لهذا العنصر.",
   "itemQuote": "عرض سعر العنصر",
   "enterDetailsForQuote": "يرجى إدخال التفاصيل اللازمة للحصول على عرض سعر.",
-  "orderTotal": "إجمالي الطلب"
+  "orderTotal": "إجمالي الطلب",
+  "searchProductsByNameOrId": "البحث في المنتجات بالاسم أو المعرف...",
+  "selectCategoryFirst": "الرجاء اختيار الفئة أولاً",
+  "selectProductFirst": "الرجاء اختيار المنتج أولاً"
 }

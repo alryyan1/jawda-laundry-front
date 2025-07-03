@@ -14,10 +14,12 @@ export default defineConfig({
     tailwindcss()
   ],
   resolve: {
+    
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+  
   
   // Enable more detailed source maps in development
   css: {

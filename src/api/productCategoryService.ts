@@ -1,6 +1,6 @@
 // src/api/productCategoryService.ts
 import apiClient from './apiClient';
-import { ProductCategory } from '@/types';
+import type { ProductCategory } from '@/types';
 
 export interface ProductCategoryFormData {
     name: string;

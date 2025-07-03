@@ -45,6 +45,7 @@ import {
     ShoppingCart,
     FolderKanban,
     ChartBar,
+    Calculator,
   } from "lucide-react";
 
 // MainLayout Component
@@ -174,6 +175,7 @@ const MainLayout: React.FC = () => {
     /* ... your navItems array ... */
     { to: "/", labelKey: "dashboard", icon: Home, type: "link" as const },
     { to: "/orders", labelKey: "orders", icon: Package, type: "link" as const },
+    { to: "/pos", labelKey: "pointOfSale", icon: Calculator, type: "link" as const },
     {
       to: "/customers",
       labelKey: "customers",

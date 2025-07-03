@@ -146,5 +146,20 @@
   "noOrdersInStatus": "لا توجد طلبات في هذه الحالة.",
   "itemCount": "{{count}} عنصر",
   "itemCount_plural": "{{count}} عناصر",
-  "due": "تاريخ الاستحقاق"
+  "due": "تاريخ الاستحقاق",
+  "length": "الطول",
+  "width": "العرض",
+  "pleaseSelectCustomer": "الرجاء اختيار عميل",
+  "orderCreatedSuccessfully": "تم إنشاء الطلب بنجاح",
+  "failedToCreateOrder": "فشل في إنشاء الطلب",
+  "completeOrder": "إكمال الطلب",
+  "startNewOrder": "بدء طلب جديد",
+  "cart": "السلة",
+  "checkout": "الدفع",
+  "printReceipt": "طباعة الإيصال",
+  "selectPickupDate": "اختر تاريخ ووقت الاستلام",
+  "pickupDateUpdatedSuccess": "تم تحديث تاريخ الاستلام بنجاح",
+  "pickupDateUpdateFailed": "فشل تحديث تاريخ الاستلام",
+  "newOrder": "طلب جديد",
+  "kanban": "لوحة كانبان"
 }

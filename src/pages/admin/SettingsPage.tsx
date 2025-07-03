@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "@/context/SettingsContext";
-import { AppSettings } from "@/services/settingService";
+import type { AppSettings } from "@/services/settingService";
 
 // shadcn/ui & Lucide Icons
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,6 @@ const SettingsPage: React.FC = () => {
   // --- Effect to Populate Form with Loaded Settings ---
   useEffect(() => {
     if (settings) {
-      console.log("Populating settings form:", settings);
       reset({
         // Reset RHF form with values from context
         company_name: settings.company_name || "",
@@ -141,7 +140,6 @@ const SettingsPage: React.FC = () => {
   // --- Form Submission ---
   const onSubmit: SubmitHandler<SettingsFormValues> = async (data) => {
     setServerError(null);
-    console.log("Submitting settings:", data);
 
     // Prepare data (ensure numbers are numbers, nulls are null)
     const dataToSubmit: Partial<AppSettings> = {

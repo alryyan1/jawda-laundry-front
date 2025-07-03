@@ -1,6 +1,6 @@
 // src/api/roleService.ts
 import apiClient from './apiClient';
-import { Role, PaginatedResponse, Permission } from '@/types'; // Assuming types are in global or role.types.ts
+import type { Role, PaginatedResponse, Permission } from '@/types'; // Assuming types are in global or role.types.ts
 
 export interface RoleFormData {
     name: string;

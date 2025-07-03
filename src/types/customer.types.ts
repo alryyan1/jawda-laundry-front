@@ -32,3 +32,30 @@ export interface CustomerFormData {
     notes?: string;
     customer_type_id?: number | string | null; // string from form select
 }
+
+
+// src/types/customer.types.ts
+// ...
+
+export interface LedgerTransaction {
+  date: string; // ISO date string
+  type: 'order' | 'payment' | 'refund';
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  reference_id: number; // The Order ID
+}
+
+export interface CustomerLedger {
+  customer: {
+      id: number;
+      name: string;
+  };
+  summary: {
+      total_debits: number;
+      total_credits: number;
+      current_balance: number;
+  };
+  transactions: LedgerTransaction[];
+}

@@ -1,6 +1,6 @@
 // src/api/userService.ts
 import apiClient from './apiClient';
-import { User, PaginatedResponse } from '@/types'; // Or from specific auth.types
+import type { User, PaginatedResponse } from '@/types'; // Or from specific auth.types
 
 export interface UserFormData { // For admin creating/editing users
     name: string;

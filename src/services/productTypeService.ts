@@ -1,6 +1,6 @@
 // src/services/productTypeService.ts
 import apiClient from '@/lib/axios';
-import { ProductType } from '@/types';
+import type { ProductType } from '@/types';
 
 export interface ProductTypeFormData {
     name: string;

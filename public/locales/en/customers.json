@@ -59,5 +59,6 @@
   "createCustomerBtn": "Create Customer",
   "selectCustomerType": "Select Customer Type",
   "customerTypeCreatedSuccess": "Customer type \"{{name}}\" created successfully.",
-  "customerTypeCreationFailed": "Failed to create customer type."
+  "customerTypeCreationFailed": "Failed to create customer type.",
+  "customerPhone": "Customer Phone"
 }

@@ -26,6 +26,7 @@
   "columns": "الأعمدة",
   "noResults": "لا توجد نتائج.",
   "selectedRows": "{{count}} من {{total}} صفوف محددة.",
+  "transactionIdOptional": "رقم المعاملة (اختياري)",
   "previous": "السابق",
   "next": "التالي",
   "firstPage": "الأول",
@@ -220,5 +221,36 @@
   "cartIsEmpty": "سلة المشتريات فارغة",
   "checkout": "إتمام الشراء",
   "selectCategoryFirst": "الرجاء اختيار الفئة أولاً",
-  "selectProductFirst": "الرجاء اختيار المنتج أولاً"
+  "selectProductFirst": "الرجاء اختيار المنتج أولاً",
+  "appName": "لوندري برو",
+  "reports": "التقارير",
+  "kanban": "كانبان",
+  "newOrder": "طلب جديد",
+  "viewDetails": "عرض التفاصيل",
+  "actions": "الإجراءات",
+  "searchOrdersPlaceholder": "البحث في الطلبات...",
+  "filterByStatus": "تصفية حسب الحالة",
+  "allStatuses": "جميع الحالات",
+  "total": "الإجمالي",
+  "pagination": {
+    "showingItems": "عرض العناصر"
+  },
+  "count": "العدد",
+  "productCategoryLC": "فئة منتج",
+  "tableHeaders": {
+    "showingItems": "عرض العناصر",
+    "order_number": "رقم الطلب",
+    "order_date": "تاريخ الطلب",
+    "total_amount": "المبلغ الإجمالي",
+    "display_name": "اسم العرض",
+    "productCategory": "فئة المنتج",
+    "productType": "نوع المنتج",
+    "serviceAction": "إجراء الخدمة",
+    "default_price": "السعر الافتراضي",
+    "pricing_strategy": "استراتيجية التسعير",
+    "is_active": "حالة النشاط",
+    "actions": "الإجراءات",
+    "description": "الوصف",
+    "roles": "الأدوار"
+  }
 }

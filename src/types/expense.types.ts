@@ -4,9 +4,10 @@ import type { User } from './auth.types';
 export interface Expense {
     id: number;
     name: string;
-    category?: string | null;
+    expense_category_id?: number | null;
     description?: string | null;
     amount: number;
+    payment_method: string;
     expense_date: string; // YYYY-MM-DD
     user?: Pick<User, 'id' | 'name'>; // Partial User type
     created_at: string;
@@ -14,9 +15,9 @@ export interface Expense {
 
 export interface ExpenseFormData {
     name: string;
-    category: string;
-
+    expense_category_id: number;
     amount: number | string;
+    payment_method: string;
     expense_date: string; // YYYY-MM-DD
     description?: string;
 }
