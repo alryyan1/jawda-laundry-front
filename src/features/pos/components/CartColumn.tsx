@@ -30,6 +30,8 @@ const CartItemComponent: React.FC<{
 }> = ({ item, onRemoveItem, onUpdateQuantity, onUpdateDimensions, onUpdateNotes, onEditItem, t, i18n }) => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const hasDetails = item.notes;
+  
+
 
   return (
     <div
@@ -94,6 +96,7 @@ const CartItemComponent: React.FC<{
                   })
                 }
                 className="h-8"
+                disabled={item._isQuoting}
               />
             </div>
             <div>
@@ -108,8 +111,15 @@ const CartItemComponent: React.FC<{
                   })
                 }
                 className="h-8"
+                disabled={item._isQuoting}
               />
             </div>
+            {item._isQuoting && (
+              <div className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>{t("calculatingPrice", { ns: "orders" })}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -137,12 +147,21 @@ const CartItemComponent: React.FC<{
             </Button>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">
-              {formatCurrency(item.price, "USD", i18n.language)} × {item.quantity}
-            </p>
-            <p className="font-medium">
-              {formatCurrency(item.price * item.quantity, "USD", i18n.language)}
-            </p>
+            {item._isQuoting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{t("calculatingPrice", { ns: "orders" })}</span>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {formatCurrency(item.price, "USD", i18n.language)} × {item.quantity}
+                </p>
+                <p className="font-medium">
+                  {formatCurrency(item._quotedSubTotal || (item.price * item.quantity), "USD", i18n.language)}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -217,6 +236,7 @@ interface CartItem {
   width_meters?: number;
   _isQuoting?: boolean;
   _quoteError?: string | null;
+  _quotedSubTotal?: number;
 }
 
 interface CartColumnProps {
@@ -252,7 +272,9 @@ export const CartColumn: React.FC<CartColumnProps> = ({
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
 
-  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = items.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
+  
+
 
   return (
     <div className="flex flex-col h-full">

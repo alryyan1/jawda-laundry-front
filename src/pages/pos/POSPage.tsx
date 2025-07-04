@@ -28,6 +28,7 @@ interface CartItem {
   width_meters?: number;
   _isQuoting?: boolean;
   _quoteError?: string | null;
+  _quotedSubTotal?: number;
 }
 
 const POSPage: React.FC = () => {
@@ -79,6 +80,7 @@ const POSPage: React.FC = () => {
           return {
             ...item,
             price: data.calculated_price_per_unit_item,
+            _quotedSubTotal: data.sub_total,
             _isQuoting: false,
             _quoteError: null,
           };
@@ -93,6 +95,7 @@ const POSPage: React.FC = () => {
             ...item,
             _isQuoting: false,
             _quoteError: error.message || t("quoteFailedForItemGeneric", { ns: "orders" }),
+            _quotedSubTotal: undefined, // Clear quoted subtotal on error
           };
         }
         return item;
@@ -137,6 +140,38 @@ const POSPage: React.FC = () => {
     setCartItems(prev => prev.map(item => 
       item.id === id ? { ...item, quantity } : item
     ));
+
+    // Trigger immediate quote for dimension-based items when quantity changes
+    const item = cartItems.find(cartItem => cartItem.id === id);
+    if (item && item.productType.is_dimension_based && selectedCustomerId && quantity > 0) {
+      const lengthNum = item.length_meters || 0;
+      const widthNum = item.width_meters || 0;
+      
+      if (lengthNum > 0 && widthNum > 0) {
+        const quotePayload: QuoteItemPayload = {
+          service_offering_id: item.serviceOffering.id,
+          customer_id: selectedCustomerId,
+          quantity: quantity,
+          length_meters: lengthNum,
+          width_meters: widthNum,
+        };
+
+        const currentQuoteInputSignature = JSON.stringify(quotePayload);
+
+        if (lastQuotedInputs[item.id] !== currentQuoteInputSignature) {
+          setLastQuotedInputs(prev => ({
+            ...prev,
+            [item.id]: currentQuoteInputSignature,
+          }));
+
+          setCartItems(prev => prev.map(cartItem => 
+            cartItem.id === id ? { ...cartItem, _isQuoting: true, _quoteError: null } : cartItem
+          ));
+
+          quoteItemMutation.mutate({ itemId: id, payload: quotePayload });
+        }
+      }
+    }
   };
 
   const handleUpdateDimensions = (id: string, dimensions: { length?: number; width?: number }) => {
@@ -148,6 +183,44 @@ const POSPage: React.FC = () => {
             width_meters: dimensions.width,
           }
         : item
+    ));
+
+    // Trigger immediate quote for dimension-based items
+    const item = cartItems.find(cartItem => cartItem.id === id);
+    if (item && item.productType.is_dimension_based && selectedCustomerId && item.quantity > 0) {
+      const lengthNum = dimensions.length || 0;
+      const widthNum = dimensions.width || 0;
+      
+      if (lengthNum > 0 && widthNum > 0) {
+        const quotePayload: QuoteItemPayload = {
+          service_offering_id: item.serviceOffering.id,
+          customer_id: selectedCustomerId,
+          quantity: item.quantity,
+          length_meters: lengthNum,
+          width_meters: widthNum,
+        };
+
+        const currentQuoteInputSignature = JSON.stringify(quotePayload);
+
+        if (lastQuotedInputs[item.id] !== currentQuoteInputSignature) {
+          setLastQuotedInputs(prev => ({
+            ...prev,
+            [item.id]: currentQuoteInputSignature,
+          }));
+
+          setCartItems(prev => prev.map(cartItem => 
+            cartItem.id === id ? { ...cartItem, _isQuoting: true, _quoteError: null } : cartItem
+          ));
+
+          quoteItemMutation.mutate({ itemId: id, payload: quotePayload });
+        }
+      }
+    }
+  };
+
+  const handleUpdateNotes = (id: string, notes: string) => {
+    setCartItems(prev => prev.map(item =>
+      item.id === id ? { ...item, notes } : item
     ));
   };
 
@@ -188,7 +261,7 @@ const POSPage: React.FC = () => {
       _derivedServiceOffering: item.serviceOffering,
       _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
       _quoted_price_per_unit_item: item.price,
-      _quoted_sub_total: item.price * item.quantity,
+      _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
     }));
 
     const orderData: NewOrderFormData = {
@@ -325,6 +398,7 @@ const POSPage: React.FC = () => {
               onRemoveItem={handleRemoveItem}
               onUpdateQuantity={handleUpdateQuantity}
               onUpdateDimensions={handleUpdateDimensions}
+              onUpdateNotes={handleUpdateNotes}
               onUpdateOrderNotes={setOrderNotes}
               onUpdateDueDate={setDueDate}
               onNewOrder={handleNewOrder}
