@@ -22,6 +22,7 @@
   "cartIsEmpty": "السلة فارغة",
   "startNewOrder": "بدء طلب جديد",
   "newUnsavedOrder": "طلب جديد غير محفوظ",
+  "OrderStatusManagement": "إدارة الحالات المختلفة للطلبات",
   "orderDetailsTitle": "تفاصيل الطلب",
   "orderPlacedOn": "تم الطلب في {{date}}",
   "printInvoice": "طباعة الفاتورة",

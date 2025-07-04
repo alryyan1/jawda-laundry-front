@@ -166,5 +166,6 @@
   "pickupDateUpdatedSuccess": "Pickup date updated successfully",
   "pickupDateUpdateFailed": "Failed to update pickup date",
   "newOrder": "New Order",
-  "kanban": "Kanban Board"
+  "kanban": "Kanban Board",
+  "OrderStatusManagement": "Order Status Management"
 }

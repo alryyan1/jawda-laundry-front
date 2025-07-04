@@ -108,6 +108,7 @@ const POSPage: React.FC = () => {
 
   const handleShowCategories = () => {
     setIsCategoryCollapsed(false);
+    setSelectedProductType(null); // Clear product selection when returning to categories
   };
 
   const handleSelectProduct = (product: ProductType) => {
@@ -150,11 +151,7 @@ const POSPage: React.FC = () => {
     ));
   };
 
-  const handleUpdateItemNotes = (id: string, notes: string) => {
-    setCartItems(prev => prev.map(item =>
-      item.id === id ? { ...item, notes } : item
-    ));
-  };
+
 
   const handleNewOrder = () => {
     setSelectedCustomerId(null);
@@ -242,7 +239,7 @@ const POSPage: React.FC = () => {
         }
       }
     });
-  }, [debouncedCartItems, selectedCustomerId, lastQuotedInputs]);
+  }, [debouncedCartItems, selectedCustomerId]);
 
   return (
     <div className="flex flex-col h-screen bg-muted">
@@ -273,27 +270,51 @@ const POSPage: React.FC = () => {
               "flex gap-4 transition-all duration-300",
               isCategoryCollapsed ? "flex-1" : "w-2/3"
             )}>
-              {/* Product Column */}
-              <div className="flex-1 bg-background rounded-lg shadow">
-                <h2 className="text-lg font-semibold p-4 border-b">{t("product", { ns: "common" })}</h2>
-                <ScrollArea className="h-[calc(100vh-13rem)]">
-                  <ProductColumn
-                    categoryId={selectedCategoryId}
-                    onSelectProduct={handleSelectProduct}
-                  />
-                </ScrollArea>
-              </div>
+              {/* Product Column - Only show when category is selected */}
+              {selectedCategoryId && (
+                <div className="flex-1 bg-background rounded-lg shadow">
+                  <h2 className="text-lg font-semibold p-4 border-b">{t("product", { ns: "common" })}</h2>
+                  <ScrollArea className="h-[calc(100vh-13rem)]">
+                    <ProductColumn
+                      categoryId={selectedCategoryId}
+                      onSelectProduct={handleSelectProduct}
+                    />
+                  </ScrollArea>
+                </div>
+              )}
 
-              {/* Service Offering Column */}
-              <div className="flex-1 bg-background rounded-lg shadow">
-                <h2 className="text-lg font-semibold p-4 border-b">{t("serviceOffering", { ns: "common" })}</h2>
-                <ScrollArea className="h-[calc(100vh-13rem)]">
-                  <ServiceOfferingColumn
-                    productType={selectedProductType}
-                    onSelectOffering={handleSelectOffering}
-                  />
-                </ScrollArea>
-              </div>
+              {/* Service Offering Column - Only show when product is selected */}
+              {selectedProductType && (
+                <div className="flex-1 bg-background rounded-lg shadow">
+                  <h2 className="text-lg font-semibold p-4 border-b">{t("serviceOffering", { ns: "common" })}</h2>
+                  <ScrollArea className="h-[calc(100vh-13rem)]">
+                    <ServiceOfferingColumn
+                      productType={selectedProductType}
+                      onSelectOffering={handleSelectOffering}
+                    />
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Placeholder when no category is selected */}
+              {!selectedCategoryId && (
+                <div className="flex-1 bg-background rounded-lg shadow flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p className="text-lg font-medium">{t("selectCategoryFirst", { ns: "common" })}</p>
+                    <p className="text-sm mt-2">{t("selectCategoryToViewProducts", { ns: "common", defaultValue: "Select a category to view available products" })}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Placeholder when category is selected but no product is selected */}
+              {selectedCategoryId && !selectedProductType && (
+                <div className="flex-1 bg-background rounded-lg shadow flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <p className="text-lg font-medium">{t("selectProductFirst", { ns: "common" })}</p>
+                    <p className="text-sm mt-2">{t("selectProductToViewServices", { ns: "common", defaultValue: "Select a product to view available services" })}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -304,7 +325,6 @@ const POSPage: React.FC = () => {
               onRemoveItem={handleRemoveItem}
               onUpdateQuantity={handleUpdateQuantity}
               onUpdateDimensions={handleUpdateDimensions}
-              onUpdateNotes={handleUpdateItemNotes}
               onUpdateOrderNotes={setOrderNotes}
               onUpdateDueDate={setDueDate}
               onNewOrder={handleNewOrder}

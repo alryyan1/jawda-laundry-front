@@ -46,6 +46,8 @@ import {
     FolderKanban,
     ChartBar,
     Calculator,
+    PanelLeftClose,
+    PanelLeftOpen,
   } from "lucide-react";
 
 // MainLayout Component
@@ -56,6 +58,7 @@ const MainLayout: React.FC = () => {
   const { user, logout: storeLogout } = useAuthStore();
 
   const [isServiceAdminOpen, setIsServiceAdminOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -214,7 +217,7 @@ const MainLayout: React.FC = () => {
     },
     {
       to: "/orders/kanban",
-      labelKey: "kanban",
+      labelKey: "OrderStatusManagement",
       namespace: "orders",
       icon: FolderKanban,
       type: "link" as const,
@@ -266,12 +269,11 @@ const MainLayout: React.FC = () => {
     }, // Use a different key if "Settings" is used for admin
   ];
 
-  const SidebarNav: React.FC<{ mobile?: boolean; closeSheet?: () => void }> = ({
+  const SidebarNav: React.FC<{ mobile?: boolean; closeSheet?: () => void; collapsed?: boolean }> = ({
     mobile = false,
     closeSheet,
+    collapsed = false,
   }) => (
-    // ... (SidebarNav implementation as before, using navItems)
-    // Make sure to call closeSheet?.() on mobile link clicks if sheet state is managed here or passed
     <nav
       className={`grid items-start gap-1 px-2 text-sm font-medium lg:px-4 ${
         mobile ? "text-lg py-4" : "py-2"
@@ -287,20 +289,37 @@ const MainLayout: React.FC = () => {
           <Button
             key={item.labelKey}
             variant={isActive ? "secondary" : "ghost"}
-            className="w-full justify-start"
+            className={`w-full justify-start ${collapsed ? "justify-center px-2" : ""}`}
             asChild
             onClick={() => mobile && closeSheet?.()}
+            title={collapsed ? t(item.labelKey, {
+              ns: item.namespace || (item.labelKey.includes("settings") ? "settings" : "common"),
+            }) : undefined}
           >
             <Link to={item.to!}>
               <item.icon
-                className={`mr-3 h-4 w-4 rtl:ml-3 rtl:mr-0 ${
+                className={`h-4 w-4 ${
                   mobile ? "h-5 w-5" : ""
-                }`}
+                } ${collapsed ? "" : "mr-3 rtl:ml-3 rtl:mr-0"}`}
               />
-              {t(item.labelKey, {
+              {!collapsed && t(item.labelKey, {
                 ns: item.namespace || (item.labelKey.includes("settings") ? "settings" : "common"),
               })}
             </Link>
+          </Button>
+        ) : collapsed ? (
+          <Button
+            key={item.labelKey}
+            variant={isSubItemActive ? "secondary" : "ghost"}
+            className="w-full justify-center px-2"
+            title={t(item.labelKey, { ns: "services" })}
+            onClick={() => item.onToggle?.()}
+          >
+            <item.icon
+              className={`h-4 w-4 ${
+                mobile ? "h-5 w-5" : ""
+              }`}
+            />
           </Button>
         ) : (
           <Collapsible
@@ -359,20 +378,39 @@ const MainLayout: React.FC = () => {
 
   // --- Main Layout JSX ---
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <div className={`grid min-h-screen w-full transition-all duration-300 ${
+      isSidebarCollapsed 
+        ? "md:grid-cols-[60px_1fr]" 
+        : "md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
+    }`}>
       {/* Desktop Sidebar */}
       <div className="hidden border-r bg-background md:block dark:bg-muted/40">
-        {" "}
-        {/* Adjusted dark mode bg for sidebar */}
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold">
-              <ShirtIcon className="h-6 w-6 text-primary" />
-              <span className="text-lg">{t("appName", { ns: "common" })}</span>
-            </Link>
+            <div className="flex items-center justify-between w-full">
+              {!isSidebarCollapsed && (
+                <Link to="/" className="flex items-center gap-2 font-semibold">
+                  <ShirtIcon className="h-6 w-6 text-primary" />
+                  <span className="text-lg">{t("appName", { ns: "common" })}</span>
+                </Link>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className="ml-auto"
+                title={isSidebarCollapsed ? t("expandSidebar", { ns: "common", defaultValue: "Expand sidebar" }) : t("collapseSidebar", { ns: "common", defaultValue: "Collapse sidebar" })}
+              >
+                {isSidebarCollapsed ? (
+                  <PanelLeftOpen className="h-4 w-4" />
+                ) : (
+                  <PanelLeftClose className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <SidebarNav />
+            <SidebarNav collapsed={isSidebarCollapsed} />
           </div>
         </div>
       </div>
