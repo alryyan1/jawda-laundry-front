@@ -168,5 +168,6 @@
   "newOrder": "New Order",
   "kanban": "Kanban Board",
   "OrderStatusManagement": "Order Status Management",
-  "quoteError": "Price calculation error"
+  "quoteError": "Price calculation error",
+  "selectCustomerFirst": "Please select a customer first"
 }

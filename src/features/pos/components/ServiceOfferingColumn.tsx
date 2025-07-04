@@ -12,11 +12,15 @@ import { formatCurrency } from "@/lib/formatters";
 interface ServiceOfferingColumnProps {
   productType: ProductType | null;
   onSelectOffering: (offering: ServiceOffering) => void;
+  disabled?: boolean;
+  disabledMessage?: string;
 }
 
 export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
   productType,
   onSelectOffering,
+  disabled = false,
+  disabledMessage,
 }) => {
   const { t, i18n } = useTranslation(["services", "common", "orders"]);
 
@@ -48,6 +52,10 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
                 <Skeleton key={i} className="h-12 w-full rounded-lg" />
               ))}
             </div>
+          ) : disabled ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px] gap-4">
+              <p>{disabledMessage || t("selectCustomerFirst", { ns: "orders" })}</p>
+            </div>
           ) : offerings.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px] gap-4">
               <p>
@@ -61,11 +69,15 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
               {offerings.map((offering) => (
                 <Card
                   key={offering.id}
-                  onClick={() => onSelectOffering(offering)}
-                  className="cursor-pointer hover:border-primary transition-all duration-200 group"
-                  tabIndex={0}
+                  onClick={() => !disabled && onSelectOffering(offering)}
+                  className={`transition-all duration-200 group ${
+                    disabled 
+                      ? "cursor-not-allowed opacity-50" 
+                      : "cursor-pointer hover:border-primary"
+                  }`}
+                  tabIndex={disabled ? -1 : 0}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ")
+                    if (!disabled && (e.key === "Enter" || e.key === " "))
                       onSelectOffering(offering);
                   }}
                 >

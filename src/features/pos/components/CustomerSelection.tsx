@@ -15,11 +15,13 @@ import { getCustomers } from "@/api/customerService";
 interface CustomerSelectionProps {
   selectedCustomerId: string | null;
   onCustomerSelected: (customerId: string) => void;
+  onNewCustomerClick?: () => void;
 }
 
 export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   selectedCustomerId,
   onCustomerSelected,
+  onNewCustomerClick,
 }) => {
   const { t } = useTranslation(["common", "orders", "customers"]);
   const navigate = useNavigate();
@@ -44,25 +46,27 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
         {isLoadingCustomers ? (
           <Skeleton className="h-10 flex-grow" />
         ) : (
-          <Combobox
-            options={customerOptions}
-            value={selectedCustomerId || ""}
-            onChange={onCustomerSelected}
-            placeholder={t("selectOrSearchCustomer", {
-              ns: "customers",
-            })}
-            searchPlaceholder={t("searchCustomerByNameOrPhone", {
-              ns: "customers",
-              defaultValue: "Search by name or phone...",
-            })}
-            emptyResultText={t("noCustomerFound", { ns: "customers" })}
-            disabled={isLoadingCustomers || customerOptions.length === 0}
-          />
+          <div className={`${!selectedCustomerId ? 'ring-2 ring-red-500 rounded-md' : ''}`}>
+            <Combobox
+              options={customerOptions}
+              value={selectedCustomerId || ""}
+              onChange={onCustomerSelected}
+              placeholder={t("selectOrSearchCustomer", {
+                ns: "customers",
+              })}
+              searchPlaceholder={t("searchCustomerByNameOrPhone", {
+                ns: "customers",
+                defaultValue: "Search by name or phone...",
+              })}
+              emptyResultText={t("noCustomerFound", { ns: "customers" })}
+              disabled={isLoadingCustomers || customerOptions.length === 0}
+            />
+          </div>
         )}
         <Button
           variant="outline"
           size="icon"
-          onClick={() => navigate("/customers/new")}
+          onClick={onNewCustomerClick || (() => navigate("/customers/new"))}
           title={t("createNewCustomer", { ns: "customers" })}
         >
           <UserPlus className="h-4 w-4" />
