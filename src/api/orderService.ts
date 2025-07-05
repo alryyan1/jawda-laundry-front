@@ -73,6 +73,7 @@ export const getOrders = async (
     if (filters?.productTypeId) params.product_type_id = filters.productTypeId;
     if (filters?.dateFrom) params.date_from = filters.dateFrom;
     if (filters?.dateTo) params.date_to = filters.dateTo;
+    if (filters?.createdDate) params.created_date = filters.createdDate;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;

@@ -169,5 +169,6 @@
   "backToCart": "العودة للسلة",
   "order": "الطلب",
   "viewTodayOrders": "عرض طلبات اليوم",
-  "selectOrderToView": "اختر طلباً لعرض تفاصيله"
+  "selectOrderToView": "اختر طلباً لعرض تفاصيله",
+  "selectCustomerRequired": "اختيار العميل مطلوب"
 }

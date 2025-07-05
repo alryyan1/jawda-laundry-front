@@ -21,6 +21,7 @@
   "deleteServiceConfirmTitle": "هل أنت متأكد؟",
   "deleteServiceConfirmDescription": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف الخدمة '{{serviceName}}' بشكل دائم.",
   "itemCount": "العناصر",
+  "manageOfferingsFor": "إدارة العروض لـ {{name}}",
   "serviceItemsTitle": "بنود الخدمة",
   "expenseCategories": "فئات المصروفات",
   "allProducts": "جميع المنتجات",

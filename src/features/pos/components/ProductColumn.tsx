@@ -52,11 +52,13 @@ const muiTheme = createTheme({
 interface ProductColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
+  activeProductId?: string | null;
 }
 
 export const ProductColumn: React.FC<ProductColumnProps> = ({
   categoryId,
   onSelectProduct,
+  activeProductId,
 }) => {
   const { t } = useTranslation(["services", "common"]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,14 +99,18 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
           </div>
         </div>
 
-        <ScrollArea className="flex-grow">
+        <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
           <div className="p-4">
             {filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[200px]">
                 {/* ... empty state message ... */}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 lg:gap-4" 
+                   style={{ 
+                     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                     maxWidth: "100%"
+                   }}>
                 {filteredProducts.map((product) => (
                   <TooltipProvider key={product.id} delayDuration={300}>
                     <Tooltip>
@@ -128,7 +134,8 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                               "bg-card hover:bg-card/90",
                               "shadow-sm hover:shadow-md",
                               "transform hover:-translate-y-0.5",
-                              "border border-border hover:border-primary/50"
+                              "border border-border hover:border-primary/50",
+                              activeProductId === product.id.toString() && "border-2 border-primary bg-primary/5 shadow-primary/20"
                             )}
                             style={{ minHeight: "130px" }}
                           >

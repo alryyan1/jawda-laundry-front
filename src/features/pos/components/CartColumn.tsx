@@ -330,7 +330,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
             {t("itemCount", { count: items.length, ns: "orders" })}
           </span>
         </div>
-        {mode === 'order_view' && onBackToCart ? (
+        {/* {mode === 'order_view' && onBackToCart ? (
           <Button variant="outline" size="sm" onClick={onBackToCart}>
             {t("backToCart", { ns: "orders" })}
           </Button>
@@ -339,10 +339,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
             <PlusCircle className="mr-2 h-4 w-4" />
             {t("newOrder", { ns: "orders" })}
           </Button>
-        )}
+        )} */}
       </header>
 
-      <ScrollArea className="flex-grow">
+      <ScrollArea className="flex-grow h-[calc(100vh-800px)]">
         <div className="p-4 space-y-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
@@ -369,7 +369,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
 
       {mode === 'cart' && (
         <div className="p-4 border-t space-y-4">
-          {/* Order-level notes */}
+          {/* Order-level notes
           {onUpdateOrderNotes && (
             <div>
               <Label className="text-xs font-medium">
@@ -383,10 +383,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                 className="resize-none"
               />
             </div>
-          )}
+          )} */}
 
           {/* Due date */}
-          {onUpdateDueDate && (
+          {/* {onUpdateDueDate && (
             <div>
               <Label className="text-xs font-medium">
                 {t("dueDateOptional", { ns: "orders" })}
@@ -397,7 +397,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                 onChange={(e) => onUpdateDueDate(e.target.value)}
               />
             </div>
-          )}
+          )} */}
 
           <Separator />
 
@@ -409,7 +409,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Button
+             <Button
               className="w-full h-12 text-base font-semibold"
               onClick={onCheckout}
               disabled={items.length === 0 || isProcessing}
@@ -417,16 +417,16 @@ export const CartColumn: React.FC<CartColumnProps> = ({
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("completeOrder", { ns: "orders" })}
             </Button>
-            {onNewOrder && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={onNewOrder}
-                disabled={isProcessing}
-              >
-                {t("startNewOrder", { ns: "orders" })}
-              </Button>
-            )}
+            {/* {onNewOrder && (
+            //   <Button
+            //     variant="outline"
+            //     className="w-full"
+            //     onClick={onNewOrder}
+            //     disabled={isProcessing}
+            //   >
+            //     {t("startNewOrder", { ns: "orders" })}
+            //   </Button>
+            // )} */}
           </div>
         </div>
       )}

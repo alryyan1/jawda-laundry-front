@@ -8,7 +8,15 @@ const AuthLayout = () => {
   const { t } = useTranslation('common');
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 sm:p-6 lg:p-8 relative">
+    <div 
+      className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative"
+      style={{
+        backgroundImage: 'url(/assets/login-background.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       {/* Top-right utilities */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2">
         {/* LanguageSwitcher could go here if needed and styled minimally */}
@@ -16,7 +24,7 @@ const AuthLayout = () => {
       </div>
 
       {/* Main content area for the form */}
-      <div className="w-full max-w-md"> {/* Constrain width of the form container */}
+      <div className="w-full max-w-md bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg"> {/* Constrain width of the form container */}
         {/* Branding - Centered above the form */}
         <div className="mb-8 flex flex-col items-center">
           <Shirt className="h-12 w-12 text-primary mb-3" /> {/* Larger icon */}

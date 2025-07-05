@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, Calendar, Clock, User, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +11,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 
-import type { Order, OrderItem } from "@/types";
+import type { Order } from "@/types";
 import { getOrders } from "@/api/orderService";
 
 interface TodayOrdersProps {
@@ -62,9 +60,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
 
   const { data: ordersResponse, isLoading } = useQuery({
     queryKey: ["todayOrders", today],
-    queryFn: () => getOrders(1, 100, { created_date: today }),
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    queryFn: () => getOrders(1, 100, { createdDate: today }),
   });
 
   const orders = ordersResponse?.data || [];

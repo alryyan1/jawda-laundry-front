@@ -1,7 +1,7 @@
 // src/pages/orders/OrdersListPage.tsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
@@ -156,32 +156,28 @@ const OrdersListPage: React.FC = () => {
   const totalPages = paginatedData?.meta?.last_page || 1;
 
   const MemoizedTableRow = React.memo(({ order }: { order: Order }) => (
-    <TableRow key={order.id}>
-      <TableCell className="font-mono text-xs text-muted-foreground">
+    <TableRow 
+      key={order.id} 
+      className="cursor-pointer hover:bg-muted/50"
+      onClick={() => navigate(`/orders/${order.id}`)}
+    >
+      <TableCell className="font-mono text-xs text-muted-foreground text-center">
         {order.id}
       </TableCell>
-      <TableCell>
-        <Link
-          to={`/orders/${order.id}`}
-          className="font-medium hover:underline"
-        >
-          {order.order_number}
-        </Link>
-      </TableCell>
-      <TableCell>{order.customer?.name || t("notAvailable")}</TableCell>
-      <TableCell>
+      <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
+      <TableCell className="text-center">
         {format(new Date(order.order_date), "PP", { locale: currentLocale })}
       </TableCell>
-      <TableCell>
+      <TableCell className="text-center">
         <OrderStatusBadge status={order.status} />
       </TableCell>
-      <TableCell className="text-right font-semibold">
+      <TableCell className="text-center font-semibold">
         {formatCurrency(order.total_amount, "USD", i18n.language)}
       </TableCell>
-      <TableCell className="text-right font-semibold text-green-600 dark:text-green-500">
+      <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
         {formatCurrency(order.paid_amount, "USD", i18n.language)}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -331,18 +327,17 @@ const OrdersListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[60px]">ID</TableHead>
-              <TableHead>{t("orderNumber")}</TableHead>
-              <TableHead>{t("customerName")}</TableHead>
-              <TableHead>{t("orderDate")}</TableHead>
-              <TableHead>{t("status")}</TableHead>
-              <TableHead className="text-right">
+              <TableHead className="w-[60px] text-center">ID</TableHead>
+              <TableHead className="text-center">{t("customerName")}</TableHead>
+              <TableHead className="text-center">{t("orderDate")}</TableHead>
+              <TableHead className="text-center">{t("status")}</TableHead>
+              <TableHead className="text-center">
                 {t("totalAmount", { ns: "purchases" })}
               </TableHead>
-              <TableHead className="text-right">
+              <TableHead className="text-center">
                 {t("amountPaid", { ns: "orders" })}
               </TableHead>
-              <TableHead className="text-right w-[80px]">
+              <TableHead className="text-center w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>
@@ -350,7 +345,7 @@ const OrdersListPage: React.FC = () => {
           <TableBody>
             {isLoading && orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                 </TableCell>
               </TableRow>
@@ -360,7 +355,7 @@ const OrdersListPage: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   {t("noResults")}
                 </TableCell>
               </TableRow>

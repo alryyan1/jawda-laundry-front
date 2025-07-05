@@ -293,5 +293,6 @@
   "viewDetails": "عرض التفاصيل",
   "pageWithTotal": "صفحة {{currentPage}} من {{totalPages}}",
   "previous": "السابق",
-  "next": "التالي"
+  "next": "التالي",
+  "allCategories": "جميع الفئات"
 }

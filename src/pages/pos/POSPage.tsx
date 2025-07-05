@@ -42,6 +42,7 @@ const POSPage: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
+  const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderNotes, setOrderNotes] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>("");
@@ -116,9 +117,11 @@ const POSPage: React.FC = () => {
 
   const handleSelectProduct = (product: ProductType) => {
     setSelectedProductType(product);
+    setSelectedOfferingId(null); // Reset selected offering when product changes
   };
 
   const handleSelectOffering = (offering: ServiceOffering) => {
+    setSelectedOfferingId(offering.id.toString());
     const newItem: CartItem = {
       id: uuidv4(),
       productType: selectedProductType!,
@@ -321,7 +324,7 @@ const POSPage: React.FC = () => {
   }, [debouncedCartItems, selectedCustomerId]);
 
   return (
-    <div className="flex flex-col h-screen" style={{ backgroundColor: materialColors.background.default }}>
+    <div className="flex flex-col h-[calc(100vh-64px)]" style={{ backgroundColor: materialColors.background.default }}>
       {/* Customer Selection Bar */}
       <div className="bg-white border-b shadow-sm" style={{ borderColor: materialColors.divider }}>
         <div className="container mx-auto px-4 py-2 flex justify-between items-center">
@@ -329,6 +332,8 @@ const POSPage: React.FC = () => {
             selectedCustomerId={selectedCustomerId}
             onCustomerSelected={setSelectedCustomerId}
             onNewCustomerClick={() => setIsCustomerModalOpen(true)}
+            disabled={!!selectedOrder}
+            forcedCustomer={selectedOrder?.customer || null}
           />
           <Button
             variant="outline"
@@ -341,10 +346,10 @@ const POSPage: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 overflow-hidden container mx-auto px-4 py-4">
-        <div className="h-full flex gap-4">
+      <main className="flex-1 container mx-auto px-4 py-4 min-h-0">
+        <div className="flex gap-4 h-full">
           {/* Left Section: Categories */}
-          <div className="w-[150px] bg-white rounded-lg shadow-sm">
+          <div className="w-[150px] bg-white rounded-lg shadow-sm overflow-hidden">
             <CategoryColumn
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategoryId}
@@ -352,36 +357,40 @@ const POSPage: React.FC = () => {
           </div>
 
           {/* Middle Section: Products and Services */}
-          <div className="flex-1 flex gap-4">
+          <div className="flex-1 flex gap-4 min-h-0">
             {/* Products */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm">
+            <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("product", { ns: "common" })}
               </h2>
-              <ProductColumn
-                categoryId={selectedCategoryId}
-                onSelectProduct={handleSelectProduct}
-              />
+              <div className="flex-1 min-h-0">
+                <ProductColumn
+                  categoryId={selectedCategoryId}
+                  onSelectProduct={handleSelectProduct}
+                  activeProductId={selectedProductType?.id.toString()}
+                />
+              </div>
             </div>
 
             {/* Services */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm">
+            <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("serviceOffering", { ns: "common" })}
               </h2>
-              <ScrollArea className="h-[calc(100vh-13rem)]">
+              <div className="flex-1 min-h-0">
                 <ServiceOfferingColumn
                   productType={selectedProductType}
                   onSelectOffering={handleSelectOffering}
                   disabled={!selectedCustomerId}
                   disabledMessage={t("selectCustomerFirst", { ns: "orders" })}
+                  activeOfferingId={selectedOfferingId}
                 />
-              </ScrollArea>
+              </div>
             </div>
           </div>
 
           {/* Right Section: Cart */}
-          <div className="w-[400px] bg-white rounded-lg shadow-sm">
+          <div className="w-[400px] bg-white rounded-lg shadow-sm overflow-hidden">
             {selectedOrder ? (
               <CartColumn
                 items={selectedOrder.items?.map(item => ({

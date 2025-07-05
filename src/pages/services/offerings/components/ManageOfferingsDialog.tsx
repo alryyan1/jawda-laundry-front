@@ -190,12 +190,14 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
         return null;
     }
 
+    console.log(productType, 'productType');
+
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-[90vw] w-[1200px] sm:max-w-[90vw] md:max-w-[90vw]">
                     <DialogHeader>
-                        <DialogTitle>{t('manageOfferingsFor', { ns: 'services', name: productType.name })}</DialogTitle>
+                        <DialogTitle>{productType.name}</DialogTitle>
                         <DialogDescription>{t('manageOfferingsDescription', { ns: 'services' })}</DialogDescription>
                     </DialogHeader>
                     <div className="my-4">
