@@ -277,6 +277,8 @@
   "allStatuses": "All statuses",
   "itemWithNum": "Item #{{num}}",
   "deleteConfirmationTitle": "Are you absolutely sure you want to delete this {{item}}?",
+  "selectCategoryFirst": "Select a category first",
+  "selectProductFirst": "Select a product first",
   "deleteConfirmationMessage": "This action cannot be undone. This will permanently delete \"{{itemName}}\".",
   "irreversibleAction": "This action is irreversible.",
   "allRightsReserved": "All rights reserved.",

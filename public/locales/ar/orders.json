@@ -164,5 +164,10 @@
   "newOrder": "طلب جديد",
   "kanban": "لوحة كانبان",
   "quoteError": "خطأ في حساب السعر",
-  "selectCustomerFirst": "يرجى اختيار العميل أولاً"
+  "selectCustomerFirst": "يرجى اختيار العميل أولاً",
+  "todayOrders": "طلبات اليوم",
+  "backToCart": "العودة للسلة",
+  "order": "الطلب",
+  "viewTodayOrders": "عرض طلبات اليوم",
+  "selectOrderToView": "اختر طلباً لعرض تفاصيله"
 }

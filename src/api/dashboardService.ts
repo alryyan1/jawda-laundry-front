@@ -1,6 +1,6 @@
 // src/api/dashboardService.ts
 import apiClient from './apiClient';
-import type { DashboardSummary, OrderTrendItem, RevenueBreakdownItem } from '@/types';
+import type { DashboardSummary, OrderTrendItem, RevenueBreakdownItem, TodaySummary } from '@/types';
 
 /**
  * Fetches the main summary statistics for the dashboard cards.
@@ -31,5 +31,10 @@ export const fetchOrdersTrend = async (days: number = 7): Promise<OrderTrendItem
  */
 export const fetchRevenueBreakdown = async (): Promise<RevenueBreakdownItem[]> => {
     const { data } = await apiClient.get<{ data: RevenueBreakdownItem[] }>('/dashboard/revenue-breakdown');
+    return data.data;
+};
+
+export const fetchTodaySummary = async (): Promise<TodaySummary> => {
+    const { data } = await apiClient.get<{ data: TodaySummary }>('/dashboard/today-summary');
     return data.data;
 };

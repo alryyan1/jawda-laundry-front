@@ -5,15 +5,18 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
+import { materialColors } from "@/lib/colors";
 
-import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse } from '@/types';
+import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order } from '@/types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
 import { ServiceOfferingColumn } from '@/features/pos/components/ServiceOfferingColumn';
 import { CartColumn } from '@/features/pos/components/CartColumn';
 import { CustomerSelection } from '@/features/pos/components/CustomerSelection';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
+import { TodayOrders } from '@/features/pos/components/TodayOrders';
 import { createOrder, getOrderItemQuote } from "@/api/orderService";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -44,8 +47,9 @@ const POSPage: React.FC = () => {
   const [dueDate, setDueDate] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastQuotedInputs, setLastQuotedInputs] = useState<Record<string, string>>({});
-  const [isCategoryCollapsed, setIsCategoryCollapsed] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isTodayOrdersOpen, setIsTodayOrdersOpen] = useState(false);
 
   const debouncedCartItems = useDebounce(cartItems, 500);
 
@@ -108,12 +112,6 @@ const POSPage: React.FC = () => {
   const handleSelectCategory = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     setSelectedProductType(null);
-    setIsCategoryCollapsed(true);
-  };
-
-  const handleShowCategories = () => {
-    setIsCategoryCollapsed(false);
-    setSelectedProductType(null); // Clear product selection when returning to categories
   };
 
   const handleSelectProduct = (product: ProductType) => {
@@ -226,7 +224,13 @@ const POSPage: React.FC = () => {
     ));
   };
 
+  const handleOrderSelect = (order: Order) => {
+    setSelectedOrder(order);
+  };
 
+  const handleBackToCart = () => {
+    setSelectedOrder(null);
+  };
 
   const handleNewOrder = () => {
     setSelectedCustomerId(null);
@@ -317,100 +321,105 @@ const POSPage: React.FC = () => {
   }, [debouncedCartItems, selectedCustomerId]);
 
   return (
-    <div className="flex flex-col bg-muted">
- 
-
+    <div className="flex flex-col h-screen" style={{ backgroundColor: materialColors.background.default }}>
       {/* Customer Selection Bar */}
-      <div className="bg-background border-b">
-        <CustomerSelection
-          selectedCustomerId={selectedCustomerId}
-          onCustomerSelected={setSelectedCustomerId}
-          onNewCustomerClick={() => setIsCustomerModalOpen(true)}
-        />
+      <div className="bg-white border-b shadow-sm" style={{ borderColor: materialColors.divider }}>
+        <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+          <CustomerSelection
+            selectedCustomerId={selectedCustomerId}
+            onCustomerSelected={setSelectedCustomerId}
+            onNewCustomerClick={() => setIsCustomerModalOpen(true)}
+          />
+          <Button
+            variant="outline"
+            onClick={() => setIsTodayOrdersOpen(true)}
+            className="bg-white hover:bg-gray-50"
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            {t("viewTodayOrders", { ns: "orders", defaultValue: "View Today's Orders" })}
+          </Button>
+        </div>
       </div>
 
-      <main className="flex-1 overflow-hidden">
-        <div className="h-full p-4 flex gap-4">
-          {/* Left Section: Categories and Products */}
-          <div className="flex-1 flex gap-4">
-            {/* Category Column */}
+      <main className="flex-1 overflow-hidden container mx-auto px-4 py-4">
+        <div className="h-full flex gap-4">
+          {/* Left Section: Categories */}
+          <div className="w-[150px] bg-white rounded-lg shadow-sm">
             <CategoryColumn
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategoryId}
-              isCollapsed={isCategoryCollapsed}
-              onToggleCollapse={handleShowCategories}
             />
+          </div>
 
-            {/* Product and Service Columns Container */}
-            <div className={cn(
-              "flex gap-4 transition-all duration-300",
-              isCategoryCollapsed ? "flex-1" : "w-2/3"
-            )}>
-              {/* Show placeholder when no category is selected */}
-              {!selectedCategoryId && (
-                <div className="flex-1 bg-background rounded-lg shadow flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <p className="text-lg font-medium">{t("selectCategoryFirst", { ns: "common" })}</p>
-                    <p className="text-sm mt-2">{t("selectCategoryToViewProducts", { ns: "common", defaultValue: "Select a category to view available products" })}</p>
-                  </div>
-                </div>
-              )}
+          {/* Middle Section: Products and Services */}
+          <div className="flex-1 flex gap-4">
+            {/* Products */}
+            <div className="flex-1 bg-white rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
+                {t("product", { ns: "common" })}
+              </h2>
+              <ProductColumn
+                categoryId={selectedCategoryId}
+                onSelectProduct={handleSelectProduct}
+              />
+            </div>
 
-              {/* Show products when category is selected */}
-              {selectedCategoryId && (
-                <>
-                  <div className="flex-1 bg-background rounded-lg shadow">
-                    <h2 className="text-lg font-semibold p-4 border-b">{t("product", { ns: "common" })}</h2>
-                    <ScrollArea className="h-[calc(100vh-13rem)]">
-                      <ProductColumn
-                        categoryId={selectedCategoryId}
-                        onSelectProduct={handleSelectProduct}
-                      />
-                    </ScrollArea>
-                  </div>
-
-                  {/* Show service offerings when product is selected */}
-                  {selectedProductType ? (
-                    <div className="flex-1 bg-background rounded-lg shadow">
-                      <h2 className="text-lg font-semibold p-4 border-b">{t("serviceOffering", { ns: "common" })}</h2>
-                      <ScrollArea className="h-[calc(100vh-13rem)]">
-                        <ServiceOfferingColumn
-                          productType={selectedProductType}
-                          onSelectOffering={handleSelectOffering}
-                          disabled={!selectedCustomerId}
-                          disabledMessage={t("selectCustomerFirst", { ns: "orders" })}
-                        />
-                      </ScrollArea>
-                    </div>
-                  ) : (
-                    <div className="flex-1 bg-background rounded-lg shadow flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <p className="text-lg font-medium">{t("selectProductFirst", { ns: "common" })}</p>
-                        <p className="text-sm mt-2">{t("selectProductToViewServices", { ns: "common", defaultValue: "Select a product to view available services" })}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+            {/* Services */}
+            <div className="flex-1 bg-white rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
+                {t("serviceOffering", { ns: "common" })}
+              </h2>
+              <ScrollArea className="h-[calc(100vh-13rem)]">
+                <ServiceOfferingColumn
+                  productType={selectedProductType}
+                  onSelectOffering={handleSelectOffering}
+                  disabled={!selectedCustomerId}
+                  disabledMessage={t("selectCustomerFirst", { ns: "orders" })}
+                />
+              </ScrollArea>
             </div>
           </div>
 
           {/* Right Section: Cart */}
-          <div className="w-[400px] bg-background rounded-lg shadow">
-            <CartColumn
-              items={cartItems}
-              onRemoveItem={handleRemoveItem}
-              onUpdateQuantity={handleUpdateQuantity}
-              onUpdateDimensions={handleUpdateDimensions}
-              onUpdateNotes={handleUpdateNotes}
-              onUpdateOrderNotes={setOrderNotes}
-              onUpdateDueDate={setDueDate}
-              onNewOrder={handleNewOrder}
-              orderNotes={orderNotes}
-              dueDate={dueDate}
-              onCheckout={handleCheckout}
-              isProcessing={isProcessing}
-            />
+          <div className="w-[400px] bg-white rounded-lg shadow-sm">
+            {selectedOrder ? (
+              <CartColumn
+                items={selectedOrder.items?.map(item => ({
+                  id: item.id.toString(),
+                  productType: item.serviceOffering?.productType || {} as ProductType,
+                  serviceOffering: item.serviceOffering || {} as ServiceOffering,
+                  quantity: item.quantity,
+                  price: item.calculated_price_per_unit_item,
+                  notes: item.notes || undefined,
+                  length_meters: item.length_meters || undefined,
+                  width_meters: item.width_meters || undefined,
+                  _quotedSubTotal: item.sub_total,
+                })) || []}
+                onRemoveItem={() => {}}
+                onUpdateQuantity={() => {}}
+                onCheckout={() => {}}
+                isProcessing={false}
+                mode="order_view"
+                orderNumber={selectedOrder.order_number}
+                onBackToCart={handleBackToCart}
+              />
+            ) : (
+              <CartColumn
+                items={cartItems}
+                onRemoveItem={handleRemoveItem}
+                onUpdateQuantity={handleUpdateQuantity}
+                onUpdateDimensions={handleUpdateDimensions}
+                onUpdateNotes={handleUpdateNotes}
+                onUpdateOrderNotes={setOrderNotes}
+                onUpdateDueDate={setDueDate}
+                onNewOrder={handleNewOrder}
+                orderNotes={orderNotes}
+                dueDate={dueDate}
+                onCheckout={handleCheckout}
+                isProcessing={isProcessing}
+                mode="cart"
+              />
+            )}
           </div>
         </div>
       </main>
@@ -422,6 +431,13 @@ const POSPage: React.FC = () => {
           setSelectedCustomerId(customer.id.toString());
           queryClient.invalidateQueries({ queryKey: ['customersForSelect'] });
         }}
+      />
+
+      <TodayOrders
+        isOpen={isTodayOrdersOpen}
+        onOpenChange={setIsTodayOrdersOpen}
+        onOrderSelect={handleOrderSelect}
+        selectedOrderId={selectedOrder?.id.toString()}
       />
     </div>
   );

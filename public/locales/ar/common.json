@@ -290,5 +290,8 @@
   "refresh": "تحديث",
   "pickDateRange": "اختر نطاق تاريخ",
   "openMenu": "فتح القائمة",
-  "viewDetails": "عرض التفاصيل"
+  "viewDetails": "عرض التفاصيل",
+  "pageWithTotal": "صفحة {{currentPage}} من {{totalPages}}",
+  "previous": "السابق",
+  "next": "التالي"
 }

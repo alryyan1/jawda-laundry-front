@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, SlidersHorizontal, Shirt } from 'lucide-react';
+import { Loader2, SlidersHorizontal, Shirt, Tag } from 'lucide-react';
 
 const ServiceOfferingsListPage: React.FC = () => {
     const { t } = useTranslation(['common', 'services']);
@@ -54,6 +54,14 @@ const ServiceOfferingsListPage: React.FC = () => {
                     </div>
                 </div>
             </TableCell>
+                {/* --- NEW COLUMN FOR OFFERINGS COUNT --- */}
+                <TableCell className="text-center">
+                <div className="flex items-center justify-center gap-2 font-medium">
+                    <Tag className="h-4 w-4 text-muted-foreground"/>
+                    <span>{productType.service_offerings_count ?? 0}</span>
+                </div>
+            </TableCell>
+
             <TableCell className="text-right rtl:text-left">
                 <Button variant="outline" size="sm" onClick={() => handleManageOfferings(productType)}>
                     <SlidersHorizontal className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0"/>
@@ -85,7 +93,8 @@ const ServiceOfferingsListPage: React.FC = () => {
                     <TableHeader>
                         <TableRow>
                             <TableHead>{t("productType", {ns:'services'})}</TableHead>
-                            <TableHead className="text-right rtl:text-left">{t("actions")}</TableHead>
+                            <TableHead className="text-center">{t("offeringsCount", {ns:'services'})}</TableHead>
+                                <TableHead className="text-right rtl:text-left">{t("actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

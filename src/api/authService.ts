@@ -18,10 +18,7 @@ export interface AuthResponse {
   message?: string;
 }
 
-export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const { data } = await apiClient.post<AuthResponse>('/login', credentials);
-  return data;
-};
+
 
 export const registerUser = async (credentials: RegisterCredentials): Promise<AuthResponse> => {
   const { data } = await apiClient.post<AuthResponse>('/register', credentials);
@@ -37,3 +34,26 @@ export const fetchAuthenticatedUser = async (): Promise<User> => { // Backend sh
   const { data } = await apiClient.get<User>('/user'); // Adjust if backend wraps in 'data'
   return data;
 };
+
+
+
+
+// src/api/authService.ts
+// ...
+export interface LoginCredentials {
+  username: string; // Changed from email
+  password: string;
+}
+
+export interface RegisterCredentials extends LoginCredentials {
+  name: string;
+  email?: string; // Email is now optional
+  password_confirmation: string;
+}
+
+// The loginUser function now sends a username
+export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+const { data } = await apiClient.post<AuthResponse>('/login', credentials);
+return data;
+};
+// ... (registerUser remains compatible as it already sends more fields)

@@ -63,6 +63,7 @@ export const getOrders = async (
         productTypeId?: string;
         dateFrom?: string; // YYYY-MM-DD
         dateTo?: string;   // YYYY-MM-DD
+        createdDate?: string; // YYYY-MM-DD
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -260,3 +261,5 @@ export const updateOrderDetails = async (orderId: string | number, payload: Orde
     const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, payload);
     return data.data;
 }
+
+

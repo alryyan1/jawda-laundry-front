@@ -97,7 +97,7 @@
   "selectServicesDescription": "Choose the services for your selected product type",
   "editItem": "Edit Item",
   "removeItem": "Remove Item",
-  "quantity": "Quantity", 
+  "quantity": "Quantity",
   "productDescription": "Product Description",
   "itemNotes": "Item Notes",
   "subtotal": "Subtotal",
@@ -169,5 +169,10 @@
   "kanban": "Kanban Board",
   "OrderStatusManagement": "Order Status Management",
   "quoteError": "Price calculation error",
-  "selectCustomerFirst": "Please select a customer first"
+  "selectCustomerFirst": "Please select a customer first",
+  "todayOrders": "Today Orders",
+  "backToCart": "Back to Cart",
+  "order": "Order",
+  "viewTodayOrders": "View Today's Orders",
+  "selectOrderToView": "Select an order to view its details"
 }

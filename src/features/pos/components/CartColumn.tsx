@@ -27,7 +27,8 @@ const CartItemComponent: React.FC<{
   onEditItem?: (itemId: string) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
   i18n: { language: string };
-}> = ({ item, onRemoveItem, onUpdateQuantity, onUpdateDimensions, onUpdateNotes, onEditItem, t, i18n }) => {
+  isReadOnly?: boolean;
+}> = ({ item, onRemoveItem, onUpdateQuantity, onUpdateDimensions, onUpdateNotes, onEditItem, t, i18n, isReadOnly = false }) => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const hasDetails = item.notes;
   
@@ -44,12 +45,10 @@ const CartItemComponent: React.FC<{
       <div className="flex items-center justify-between p-3 border-b">
         <div className="flex-1">
           <h3 className="font-medium text-sm">{item.productType.name}</h3>
-          <p className="text-sm text-muted-foreground">
-            {item.serviceOffering.display_name}
-          </p>
+        
         </div>
         <div className="flex items-center gap-1">
-          {onEditItem && (
+          {!isReadOnly && onEditItem && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -68,53 +67,67 @@ const CartItemComponent: React.FC<{
               </Tooltip>
             </TooltipProvider>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-            onClick={() => onRemoveItem(item.id)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {!isReadOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => onRemoveItem(item.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="p-3 space-y-3">
         {/* Dimensions */}
-        {item.productType.is_dimension_based && onUpdateDimensions && (
+        {item.productType.is_dimension_based && (
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs mb-1">{t("length", { ns: "orders" })} (m)</Label>
-              <Input
-                type="number"
-                value={item.length_meters || ""}
-                onChange={(e) =>
-                  onUpdateDimensions(item.id, {
-                    length: parseFloat(e.target.value) || undefined,
-                    width: item.width_meters,
-                  })
-                }
-                className="h-8"
-                disabled={item._isQuoting}
-              />
+              {isReadOnly ? (
+                <div className="h-8 px-3 py-2 text-sm bg-muted rounded border">
+                  {item.length_meters || '-'}
+                </div>
+              ) : (
+                <Input
+                  type="number"
+                  value={item.length_meters || ""}
+                  onChange={(e) =>
+                    onUpdateDimensions?.(item.id, {
+                      length: parseFloat(e.target.value) || undefined,
+                      width: item.width_meters,
+                    })
+                  }
+                  className="h-8"
+                  disabled={item._isQuoting}
+                />
+              )}
             </div>
             <div>
               <Label className="text-xs mb-1">{t("width", { ns: "orders" })} (m)</Label>
-              <Input
-                type="number"
-                value={item.width_meters || ""}
-                onChange={(e) =>
-                  onUpdateDimensions(item.id, {
-                    length: item.length_meters,
-                    width: parseFloat(e.target.value) || undefined,
-                  })
-                }
-                className="h-8"
-                disabled={item._isQuoting}
-              />
+              {isReadOnly ? (
+                <div className="h-8 px-3 py-2 text-sm bg-muted rounded border">
+                  {item.width_meters || '-'}
+                </div>
+              ) : (
+                <Input
+                  type="number"
+                  value={item.width_meters || ""}
+                  onChange={(e) =>
+                    onUpdateDimensions?.(item.id, {
+                      length: item.length_meters,
+                      width: parseFloat(e.target.value) || undefined,
+                    })
+                  }
+                  className="h-8"
+                  disabled={item._isQuoting}
+                />
+              )}
             </div>
-            {item._isQuoting && (
+            {!isReadOnly && item._isQuoting && (
               <div className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 <span>{t("calculatingPrice", { ns: "orders" })}</span>
@@ -126,25 +139,46 @@ const CartItemComponent: React.FC<{
         {/* Quantity and Price */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-              disabled={item.quantity <= 1 || item._isQuoting}
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="w-8 text-center text-sm">{item.quantity}</span>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-              disabled={item._isQuoting}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
+            {isReadOnly ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{t("quantity", { ns: "orders" })}:</span>
+                <span className="font-medium">{item.quantity}</span>
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                  disabled={item.quantity <= 1 || item._isQuoting}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <Input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const newValue = parseInt(e.target.value);
+                    if (!isNaN(newValue) && newValue >= 1) {
+                      onUpdateQuantity(item.id, newValue);
+                    }
+                  }}
+                  className="w-16 h-7 px-2 text-center"
+                  disabled={item._isQuoting}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                  disabled={item._isQuoting}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </>
+            )}
           </div>
           <div className="text-right">
             {item._isQuoting ? (
@@ -253,6 +287,9 @@ interface CartColumnProps {
   onCheckout: () => void;
   isProcessing: boolean;
   onEditItem?: (itemId: string) => void;
+  mode?: 'cart' | 'order_view';
+  orderNumber?: string;
+  onBackToCart?: () => void;
 }
 
 export const CartColumn: React.FC<CartColumnProps> = ({
@@ -269,6 +306,9 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onCheckout,
   isProcessing,
   onEditItem,
+  mode = 'cart',
+  orderNumber,
+  onBackToCart,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
 
@@ -280,12 +320,21 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     <div className="flex flex-col h-full">
       <header className="p-4 border-b shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">{t("cart", { ns: "orders" })}</h2>
+          <h2 className="text-lg font-semibold">
+            {mode === 'order_view' 
+              ? `${t("order", { ns: "orders" })} #${orderNumber}` 
+              : t("cart", { ns: "orders" })
+            }
+          </h2>
           <span className="text-sm text-muted-foreground">
             {t("itemCount", { count: items.length, ns: "orders" })}
           </span>
         </div>
-        {onNewOrder && (
+        {mode === 'order_view' && onBackToCart ? (
+          <Button variant="outline" size="sm" onClick={onBackToCart}>
+            {t("backToCart", { ns: "orders" })}
+          </Button>
+        ) : onNewOrder && (
           <Button variant="outline" size="sm" onClick={onNewOrder}>
             <PlusCircle className="mr-2 h-4 w-4" />
             {t("newOrder", { ns: "orders" })}
@@ -311,73 +360,87 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                 onEditItem={onEditItem}
                 t={t}
                 i18n={i18n}
+                isReadOnly={mode === 'order_view'}
               />
             ))
           )}
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t space-y-4">
-        {/* Order-level notes */}
-        {onUpdateOrderNotes && (
-          <div>
-            <Label className="text-xs font-medium">
-              {t("overallOrderNotesOptional", { ns: "orders" })}
-            </Label>
-            <Textarea
-              value={orderNotes || ""}
-              onChange={(e) => onUpdateOrderNotes(e.target.value)}
-              rows={2}
-              placeholder={t("addNotesForThisOrder", { ns: "orders" })}
-              className="resize-none"
-            />
-          </div>
-        )}
-
-        {/* Due date */}
-        {onUpdateDueDate && (
-          <div>
-            <Label className="text-xs font-medium">
-              {t("dueDateOptional", { ns: "orders" })}
-            </Label>
-            <Input
-              type="date"
-              value={dueDate || ""}
-              onChange={(e) => onUpdateDueDate(e.target.value)}
-            />
-          </div>
-        )}
-
-        <Separator />
-
-        <div className="flex justify-between items-center text-lg font-bold">
-          <span>{t("total", { ns: "common" })}:</span>
-          <span className="text-primary">
-            {formatCurrency(total, "USD", i18n.language)}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Button
-            className="w-full h-12 text-base font-semibold"
-            onClick={onCheckout}
-            disabled={items.length === 0 || isProcessing}
-          >
-            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("completeOrder", { ns: "orders" })}
-          </Button>
-          {onNewOrder && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={onNewOrder}
-              disabled={isProcessing}
-            >
-              {t("startNewOrder", { ns: "orders" })}
-            </Button>
+      {mode === 'cart' && (
+        <div className="p-4 border-t space-y-4">
+          {/* Order-level notes */}
+          {onUpdateOrderNotes && (
+            <div>
+              <Label className="text-xs font-medium">
+                {t("overallOrderNotesOptional", { ns: "orders" })}
+              </Label>
+              <Textarea
+                value={orderNotes || ""}
+                onChange={(e) => onUpdateOrderNotes(e.target.value)}
+                rows={2}
+                placeholder={t("addNotesForThisOrder", { ns: "orders" })}
+                className="resize-none"
+              />
+            </div>
           )}
+
+          {/* Due date */}
+          {onUpdateDueDate && (
+            <div>
+              <Label className="text-xs font-medium">
+                {t("dueDateOptional", { ns: "orders" })}
+              </Label>
+              <Input
+                type="date"
+                value={dueDate || ""}
+                onChange={(e) => onUpdateDueDate(e.target.value)}
+              />
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span>{t("total", { ns: "common" })}:</span>
+            <span className="text-primary">
+              {formatCurrency(total, "USD", i18n.language)}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              className="w-full h-12 text-base font-semibold"
+              onClick={onCheckout}
+              disabled={items.length === 0 || isProcessing}
+            >
+              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("completeOrder", { ns: "orders" })}
+            </Button>
+            {onNewOrder && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onNewOrder}
+                disabled={isProcessing}
+              >
+                {t("startNewOrder", { ns: "orders" })}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {mode === 'order_view' && (
+        <div className="p-4 border-t">
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span>{t("total", { ns: "common" })}:</span>
+            <span className="text-primary">
+              {formatCurrency(total, "USD", i18n.language)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 

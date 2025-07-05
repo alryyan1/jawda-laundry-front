@@ -74,8 +74,8 @@ const UsersListPage: React.FC = () => {
             header: t('roles'),
             cell: ({ row }) => (
                 <div className="flex flex-wrap gap-1">
-                    {row.original.roles.map(role => (
-                        <Badge key={role.id} variant="secondary" className="capitalize">
+                    {row.original.roles.map((role, index) => (
+                        <Badge key={`${role.id}-${index}`} variant="secondary" className="capitalize">
                             {role.name}
                         </Badge>
                     ))}

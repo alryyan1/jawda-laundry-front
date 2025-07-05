@@ -238,7 +238,7 @@ const ProductTypesListPage: React.FC = () => {
                 onClick={() => handleSort("id")}
               >
                 <div className="flex items-center gap-1">
-                  {t("id")}
+                  {t("id", { ns: "common" })}
                   {getSortIcon("id")}
                 </div>
               </TableHead>

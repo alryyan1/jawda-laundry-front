@@ -73,8 +73,8 @@ const OfferingRow: React.FC<{
 
     return (
         <TableRow>
-            <TableCell className="font-medium">{offering.serviceAction?.name}</TableCell>
-            <TableCell>
+            <TableCell className="font-medium text-center">{offering.serviceAction?.name}</TableCell>
+            <TableCell className="text-center">
                 {isDimensionBased ? (
                     <Input
                         type="number"
@@ -95,14 +95,14 @@ const OfferingRow: React.FC<{
                     />
                 )}
             </TableCell>
-            <TableCell className="text-center">
+            <TableCell className="text-center w-[120px]">
                 <Switch
                     checked={isActive}
                     onCheckedChange={setIsActive}
                     disabled={isUpdating}
                 />
             </TableCell>
-            <TableCell className="text-right rtl:text-left space-x-2">
+            <TableCell className="text-center space-x-2">
                 <Button
                     variant="ghost"
                     size="icon"
@@ -193,7 +193,7 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-[90vw] w-[1200px] sm:max-w-[90vw] md:max-w-[90vw]">
                     <DialogHeader>
                         <DialogTitle>{t('manageOfferingsFor', { ns: 'services', name: productType.name })}</DialogTitle>
                         <DialogDescription>{t('manageOfferingsDescription', { ns: 'services' })}</DialogDescription>
@@ -213,10 +213,10 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t('serviceAction', { ns: 'services' })}</TableHead>
-                                    <TableHead>{productType.is_dimension_based ? t('pricePerSqMeter', {ns:'services'}) : t('pricePerItem', {ns:'services'})}</TableHead>
+                                    <TableHead className='text-center'>{t('serviceAction', { ns: 'services' })}</TableHead>
+                                    <TableHead className='text-center'>{productType.is_dimension_based ? t('pricePerSqMeter', {ns:'services'}) : t('pricePerItem', {ns:'services'})}</TableHead>
                                     <TableHead className="text-center">{t('active')}</TableHead>
-                                    <TableHead className="text-right rtl:text-left w-[120px]">{t('actions')}</TableHead>
+                                    <TableHead className="text-center rtl:text-left w-[120px]">{t('actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
