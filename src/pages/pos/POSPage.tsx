@@ -324,9 +324,9 @@ const POSPage: React.FC = () => {
   }, [debouncedCartItems, selectedCustomerId]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]" style={{ backgroundColor: materialColors.background.default }}>
+    <div className="flex flex-col h-[calc(100vh-64px)]">
       {/* Customer Selection Bar */}
-      <div className="bg-white border-b shadow-sm" style={{ borderColor: materialColors.divider }}>
+      <div className="border-b shadow-sm bg-background" style={{ borderColor: materialColors.divider }}>
         <div className="container mx-auto px-4 py-2 flex justify-between items-center">
           <CustomerSelection
             selectedCustomerId={selectedCustomerId}
@@ -338,7 +338,6 @@ const POSPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => setIsTodayOrdersOpen(true)}
-            className="bg-white hover:bg-gray-50"
           >
             <Calendar className="mr-2 h-4 w-4" />
             {t("viewTodayOrders", { ns: "orders", defaultValue: "View Today's Orders" })}
@@ -349,7 +348,7 @@ const POSPage: React.FC = () => {
       <main className="flex-1 container mx-auto px-4 py-4 min-h-0">
         <div className="flex gap-4 h-full">
           {/* Left Section: Categories */}
-          <div className="w-[150px] bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="w-[150px] bg-background rounded-lg shadow-sm overflow-hidden">
             <CategoryColumn
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategoryId}
@@ -359,7 +358,7 @@ const POSPage: React.FC = () => {
           {/* Middle Section: Products and Services */}
           <div className="flex-1 flex gap-4 min-h-0">
             {/* Products */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("product", { ns: "common" })}
               </h2>
@@ -373,7 +372,7 @@ const POSPage: React.FC = () => {
             </div>
 
             {/* Services */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("serviceOffering", { ns: "common" })}
               </h2>
@@ -390,7 +389,7 @@ const POSPage: React.FC = () => {
           </div>
 
           {/* Right Section: Cart */}
-          <div className="w-[400px] bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
             {selectedOrder ? (
               <CartColumn
                 items={selectedOrder.items?.map(item => ({

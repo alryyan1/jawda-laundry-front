@@ -161,19 +161,19 @@ const CustomersListPage: React.FC = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[40px]">
+                                    <TableHead className="w-[40px] text-center">
                                         <Checkbox
                                             checked={isAllSelected || (isSomeSelected && 'indeterminate')}
                                             onCheckedChange={(checked) => handleSelectAll(!!checked)}
                                             aria-label={t('selectAll')}
                                         />
                                     </TableHead>
-                                    <TableHead className="min-w-[200px]">{t('name', { ns: 'common' })}</TableHead>
-                                    <TableHead className="min-w-[200px]">{t('email', { ns: 'common' })}</TableHead>
-                                    <TableHead>{t('phone', { ns: 'customers' })}</TableHead>
+                                    <TableHead className="min-w-[200px] text-center">{t('name', { ns: 'common' })}</TableHead>
+                                    <TableHead className="min-w-[200px] text-center">{t('email', { ns: 'common' })}</TableHead>
+                                    <TableHead className="text-center">{t('phone', { ns: 'customers' })}</TableHead>
                                     <TableHead className="text-center">{t('totalOrders', { ns: 'customers' })}</TableHead>
-                                    <TableHead>{t('registeredDate', { ns: 'customers' })}</TableHead>
-                                    <TableHead className="text-right rtl:text-left w-[80px]">{t('actions')}</TableHead>
+                                    <TableHead className="text-center">{t('registeredDate', { ns: 'customers' })}</TableHead>
+                                    <TableHead className="text-center w-[80px]">{t('actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -188,21 +188,21 @@ const CustomersListPage: React.FC = () => {
                                 ) : customers.length > 0 ? (
                                     customers.map((customer: Customer) => (
                                         <TableRow key={customer.id} data-state={selectedRows[customer.id] && "selected"}>
-                                            <TableCell>
+                                            <TableCell className='text-center'>
                                                 <Checkbox
                                                     checked={!!selectedRows[customer.id]}
                                                     onCheckedChange={(checked) => handleSelectRow(customer.id, !!checked)}
                                                     aria-label={t('selectRow')}
                                                 />
                                             </TableCell>
-                                            <TableCell className="font-medium">{customer.name}</TableCell>
-                                            <TableCell>{customer.email || t('notAvailable')}</TableCell>
-                                            <TableCell>{customer.phone || t('notAvailable')}</TableCell>
+                                            <TableCell className="font-medium text-center">{customer.name}</TableCell>
+                                            <TableCell className="text-center">{customer.email || t('notAvailable')}</TableCell>
+                                            <TableCell className="text-center">{customer.phone || t('notAvailable')}</TableCell>
                                             <TableCell className="text-center">{customer.total_orders ?? 0}</TableCell>
                                             <TableCell>
                                                 {format(new Date(customer.registered_date), "PP", { locale: currentLocale })}
                                             </TableCell>
-                                            <TableCell className="text-right rtl:text-left">
+                                            <TableCell className="text-center">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" className="h-8 w-8 p-0">

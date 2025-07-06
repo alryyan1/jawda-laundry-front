@@ -99,7 +99,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
           </div>
         </div>
 
-        <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
+        <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
           <div className="p-4">
             {filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[200px]">
