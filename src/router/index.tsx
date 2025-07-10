@@ -1,6 +1,6 @@
 // src/router/index.tsx
 import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, createHashRouter, Navigate } from "react-router-dom";
 
 // Layouts
 import MainLayout from "@/layouts/MainLayout";
@@ -114,7 +114,7 @@ const RouteSuspenseFallback = () => (
   </div>
 );
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     // Routes that use the MainLayout (typically protected)
     element: <MainLayout />, // MainLayout itself is not protected here, but its Outlet will be.
