@@ -20,6 +20,20 @@ export interface ProductType {
     service_offerings_count?: number;
 }
 
+
+export interface PredefinedSize {
+    id: number;
+    product_type_id: number;
+    name: string;
+    length_meters: number;
+    width_meters: number;
+}
+
+export interface PredefinedSizeFormData {
+    name: string;
+    length_meters: number | string;
+    width_meters: number | string;
+}
 export interface ServiceAction {
     id: number;
     name: string;

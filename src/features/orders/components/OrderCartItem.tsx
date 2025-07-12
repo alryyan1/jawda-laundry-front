@@ -5,17 +5,23 @@ import { useFormContext, useWatch } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, Trash2, Edit, FileText, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, Trash2, Edit3, Ruler, AlertCircle, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
+import { SelectSizeDialog } from "../../pos/components/SelectSizeDialog"; // Fixed import path
 
 import type { NewOrderFormData, OrderItemFormLine } from "@/types";
 
@@ -32,17 +38,27 @@ export const OrderCartItem: React.FC<OrderCartItemProps> = ({
   onEdit,
   isSubmittingOrder,
 }) => {
-  const { t, i18n } = useTranslation(["common", "orders", "services"]);
+  const { t, i18n } = useTranslation([
+    "common",
+    "orders",
+    "services",
+    "validation",
+  ]);
   const {
     register,
+    setValue,
     formState: { errors },
   } = useFormContext<NewOrderFormData>();
 
+  const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
+
   const itemPathPrefix = `items.${index}` as const;
   const itemData = useWatch({ name: itemPathPrefix });
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false); // State to toggle details view
+  const itemErrors = (errors.items?.[index] || {}) as Record<
+    keyof OrderItemFormLine,
+    { message?: string } | undefined
+  >;
 
-  // Fallback in case of data inconsistency
   if (!itemData?._derivedServiceOffering) {
     return (
       <div className="p-3 border rounded-lg bg-destructive/10 text-destructive text-sm flex justify-between items-center">
@@ -65,204 +81,178 @@ export const OrderCartItem: React.FC<OrderCartItemProps> = ({
     _isQuoting: isQuoting,
     _quoteError: quoteError,
     _quoted_sub_total: subtotal,
-    _quoted_price_per_unit_item: pricePerUnit,
   } = itemData;
 
   const isDimensionBased = offering.productType?.is_dimension_based;
-  const hasDetails = itemData.product_description_custom || itemData.notes;
 
   return (
-    <div className="p-3 border rounded-lg bg-background shadow-sm space-y-2 text-sm">
-      {/* --- Main Item Row --- */}
-      <div className="flex items-start gap-2">
-        {/* Item Name */}
-        <div className="flex-grow">
-          <p className="font-semibold leading-tight">{offering.display_name}</p>
-          <p className="text-xs text-muted-foreground">
-            {offering.productType?.name}
-          </p>
-        </div>
-
-        {/* Quantity Input */}
-        <div className="w-16">
-          <Label htmlFor={`${itemPathPrefix}.quantity`} className="sr-only">
-            {t("quantity")}
-          </Label>
-          <Input
-            id={`${itemPathPrefix}.quantity`}
-            type="number"
-            {...register(`${itemPathPrefix}.quantity`)}
-            min="1"
-            disabled={isSubmittingOrder}
-            className="h-8 text-center"
-          />
-        </div>
-
-        {/* Unit Price */}
-        <div className="w-20 text-right rtl:text-left">
-          {pricePerUnit !== null && pricePerUnit !== undefined ? (
-            <span className="font-mono">
-              {formatCurrency(pricePerUnit, "USD", i18n.language)}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          )}
-        </div>
-
-        {/* Subtotal & Actions */}
-        <div className="w-24 text-right rtl:text-left font-semibold">
-          {isQuoting ? (
-            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-          ) : quoteError ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-destructive font-bold">Error</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{quoteError}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : subtotal !== null && subtotal !== undefined ? (
-            <span>{formatCurrency(subtotal, "USD", i18n.language)}</span>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          )}
-        </div>
-        <div className="w-8 flex items-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemove(index)}
-            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+    <>
+      <div className="p-3 border rounded-lg bg-background shadow-sm space-y-2 text-sm">
+        {/* --- Main Item Row --- */}
+        <div className="grid grid-cols-12 gap-x-2 items-center">
+          {/* Item Name */}
+          <div
+            className={cn(
+              "col-span-12 sm:col-span-6",
+              isDimensionBased && "sm:col-span-4"
+            )}
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* --- Collapsible Details Section --- */}
-      {(isDimensionBased || hasDetails || isDetailsOpen) && (
-        <div className="pt-2 border-t border-dashed">
-          <div className="flex items-end gap-2">
-            {/* Dimension Inputs */}
-            {isDimensionBased && (
-              <div className="flex items-end gap-2 flex-grow">
-                <div className="grid gap-1 w-full">
-                  <Label
-                    htmlFor={`${itemPathPrefix}.length_meters`}
-                    className="text-xs"
-                  >
-                    {t("lengthMeters", { ns: "orders" })}
-                  </Label>
-                  <Input
-                    id={`${itemPathPrefix}.length_meters`}
-                    type="number"
-                    step="0.01"
-                    {...register(`${itemPathPrefix}.length_meters`)}
-                    placeholder="L"
-                    disabled={isSubmittingOrder}
-                    className="h-8"
-                  />
-                </div>
-                <div className="text-muted-foreground text-xs pb-2">x</div>
-                <div className="grid gap-1 w-full">
-                  <Label
-                    htmlFor={`${itemPathPrefix}.width_meters`}
-                    className="text-xs"
-                  >
-                    {t("widthMeters", { ns: "orders" })}
-                  </Label>
-                  <Input
-                    id={`${itemPathPrefix}.width_meters`}
-                    type="number"
-                    step="0.01"
-                    {...register(`${itemPathPrefix}.width_meters`)}
-                    placeholder="W"
-                    disabled={isSubmittingOrder}
-                    className="h-8"
-                  />
-                </div>
-              </div>
-            )}
-            {/* Toggle Button for other details */}
-            {!isDimensionBased && (
-              <div className="flex-grow">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground h-8"
-                  onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-                >
-                  {isDetailsOpen ? t("hideDetails") : t("addDetails")}
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 ml-1 transition-transform",
-                      isDetailsOpen && "rotate-180"
-                    )}
-                  />
-                </Button>
-              </div>
-            )}
-            {/* Edit Service Offering Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEdit(index)}
-                    className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t("changeService", { ns: "orders" })}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <p className="font-semibold leading-tight">
+              {offering.display_name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {offering.productType?.name}
+            </p>
           </div>
-          {/* Description and Notes appear when toggled or if they have content */}
-          {(isDetailsOpen || hasDetails) && (
-            <div className="grid sm:grid-cols-2 gap-3 pt-2">
-              <div className="grid gap-1.5">
-                <Label
-                  htmlFor={`${itemPathPrefix}.product_description_custom`}
-                  className="text-xs"
-                >
-                  {t("itemDescriptionOptional", { ns: "orders" })}
-                </Label>
+          {/* Quantity Input */}
+          <div className="col-span-4 sm:col-span-2">
+            <Input
+              id={`${itemPathPrefix}.quantity`}
+              type="number"
+              aria-label={t("quantity", { ns: "services" })}
+              {...register(`${itemPathPrefix}.quantity`)}
+              min="1"
+              disabled={isSubmittingOrder}
+              className={cn(
+                "h-9 text-center",
+                itemErrors?.quantity && "border-destructive"
+              )}
+            />
+          </div>
+          {/* Conditional Dimension Inputs */}
+          {isDimensionBased ? (
+            <>
+              <div className="col-span-4 sm:col-span-2 relative">
                 <Input
-                  id={`${itemPathPrefix}.product_description_custom`}
-                  {...register(`${itemPathPrefix}.product_description_custom`)}
-                  placeholder={t("itemDescriptionPlaceholder", {
+                  id={`${itemPathPrefix}.length_meters`}
+                  type="number"
+                  step="0.01"
+                  aria-label={t("lengthMeters", { ns: "orders" })}
+                  {...register(`${itemPathPrefix}.length_meters`)}
+                  placeholder={t("lengthAbbr", {
                     ns: "orders",
+                    defaultValue: "L",
                   })}
                   disabled={isSubmittingOrder}
-                  className="h-8 text-xs"
+                  className={cn(
+                    "h-9 text-center",
+                    itemErrors?.length_meters && "border-destructive"
+                  )}
                 />
               </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor={`${itemPathPrefix}.notes`} className="text-xs">
-                  {t("itemNotesOptional", { ns: "orders" })}
-                </Label>
+              <div className="col-span-4 sm:col-span-2 relative">
                 <Input
-                  id={`${itemPathPrefix}.notes`}
-                  {...register(`${itemPathPrefix}.notes`)}
-                  placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
+                  id={`${itemPathPrefix}.width_meters`}
+                  type="number"
+                  step="0.01"
+                  aria-label={t("widthMeters", { ns: "orders" })}
+                  {...register(`${itemPathPrefix}.width_meters`)}
+                  placeholder={t("widthAbbr", {
+                    ns: "orders",
+                    defaultValue: "W",
+                  })}
                   disabled={isSubmittingOrder}
-                  className="h-8 text-xs"
+                  className={cn(
+                    "h-9 text-center",
+                    itemErrors?.width_meters && "border-destructive"
+                  )}
                 />
               </div>
-            </div>
-          )}
+            </>
+          ) : (
+            <div className="hidden sm:block sm:col-span-4"></div>
+          )}{" "}
+          {/* Placeholder to keep alignment */}
+          {/* Subtotal */}
+          <div className="col-span-8 sm:col-span-2 text-right rtl:text-left font-semibold">
+            {isQuoting ? (
+              <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
+            ) : quoteError ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="h-5 w-5 text-destructive mx-auto cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{quoteError}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : subtotal !== null && subtotal !== undefined ? (
+              <span>{formatCurrency(subtotal, "USD", i18n.language)}</span>
+            ) : (
+              <span className="text-muted-foreground">-</span>
+            )}
+          </div>
+          {/* Actions */}
+          <div className="col-span-4 sm:col-span-1 flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(index)}>
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  <span>{t("changeService", { ns: "orders" })}</span>
+                </DropdownMenuItem>
+                {isDimensionBased && (
+                  <DropdownMenuItem onClick={() => setIsSizeDialogOpen(true)}>
+                    <Ruler className="mr-2 h-4 w-4" />
+                    <span>{t("selectPredefinedSize", { ns: "services" })}</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onRemove(index)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>{t("removeItem", { ns: "common" })}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {/* Display validation errors below the row */}
+        {(itemErrors?.quantity ||
+          itemErrors?.length_meters ||
+          itemErrors?.width_meters) && (
+          <div className="text-xs text-destructive pl-1">
+            {itemErrors?.quantity && (
+              <p>{t(itemErrors.quantity.message as string)}</p>
+            )}
+            {itemErrors?.length_meters && (
+              <p>{t(itemErrors.length_meters.message as string)}</p>
+            )}
+            {itemErrors?.width_meters && (
+              <p>{t(itemErrors.width_meters.message as string)}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {offering.productType && (
+        <SelectSizeDialog
+          isOpen={isSizeDialogOpen}
+          onOpenChange={setIsSizeDialogOpen}
+          productType={offering.productType}
+          onSelect={(size: { length_meters: number; width_meters: number }) => {
+            setValue(
+              `${itemPathPrefix}.length_meters`,
+              size.length_meters.toString(),
+              { shouldDirty: true }
+            );
+            setValue(
+              `${itemPathPrefix}.width_meters`,
+              size.width_meters.toString(),
+              { shouldDirty: true, shouldValidate: true }
+            );
+          }}
+        />
       )}
-    </div>
+    </>
   );
 };

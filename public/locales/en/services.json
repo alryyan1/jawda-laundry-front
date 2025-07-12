@@ -187,7 +187,21 @@
             "noServicesForProduct": "No services available for this product",
             "searchProductsByNameOrId": "Search products by name or ID...",
             "selectCategoryFirst": "Please select a category first",
-            "selectProductFirst": "Please select a product first"
+            "selectProductFirst": "Please select a product first",
+            "selectPredefinedSize": "Select Predefined Size",
+            "selectPredefinedSizeFor": "Select Predefined Size for {{name}}",
+            "selectSizeHint": "Choose a predefined size to automatically fill dimensions",
+            "noPredefinedSizes": "No Predefined Sizes",
+            "noPredefinedSizesHint": "No predefined sizes are available for this product type",
+            "manageSizes": "Manage Sizes",
+            "close": "Close",
+            "managePredefinedSizesFor": "Manage Predefined Sizes for {{name}}",
+            "addNewSize": "Add New Size",
+            "sizeName": "Size Name",
+            "addSize": "Add Size",
+            "sizeAddedSuccess": "Size added successfully",
+            "sizeDeletedSuccess": "Size deleted successfully",
+            "sizeActionFailed": "Failed to perform size action"
           }
       
     

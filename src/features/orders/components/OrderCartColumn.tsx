@@ -48,6 +48,10 @@ export const OrderCartColumn: React.FC<OrderCartColumnProps> = ({
                 key={field.id}
                 index={index}
                 onRemove={onRemove}
+                onEdit={(index) => {
+                  // Handle edit functionality - this could open a modal or navigate to edit form
+                  console.log('Edit item at index:', index);
+                }}
                 isSubmittingOrder={isSubmitting}
               />
             ))

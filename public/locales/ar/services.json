@@ -186,5 +186,19 @@
   "orderTotal": "إجمالي الطلب",
   "searchProductsByNameOrId": "البحث في المنتجات بالاسم أو المعرف...",
   "selectCategoryFirst": "الرجاء اختيار الفئة أولاً",
-  "selectProductFirst": "الرجاء اختيار المنتج أولاً"
+  "selectProductFirst": "الرجاء اختيار المنتج أولاً",
+  "selectPredefinedSize": "اختر مقاس محدد مسبقاً",
+  "selectPredefinedSizeFor": "اختر مقاس محدد مسبقاً لـ {{name}}",
+  "selectSizeHint": "اختر مقاس محدد مسبقاً لملء الأبعاد تلقائياً",
+  "noPredefinedSizes": "لا توجد مقاسات محددة مسبقاً",
+  "noPredefinedSizesHint": "لا توجد مقاسات محددة مسبقاً متاحة لنوع المنتج هذا",
+  "manageSizes": "إدارة المقاسات",
+  "close": "إغلاق",
+  "managePredefinedSizesFor": "إدارة المقاسات المحددة مسبقاً لـ {{name}}",
+  "addNewSize": "إضافة مقاس جديد",
+  "sizeName": "اسم المقاس",
+  "addSize": "إضافة مقاس",
+  "sizeAddedSuccess": "تم إضافة المقاس بنجاح",
+  "sizeDeletedSuccess": "تم حذف المقاس بنجاح",
+  "sizeActionFailed": "فشل في تنفيذ إجراء المقاس"
 }
