@@ -36,5 +36,6 @@
     "unitPriceRequired": "Unit price is required.",
     "url": "Please enter a valid URL.",
     "required": "This field is required.",
-    "phoneNumber": "Please enter a valid phone number (numbers only)."
+    "phoneNumber": "Please enter a valid phone number (numbers only).",
+    "countryCode": "Please enter a valid country code (numbers only)."
   }

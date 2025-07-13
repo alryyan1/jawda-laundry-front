@@ -259,8 +259,45 @@ export interface OrderDetailsUpdatePayload {
 }
 
 export const updateOrderDetails = async (orderId: string | number, payload: OrderDetailsUpdatePayload): Promise<Order> => {
-    const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, payload);
+    const { data } = await apiClient.patch<{ data: Order }>(`/orders/${orderId}`, payload);
     return data.data;
-}
+};
+
+/**
+ * Sends a WhatsApp message to the customer about their order.
+ */
+export const sendOrderWhatsAppMessage = async (
+    orderId: string | number, 
+    message: string
+): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/orders/${orderId}/send-whatsapp-message`, {
+        message
+    });
+    return data;
+};
+
+/**
+ * Sends the order invoice via WhatsApp to the customer.
+ */
+export const sendOrderWhatsAppInvoice = async (
+    orderId: string | number
+): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/orders/${orderId}/send-whatsapp-invoice`);
+    return data;
+};
+
+/**
+ * Updates the status of a specific order item.
+ */
+export const updateOrderItemStatus = async (
+  orderItemId: number | string,
+  status: string
+): Promise<OrderItem> => {
+  const { data } = await apiClient.patch<{ order_item: OrderItem }>(
+    `/order-items/${orderItemId}/status`,
+    { status }
+  );
+  return data.order_item;
+};
 
 

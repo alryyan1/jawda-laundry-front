@@ -150,6 +150,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                       width: item.width_meters,
                     })
                   }
+                  onFocus={(e) => e.target.select()}
                   className="h-8"
                   disabled={isReadOnly || item._isQuoting}
                 />
@@ -169,6 +170,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                       width: parseFloat(e.target.value) || undefined,
                     })
                   }
+                  onFocus={(e) => e.target.select()}
                   className="h-8"
                   disabled={isReadOnly || item._isQuoting}
                 />
@@ -219,6 +221,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                     onChange={handleQuantityChange}
                     className="w-16 h-7 px-2 text-center"
                     disabled={item._isQuoting}
+                    onFocus={(e) => e.target.select()}
                   />
                   <Button
                     variant="outline"

@@ -19,6 +19,7 @@ export interface AppSettings {
     whatsapp_api_url: string;
     whatsapp_api_token: string;
     whatsapp_notification_number: string;
+    whatsapp_country_code: string;
     // Add other settings as defined in your config
 }
 

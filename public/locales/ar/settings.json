@@ -96,5 +96,7 @@
     "whatsappSettingsUpdateFailed": "فشل في تحديث إعدادات واتساب",
     "testMessageSentSuccessfully": "تم إرسال الرسالة التجريبية بنجاح",
     "testMessageFailed": "فشل في إرسال الرسالة التجريبية",
-    "pleaseEnterNotificationNumber": "يرجى إدخال رقم هاتف الإشعارات"
+    "pleaseEnterNotificationNumber": "يرجى إدخال رقم هاتف الإشعارات",
+    "whatsappCountryCode": "رمز الدولة",
+    "whatsappCountryCodeDesc": "رمز الدولة الافتراضي لرسائل واتساب (مثال: 968 لعمان)"
 }

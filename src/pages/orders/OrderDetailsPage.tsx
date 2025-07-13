@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,9 +29,17 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For payment status
 import { Label } from "@/components/ui/label";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import type { Order, OrderStatus, OrderItem as OrderItemType } from "@/types"; // Use OrderItemType alias
-import { getOrderById, updateOrderDetails } from "@/api/orderService";
+import { getOrderById, updateOrderDetails, updateOrderStatus, sendOrderWhatsAppInvoice } from "@/api/orderService";
+import { ORDER_STATUSES } from "@/lib/constants";
 
 import {
   ArrowLeft,
@@ -48,6 +56,7 @@ import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentMo
 import { OrderPaymentsList } from "@/features/orders/components/OrderPaymentsList";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { printPosPdfReceipt } from "@/lib/printUtils";
+import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{
@@ -157,6 +166,7 @@ const OrderDetailsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [pickupDate, setPickupDate] = useState<Date | undefined>(undefined);
   const { can } = useAuth();
   const {
@@ -198,30 +208,64 @@ const OrderDetailsPage: React.FC = () => {
     },
   });
 
+  // Mutation for updating order status
+  const updateStatusMutation = useMutation<
+    Order,
+    Error,
+    { orderId: string | number; status: OrderStatus }
+  >({
+    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
+    onSuccess: (updatedOrder) => {
+      toast.success(
+        t("orderStatusUpdatedSuccess", {
+          ns: "orders",
+          status: t(`status_${updatedOrder.status}`, { ns: "orders" }),
+        })
+      );
+      queryClient.setQueryData(["order", id], updatedOrder);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("orderStatusUpdateFailed", { ns: "orders" })
+      );
+    },
+  });
+
+  // Mutation for sending WhatsApp invoice
+  const sendWhatsAppInvoiceMutation = useMutation<
+    { message: string },
+    Error,
+    string | number
+  >({
+    mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
+    onSuccess: () => {
+      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("whatsappInvoiceSendFailed", { ns: "orders" })
+      );
+    },
+  });
+
   const handlePickupDateChange = (date: Date | undefined) => {
     setPickupDate(date);
     const formattedDate = date ? format(date, "yyyy-MM-dd HH:mm:ss") : null;
     updateOrderMutation.mutate({ pickup_date: formattedDate });
   };
 
-  // TODO: Implement updateOrderStatus in orderService.ts and its backend controller method
-  // const updateStatusMutation = useMutation<Order, Error, { orderId: string | number; status: OrderStatus }>({
-  //   mutationFn: ({orderId, status}) => updateOrderStatus(orderId, status),
-  //   onSuccess: (updatedOrder) => {
-  //     toast.success(t('orderStatusUpdatedSuccess', {ns: 'orders', status: t(`status_${updatedOrder.status}`, {ns:'orders'})}));
-  //     queryClient.invalidateQueries({ queryKey: ['order', id] });
-  //     queryClient.invalidateQueries({ queryKey: ['orders'] }); // Invalidate list if status affects it
-  //   },
-  //   onError: (error) => {
-  //     toast.error(error.message || t('orderStatusUpdateFailed', {ns: 'orders'}));
-  //   }
-  // });
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    if (order && newStatus !== order.status) {
+      updateStatusMutation.mutate({ orderId: order.id, status: newStatus });
+    }
+  };
 
-  // const handleStatusChange = (newStatus: OrderStatus) => {
-  //   if (order && newStatus !== order.status) {
-  //     updateStatusMutation.mutate({ orderId: order.id, status: newStatus });
-  //   }
-  // };
+  const handleSendWhatsAppInvoice = () => {
+    if (order) {
+      sendWhatsAppInvoiceMutation.mutate(order.id);
+    }
+  };
 
   if (isLoading)
     return (
@@ -293,6 +337,25 @@ const OrderDetailsPage: React.FC = () => {
           <Printer className="mr-2 h-4 w-4" />
           {t("printReceipt", { ns: "orders" })}
         </Button>
+        {can("order:send-whatsapp") && order.customer?.phone && (
+          <Button variant="outline" onClick={() => setIsWhatsAppModalOpen(true)}>
+            <WhatsAppIcon className="mr-2 h-4 w-4" />
+            {t("sendMessage", { ns: "orders" })}
+          </Button>
+        )}
+        {can("order:send-whatsapp") && order.customer?.phone && (
+          <Button 
+            variant="outline" 
+            onClick={handleSendWhatsAppInvoice}
+            disabled={sendWhatsAppInvoiceMutation.isPending}
+          >
+            <WhatsAppIcon className="mr-2 h-4 w-4" />
+            {sendWhatsAppInvoiceMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {t("sendInvoice", { ns: "orders" })}
+          </Button>
+        )}
         {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
       </PageHeader>
       <div className="grid md:grid-cols-3 gap-6">
@@ -413,24 +476,40 @@ const OrderDetailsPage: React.FC = () => {
                 status={order.status}
                 className="mt-1 text-base px-3 py-1.5 w-full justify-center"
               />
-              {/* TODO: Add Select to change status
-                     <Select
-                        value={order.status}
-                        onValueChange={(newStatus: OrderStatus) => handleStatusChange(newStatus)}
-                        disabled={updateStatusMutation.isPending}
-                    >
-                        <SelectTrigger className="mt-2">
-                            <SelectValue placeholder={t('changeStatus', {ns:'orders'})} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {orderStatusOptions.map(statusOpt => (
-                                <SelectItem key={statusOpt} value={statusOpt}>
-                                    {t(`status_${statusOpt}`, {ns:'orders'})}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    */}
+              {/* Status Change Select */}
+              {can("order:update-status") && (
+                <div className="mt-3">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("changeStatus", { ns: "orders" })}
+                  </Label>
+                  <Select
+                    value={order.status}
+                    onValueChange={(newStatus: OrderStatus) =>
+                      handleStatusChange(newStatus)
+                    }
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue
+                        placeholder={t("changeStatus", { ns: "orders" })}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {t(`status_${status}`, { ns: "orders" })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {updateStatusMutation.isPending && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("updating", { ns: "common" })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <Separator />
             <PaymentStatusAlert order={order} i18n={i18n} />
@@ -553,7 +632,14 @@ const OrderDetailsPage: React.FC = () => {
           isOpen={isPaymentModalOpen}
           onOpenChange={setIsPaymentModalOpen}
         />
-      )}{" "}
+      )}
+      {can("order:send-whatsapp") && (
+        <WhatsAppMessageDialog
+          order={order}
+          isOpen={isWhatsAppModalOpen}
+          onOpenChange={setIsWhatsAppModalOpen}
+        />
+      )}
     </div>
   );
 };

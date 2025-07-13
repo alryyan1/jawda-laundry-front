@@ -43,6 +43,7 @@ const whatsappSettingsSchema = z.object({
   whatsapp_api_url: z.string().url({ message: "validation:url" }).or(z.literal("")),
   whatsapp_api_token: z.string().min(1, { message: "validation:required" }).or(z.literal("")),
   whatsapp_notification_number: z.string().regex(/^[0-9]+$/, { message: "validation:phoneNumber" }).or(z.literal("")),
+  whatsapp_country_code: z.string().regex(/^[0-9]+$/, { message: "validation:countryCode" }).min(1, { message: "validation:required" }),
 });
 
 type WhatsAppSettingsFormValues = z.infer<typeof whatsappSettingsSchema>;
@@ -69,6 +70,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       whatsapp_api_url: "",
       whatsapp_api_token: "",
       whatsapp_notification_number: "",
+      whatsapp_country_code: "968",
     },
   });
 
@@ -90,6 +92,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         whatsapp_api_url: settings.whatsapp_api_url || "",
         whatsapp_api_token: settings.whatsapp_api_token || "",
         whatsapp_notification_number: settings.whatsapp_notification_number || "",
+        whatsapp_country_code: settings.whatsapp_country_code || "968",
       });
     }
   }, [settings, reset]);
@@ -241,6 +244,29 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       </FormControl>
                       <FormDescription>
                         {t("settings:whatsappNotificationNumberDesc")}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Country Code */}
+                <FormField
+                  control={form.control}
+                  name="whatsapp_country_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("settings:whatsappCountryCode")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="968"
+                          type="tel"
+                          maxLength={4}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t("settings:whatsappCountryCodeDesc")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

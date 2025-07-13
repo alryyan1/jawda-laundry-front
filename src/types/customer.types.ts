@@ -5,6 +5,10 @@ export interface CustomerType {
     id: number;
     name: string;
     description?: string | null;
+    customers_count?: number;
+    pricing_rules_count?: number;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Customer {

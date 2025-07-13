@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
-import type { DateRange } from "react-day-picker";
+
 
 import {
   type Order,
@@ -50,7 +50,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+
 import {
   PlusCircle,
   MoreHorizontal,
@@ -60,14 +60,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
+import  OrderItemsDialog  from "@/features/orders/components/OrderItemsDialog";
 
 const OrdersListPage: React.FC = () => {
-  const { t, i18n } = useTranslation([
-    "common",
-    "orders",
-    "customers",
-    "services",
-  ]);
+  const { t, i18n } = useTranslation("orders");
   const navigate = useNavigate();
   const { can } = useAuth();
 
@@ -78,13 +74,28 @@ const OrdersListPage: React.FC = () => {
     status?: OrderStatus | "";
     customerId?: string;
     productTypeId?: string;
-    dateRange?: DateRange;
+    dateFrom?: string;
+    dateTo?: string;
   }>({});
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
+  const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
+
+  // Handler to update order item status in memory
+  const handleOrderItemStatusChange = (itemId: number, newStatus: string) => {
+    setOrderItemsDialogOrder((prevOrder) => {
+      if (!prevOrder) return prevOrder;
+      return {
+        ...prevOrder,
+        items: prevOrder.items.map((item) =>
+          item.id === itemId ? { ...item, status: newStatus as OrderStatus } : item
+        ),
+      };
+    });
+  };
 
   // --- Data Fetching ---
   const { data: customers = [] } = useQuery<Customer[], Error>({
@@ -105,7 +116,8 @@ const OrdersListPage: React.FC = () => {
       debouncedSearch,
       filters.customerId,
       filters.productTypeId,
-      filters.dateRange,
+      filters.dateFrom,
+      filters.dateTo,
     ],
     [
       currentPage,
@@ -114,7 +126,8 @@ const OrdersListPage: React.FC = () => {
       debouncedSearch,
       filters.customerId,
       filters.productTypeId,
-      filters.dateRange,
+      filters.dateFrom,
+      filters.dateTo,
     ]
   );
 
@@ -131,12 +144,8 @@ const OrdersListPage: React.FC = () => {
         search: debouncedSearch,
         customerId: filters.customerId,
         productTypeId: filters.productTypeId,
-        dateFrom: filters.dateRange?.from
-          ? format(filters.dateRange.from, "yyyy-MM-dd")
-          : undefined,
-        dateTo: filters.dateRange?.to
-          ? format(filters.dateRange.to, "yyyy-MM-dd")
-          : undefined,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
       }),
     placeholderData: keepPreviousData,
   });
@@ -148,7 +157,8 @@ const OrdersListPage: React.FC = () => {
     debouncedSearch,
     filters.customerId,
     filters.productTypeId,
-    filters.dateRange,
+    filters.dateFrom,
+    filters.dateTo,
   ]);
 
   const orders = paginatedData?.data || [];
@@ -169,6 +179,11 @@ const OrdersListPage: React.FC = () => {
         {format(new Date(order.order_date), "PP", { locale: currentLocale })}
       </TableCell>
       <TableCell className="text-center">
+        {order.pickup_date
+          ? format(new Date(order.pickup_date), "PP", { locale: currentLocale })
+          : "-"}
+      </TableCell>
+      <TableCell className="text-center">
         <OrderStatusBadge status={order.status} />
       </TableCell>
       <TableCell className="text-center font-semibold">
@@ -176,6 +191,19 @@ const OrdersListPage: React.FC = () => {
       </TableCell>
       <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
         {formatCurrency(order.paid_amount, "USD", i18n.language)}
+      </TableCell>
+      <TableCell className="text-center w-12">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={e => {
+            e.stopPropagation();
+            setOrderItemsDialogOrder(order);
+          }}
+          aria-label={t("viewItems", { defaultValue: "View Items" })}
+        >
+          <Eye className="h-5 w-5" />
+        </Button>
       </TableCell>
       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
@@ -196,7 +224,7 @@ const OrdersListPage: React.FC = () => {
                 onClick={() => setSelectedOrderForPayments(order)}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
-                {t("viewPayments", { ns: "orders" })}
+                {t("viewPayments")}
               </DropdownMenuItem>
             )}
             {can("order:update") && (
@@ -206,7 +234,7 @@ const OrdersListPage: React.FC = () => {
                   onClick={() => navigate(`/orders/${order.id}/edit`)}
                 >
                   <Edit3 className="mr-2 h-4 w-4" />
-                  {t("editOrder", { ns: "orders" })}
+                  {t("editOrder")}
                 </DropdownMenuItem>
               </>
             )}
@@ -219,8 +247,8 @@ const OrdersListPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title={t("title", { ns: "orders" })}
-        description={t("orderListDescription", { ns: "orders" })}
+        title={t("title")}
+        description={t("orderListDescription")}
         actionButton={
           can("order:create")
             ? { label: t("newOrder"), icon: PlusCircle, to: "/orders/new" }
@@ -259,7 +287,7 @@ const OrdersListPage: React.FC = () => {
               <SelectItem value="all">{t("allStatuses")}</SelectItem>
               {orderStatusOptions.map((opt) => (
                 <SelectItem key={opt} value={opt}>
-                  {t(`status_${opt}`, { ns: "orders" })}
+                  {t(`status_${opt}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -275,7 +303,7 @@ const OrdersListPage: React.FC = () => {
           >
             <SelectTrigger>
               <SelectValue
-                placeholder={t("filterByCustomer", { ns: "orders" })}
+                placeholder={t("filterByCustomer")}
               />
             </SelectTrigger>
             <SelectContent>
@@ -300,12 +328,12 @@ const OrdersListPage: React.FC = () => {
           >
             <SelectTrigger>
               <SelectValue
-                placeholder={t("filterByProduct", { ns: "orders" })}
+                placeholder={t("filterByProduct")}
               />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
-                {t("allProducts", { ns: "services" })}
+                {t("allProducts")}
               </SelectItem>
               {productTypes.map((pt) => (
                 <SelectItem key={pt.id} value={pt.id.toString()}>
@@ -314,12 +342,34 @@ const OrdersListPage: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          <DatePickerWithRange
-            date={filters.dateRange}
-            onDateChange={(range) =>
-              setFilters((prev) => ({ ...prev, dateRange: range }))
-            }
-          />
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted-foreground">
+                {t("fromDate", { defaultValue: "From Date" })}
+              </label>
+              <Input
+                type="date"
+                value={filters.dateFrom || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
+                }
+                className="w-40"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-muted-foreground">
+                {t("toDate", { defaultValue: "To Date" })}
+              </label>
+              <Input
+                type="date"
+                value={filters.dateTo || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
+                }
+                className="w-40"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -328,17 +378,18 @@ const OrdersListPage: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[60px] text-center">ID</TableHead>
-              <TableHead className="text-center">{t("customerName")}</TableHead>
-              <TableHead className="text-center">{t("orderDate")}</TableHead>
-              <TableHead className="text-center">{t("status")}</TableHead>
+              <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
+              <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
+              <TableHead className="text-center">{t("pickupDate", { defaultValue: "Pickup Date" })}</TableHead>
+              <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
               <TableHead className="text-center">
-                {t("totalAmount", { ns: "purchases" })}
+                {t("totalAmount", { ns: "orders" })}
               </TableHead>
               <TableHead className="text-center">
-                {t("amountPaid", { ns: "orders" })}
+                {t("amountPaid")}
               </TableHead>
-              <TableHead className="text-center w-[80px]">
-                {t("actions")}
+              <TableHead className="text-center w-12">
+                {t("actions", { ns: "orders" })}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -368,6 +419,7 @@ const OrdersListPage: React.FC = () => {
         <div className="flex items-center justify-between space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
             {t("pagination.showingItems", {
+              ns: "common",
               first: paginatedData?.meta.from || 0,
               last: paginatedData?.meta.to || 0,
               total: totalItems,
@@ -381,7 +433,7 @@ const OrdersListPage: React.FC = () => {
               disabled={currentPage === 1 || isFetching}
             >
               
-              {t("firstPage")}
+              {t("firstPage", { ns: "common" })}
             </Button>
             <Button
               variant="outline"
@@ -390,10 +442,10 @@ const OrdersListPage: React.FC = () => {
               disabled={currentPage === 1 || isFetching}
             >
               
-              {t("previous")}
+              {t("previous", { ns: "common" })}
             </Button>
             <span className="text-sm font-medium">
-              {t("pageWithTotal", { currentPage, totalPages })}
+              {t("pageWithTotal", { ns: "common", currentPage, totalPages })}
             </span>
             <Button
               variant="outline"
@@ -404,7 +456,7 @@ const OrdersListPage: React.FC = () => {
               disabled={currentPage === totalPages || isFetching}
             >
               
-              {t("next")}
+              {t("next", { ns: "common" })}
             </Button>
             <Button
               variant="outline"
@@ -413,7 +465,7 @@ const OrdersListPage: React.FC = () => {
               disabled={currentPage === totalPages || isFetching}
             >
               
-              {t("lastPage")}
+              {t("lastPage", { ns: "common" })}
             </Button>
           </div>
         </div>
@@ -423,6 +475,14 @@ const OrdersListPage: React.FC = () => {
           order={selectedOrderForPayments}
           isOpen={!!selectedOrderForPayments}
           onOpenChange={(open) => !open && setSelectedOrderForPayments(null)}
+        />
+      )}
+      {orderItemsDialogOrder && (
+        <OrderItemsDialog 
+          order={orderItemsDialogOrder} 
+          open={!!orderItemsDialogOrder} 
+          onOpenChange={(open) => !open && setOrderItemsDialogOrder(null)}
+          onOrderItemStatusChange={handleOrderItemStatusChange}
         />
       )}
 

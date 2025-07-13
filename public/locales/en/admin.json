@@ -50,5 +50,6 @@
   "password": "Password",
   "confirmPassword": "Confirm Password",
   "cancel": "Cancel",
-  "createUserBtn": "Create User"
+  "createUserBtn": "Create User",
+  "expenseCategories": "Expense Categories"
 } 

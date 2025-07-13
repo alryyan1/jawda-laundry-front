@@ -74,6 +74,7 @@ const settingsFormSchema = z.object({
   whatsapp_api_url: z.string().optional(),
   whatsapp_api_token: z.string().optional(),
   whatsapp_notification_number: z.string().optional(),
+  whatsapp_country_code: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -105,6 +106,7 @@ const SettingsPage: React.FC = () => {
       whatsapp_api_url: "",
       whatsapp_api_token: "",
       whatsapp_notification_number: "",
+      whatsapp_country_code: "968",
     },
   });
   const {
@@ -133,6 +135,7 @@ const SettingsPage: React.FC = () => {
         whatsapp_api_url: settings.whatsapp_api_url || "",
         whatsapp_api_token: settings.whatsapp_api_token || "",
         whatsapp_notification_number: settings.whatsapp_notification_number || "",
+        whatsapp_country_code: settings.whatsapp_country_code || "968",
       });
     }
   }, [settings, reset]); // Depend on settings

@@ -21,7 +21,7 @@ import {
 } from '@/api/serviceOfferingService';
 
 import type { ProductType, ServiceOffering } from '@/types';
-import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog'; // Re-use for deleting offerings
+
 
 interface ManageOfferingsDialogProps {
     isOpen: boolean;
@@ -77,6 +77,7 @@ const OfferingRow: React.FC<{
             <TableCell className="text-center">
                 {isDimensionBased ? (
                     <Input
+                        onFocus={(e) => e.target.select()}
                         type="number"
                         step="0.01"
                         value={pricePerSqMeter}
@@ -86,6 +87,7 @@ const OfferingRow: React.FC<{
                     />
                 ) : (
                     <Input
+                        onFocus={(e) => e.target.select()}
                         type="number"
                         step="0.01"
                         value={price}
@@ -130,8 +132,6 @@ const OfferingRow: React.FC<{
 export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ isOpen, onOpenChange, productType }) => {
     const { t } = useTranslation(['common', 'services']);
 
-    const [itemToDelete, setItemToDelete] = useState<ServiceOffering | null>(null);
-
     // Fetch service offerings specifically for this productType
     const { data: offerings = [], isLoading, refetch } = useQuery<ServiceOffering[], Error>({
         queryKey: ['serviceOfferingsForProductType', productType?.id],
@@ -172,7 +172,6 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
         onSuccess: () => {
             toast.success(t('offeringDeletedSuccess', { ns: 'services' }));
             refetch();
-            setItemToDelete(null);
         },
         onError: (error) => {
             toast.error(error.message || t('offeringDeleteFailed', { ns: 'services' }));
@@ -181,6 +180,10 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
 
     const handleUpdate = (id: number, data: Partial<ServiceOfferingFormData>) => {
         updateMutation.mutate({ id, data });
+    };
+
+    const handleDelete = (offering: ServiceOffering) => {
+        deleteMutation.mutate(offering.id);
     };
 
     const isMutating = createAllMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
@@ -230,7 +233,7 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
                                             key={offering.id}
                                             offering={offering}
                                             onUpdate={handleUpdate}
-                                            onDelete={setItemToDelete}
+                                            onDelete={handleDelete}
                                             isUpdating={updateMutation.isPending && updateMutation.variables?.id === offering.id}
                                         />
                                     ))
@@ -242,15 +245,6 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
                     </div>
                 </DialogContent>
             </Dialog>
-
-            <DeleteConfirmDialog
-                isOpen={!!itemToDelete}
-                onOpenChange={(open) => !open && setItemToDelete(null)}
-                onConfirm={() => { if (itemToDelete) deleteMutation.mutate(itemToDelete.id); }}
-                itemName={itemToDelete?.display_name}
-                itemType="serviceOfferingLC"
-                isPending={deleteMutation.isPending}
-            />
         </>
     );
 };

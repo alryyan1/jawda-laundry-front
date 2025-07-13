@@ -170,5 +170,17 @@
   "order": "الطلب",
   "viewTodayOrders": "عرض طلبات اليوم",
   "selectOrderToView": "اختر طلباً لعرض تفاصيله",
-  "selectCustomerRequired": "اختيار العميل مطلوب"
+  "selectCustomerRequired": "اختيار العميل مطلوب",
+  "sendWhatsAppMessage": "إرسال رسالة واتساب",
+  "sendWhatsAppMessageDescription": "إرسال رسالة مخصصة للعميل حول طلبه",
+  "orderReceivedMessage": "مرحباً {{customerName}}، تم استلام طلبك رقم {{orderNumber}} وهو قيد المعالجة. سنخطرك عندما يكون جاهزاً. شكراً لاختيارك خدمتنا!",
+  "whatsappMessageSentSuccess": "تم إرسال رسالة الواتساب بنجاح!",
+  "whatsappMessageSendFailed": "فشل إرسال رسالة الواتساب",
+  "customerPhoneMissing": "رقم هاتف العميل مفقود. لا يمكن إرسال رسالة واتساب.",
+  "sendMessage": "إرسال رسالة",
+  "sendInvoice": "إرسال الفاتورة",
+  "whatsappInvoiceSentSuccess": "تم إرسال الفاتورة بنجاح عبر الواتساب!",
+  "whatsappInvoiceSendFailed": "فشل إرسال الفاتورة عبر الواتساب",
+  "fromDate": "من تاريخ",
+  "toDate": "إلى تاريخ"
 }

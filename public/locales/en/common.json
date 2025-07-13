@@ -82,7 +82,7 @@
   "recordedBy": "Recorded By",
   "tax": "Tax",
   "pagination": {
-    "showingItems": "Showing items"
+    "showingItems": "Showing items {{first}} to {{last}} of {{total}}"
   },
   "productTypeLC": "product type",
   "discount": "Discount",
@@ -198,14 +198,19 @@
   "next": "Next",
   "lastPage": "Last",
   "selectedRows": "{{count}} of {{total}} selected",
+  "message": "Message",
+  "messageRequired": "Message is required",
+  "enterMessage": "Enter your message...",
+  "messageLength": "{{current}}/{{max}} characters",
+  "recipient": "Recipient",
+  "sending": "Sending...",
+  "sendMessage": "Send Message",
+  "close": "Close",
   "collapseSidebar": "Collapse sidebar",
   "expandSidebar": "Expand sidebar",
   "selectCategoryToViewProducts": "Select a category to view available products",
   "selectProductToViewServices": "Select a product to view available services",
-  "dashboard": "Dashboard",
-  "orders": "Orders",
   "pointOfSale": "Point of Sale",
-  "customers": "Customers",
   "serviceOfferings": "Service Offerings",
   "users": "Users",
   "roles": "Roles",
@@ -302,5 +307,9 @@
   "toggleNavigationMenu": "Toggle navigation menu",
   "appName": "Jawda Laundry",
   "reports": "Reports",
-  "kanban": "Kanban"
+  "kanban": "Kanban",
+  "expenses": "Expenses",
+  "purchases": "Purchases",
+  "suppliers": "Suppliers",
+  "expenseCategories": "Expense Categories"
 }

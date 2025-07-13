@@ -201,7 +201,8 @@
             "addSize": "Add Size",
             "sizeAddedSuccess": "Size added successfully",
             "sizeDeletedSuccess": "Size deleted successfully",
-            "sizeActionFailed": "Failed to perform size action"
+            "sizeActionFailed": "Failed to perform size action",
+            "productType": "Product Type"
           }
       
     

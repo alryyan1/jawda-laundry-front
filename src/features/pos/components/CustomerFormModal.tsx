@@ -32,7 +32,7 @@ const customerSchema = z.object({
   phone: z.string().nonempty({ message: "validation.phoneRequired" }).min(7, { message: "validation.phoneInvalid" }),
   address: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
-  customer_type_id: z.string().optional().or(z.literal('')),
+  customer_type_id: z.union([z.string(), z.number(), z.null()]).optional(),
 });
 
 interface CustomerFormModalProps {
@@ -54,10 +54,10 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     queryKey: ['customerTypesForSelect'],
     queryFn: getCustomerTypes,
     retry: 1,
-    staleTime: 5 * 60 * 1000,
   });
 
-  const customerTypesArray = customerTypes || [];
+  // Ensure customerTypesArray is always an array
+  const customerTypesArray = Array.isArray(customerTypes) ? customerTypes : [];
 
   const { control, register, handleSubmit, formState: { errors }, setValue, reset } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -126,14 +126,16 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     name="customer_type_id"
                     control={control}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value || ''} disabled={isLoadingTypes}>
-                        <SelectTrigger id="customer_type_id">
+                      <Select onValueChange={field.onChange} value={field.value?.toString() || ''} disabled={isLoadingTypes}>
+                        <SelectTrigger id="customer_type_id" className="w-full">
                           <SelectValue placeholder={isLoadingTypes ? t('loading') : t('selectCustomerType', { ns: 'customers' })} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value=" ">{t('noneUnit', { ns: 'services' })}</SelectItem>
-                          {customerTypesArray && customerTypesArray.length > 0 && customerTypesArray.map(type => (
-                            <SelectItem key={type.id} value={type.id.toString()}>{type.name}</SelectItem>
+                          {customerTypesArray.map(type => (
+                            <SelectItem key={type.id} value={type.id.toString()}>
+                              {type.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

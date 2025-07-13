@@ -7,7 +7,6 @@ import { UserPlus2 } from "lucide-react";
 import type { ServiceOffering, ProductType } from "@/types";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -48,7 +47,7 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-grow  h-[calc(100vh-200px)]">
+      <ScrollArea className="flex-grow h-[calc(100vh-200px)]">
         <div className="p-4">
           {isLoading ? (
             <div className="space-y-3">
@@ -103,28 +102,27 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <ul className="space-y-2">
               {offerings.map((offering) => (
-                <Card
-                  key={offering.id}
-                  onClick={() => !disabled && onSelectOffering(offering)}
-                  className={cn(
-                    "transition-all duration-200 group",
-                    disabled 
-                      ? "cursor-not-allowed opacity-50" 
-                      : "cursor-pointer hover:border-primary hover:shadow-md",
-                    activeOfferingId === offering.id.toString() && "border-2 border-primary bg-primary/5 shadow-lg shadow-primary/20"
-                  )}
-                  tabIndex={disabled ? -1 : 0}
-                  onKeyDown={(e) => {
-                    if (!disabled && (e.key === "Enter" || e.key === " "))
-                      onSelectOffering(offering);
-                  }}
-                >
-                  <CardContent className={cn(
-                    "p-4",
-                    activeOfferingId === offering.id.toString() && "bg-primary/5"
-                  )}>
+                <li key={offering.id}>
+                  <button
+                    onClick={() => !disabled && onSelectOffering(offering)}
+                    disabled={disabled}
+                    className={cn(
+                      "w-full text-left p-3 rounded-lg border transition-all duration-200 group",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      disabled 
+                        ? "cursor-not-allowed opacity-50" 
+                        : "cursor-pointer hover:border-primary hover:shadow-sm",
+                      activeOfferingId === offering.id.toString() && 
+                        "border-primary bg-primary/5 shadow-sm"
+                    )}
+                    tabIndex={disabled ? -1 : 0}
+                    onKeyDown={(e) => {
+                      if (!disabled && (e.key === "Enter" || e.key === " "))
+                        onSelectOffering(offering);
+                    }}
+                  >
                     <div className="flex flex-col gap-1">
                       <h3 className={cn(
                         "font-medium text-sm",
@@ -136,10 +134,10 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
                         {getPriceDisplay(offering)}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </ScrollArea>

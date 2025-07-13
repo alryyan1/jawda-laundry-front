@@ -9,7 +9,8 @@ export interface CustomerTypeFormData {
 // Get all customer types (for dropdowns/select)
 export const getCustomerTypes = async (): Promise<CustomerType[]> => {
     const response = await apiClient.get('/customer-types');
-    return response.data;
+    // Handle both possible response structures
+    return Array.isArray(response.data) ? response.data : response.data.data || [];
 };
 
 // Get paginated customer types (for list pages)

@@ -294,5 +294,13 @@
   "pageWithTotal": "صفحة {{currentPage}} من {{totalPages}}",
   "previous": "السابق",
   "next": "التالي",
-  "allCategories": "جميع الفئات"
+  "allCategories": "جميع الفئات",
+  "message": "الرسالة",
+  "messageRequired": "الرسالة مطلوبة",
+  "enterMessage": "أدخل رسالتك...",
+  "messageLength": "{{current}}/{{max}} حرف",
+  "recipient": "المستلم",
+  "sending": "جارٍ الإرسال...",
+  "sendMessage": "إرسال الرسالة",
+  "close": "إغلاق"
 }

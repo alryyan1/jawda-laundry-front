@@ -60,6 +60,7 @@ export interface OrderItem {
     brand?: string | null;
     color?: string | null;
     defects?: string | null;
+    status?: OrderStatus;
 }
 
 export type BackendOrderItem = Omit<OrderItem, 'serviceOffering'> & { serviceOffering: ServiceOffering };
