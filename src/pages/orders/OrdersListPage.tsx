@@ -14,13 +14,16 @@ import {
   orderStatusOptions,
   type Customer,
   type ProductType,
+  type OrderStatistics,
 } from "@/types";
-import { getOrders } from "@/api/orderService";
+import { getOrders, getOrderStatistics } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { formatCurrency } from "@/lib/formatters";
+import { PAYMENT_METHODS } from "@/lib/constants";
+import { useSettings } from "@/context/SettingsContext";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
@@ -58,6 +61,7 @@ import {
   Edit3,
   CreditCard,
   Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import  OrderItemsDialog  from "@/features/orders/components/OrderItemsDialog";
@@ -67,6 +71,8 @@ const OrdersListPage: React.FC = () => {
   const navigate = useNavigate();
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const { getSetting } = useSettings();
+  const currencySymbol = getSetting('currency_symbol', '$');
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,6 +251,16 @@ const OrdersListPage: React.FC = () => {
     placeholderData: keepPreviousData,
   });
 
+  // Statistics query
+  const {
+    data: statistics,
+    isLoading: isLoadingStats,
+  } = useQuery<OrderStatistics, Error>({
+    queryKey: ["orderStatistics", filters.dateFrom, filters.dateTo],
+    queryFn: () => getOrderStatistics(filters.dateFrom, filters.dateTo),
+    enabled: !!(filters.dateFrom && filters.dateTo),
+  });
+
   useEffect(() => {
     if (currentPage !== 1) setCurrentPage(1);
   }, [
@@ -260,14 +276,20 @@ const OrdersListPage: React.FC = () => {
   const totalItems = paginatedData?.meta?.total || 0;
   const totalPages = paginatedData?.meta?.last_page || 1;
 
-  const MemoizedTableRow = React.memo(({ order }: { order: Order }) => (
-    <TableRow 
-      key={order.id} 
-      className={`cursor-pointer hover:bg-muted/50 ${
-        orderItemsDialogOrder?.id === order.id ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500' : ''
-      }`}
-      onClick={() => navigate(`/orders/${order.id}`)}
-    >
+  const MemoizedTableRow = React.memo(({ order }: { order: Order }) => {
+    // Check if order is fully paid
+    const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+    
+    return (
+      <TableRow 
+        key={order.id} 
+        className={`cursor-pointer hover:bg-muted/50 ${
+          orderItemsDialogOrder?.id === order.id ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500' : ''
+        } ${
+          isFullyPaid ? 'bg-green-50/50 dark:bg-green-950/10 border-l-2 border-l-green-400' : ''
+        }`}
+        onClick={() => navigate(`/orders/${order.id}`)}
+      >
       <TableCell className="font-mono text-xs text-muted-foreground text-center">
         {order.id}
       </TableCell>
@@ -287,10 +309,15 @@ const OrdersListPage: React.FC = () => {
         {calculateTotalQuantities(order)} / {calculateTotalPickedUpQuantities(order)}
       </TableCell>
       <TableCell className="text-center font-semibold">
-        {formatCurrency(order.total_amount, "USD", i18n.language)}
+        {formatCurrency(order.total_amount, currencySymbol, i18n.language)}
       </TableCell>
       <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
-        {formatCurrency(order.paid_amount, "USD", i18n.language)}
+        <div className="flex items-center justify-center gap-1">
+          {formatCurrency(order.paid_amount, currencySymbol, i18n.language)}
+          {isFullyPaid && (
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-center w-12">
         <Button
@@ -342,7 +369,8 @@ const OrdersListPage: React.FC = () => {
         </DropdownMenu>
       </TableCell>
     </TableRow>
-  ));
+    );
+  });
 
   return (
     <div>
@@ -387,6 +415,116 @@ const OrdersListPage: React.FC = () => {
           </div>
         </div>
       </PageHeader>
+
+      {/* Summary Statistics */}
+      {statistics && (
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Orders */}
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    {t("totalOrders", { defaultValue: "Total Orders" })}
+                  </p>
+                  <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                    {statistics.totalOrders.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-10 w-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Total Amount Paid */}
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
+                  </p>
+                  <p className="text-xl font-bold text-green-900 dark:text-green-100">
+                    {formatCurrency(statistics.totalAmountPaid, currencySymbol, i18n.language)}
+                  </p>
+                </div>
+                <div className="h-10 w-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Methods Breakdown */}
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-800 col-span-1 md:col-span-2">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                  {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
+                </p>
+                <div className="h-10 w-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+              </div>
+                            <div className="grid grid-cols-4 gap-3">
+                {PAYMENT_METHODS.map((method) => {
+                  const amount = statistics.paymentBreakdown[method as keyof typeof statistics.paymentBreakdown] || 0;
+                  const percentage = statistics.totalAmountPaid > 0 ? (amount / statistics.totalAmountPaid) * 100 : 0;
+                  
+                  return (
+                    <div key={method} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                          {t(`paymentMethod_${method}`, { defaultValue: method })}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {formatCurrency(amount, currencySymbol, i18n.language)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Loading state for statistics */}
+      {isLoadingStats && (
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                  </div>
+                  <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Card className="mb-4">
         <CardHeader>

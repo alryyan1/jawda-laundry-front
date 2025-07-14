@@ -64,9 +64,9 @@ export const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*
 // Use `as const` to get a readonly tuple with literal types
 // Then derive the type from it in your types file. This is a very robust pattern.
 
-export const PAYMENT_METHODS = ['cash', 'card', 'online', 'credit'] as const;
+export const PAYMENT_METHODS = ['cash', 'visa', 'bank_transfer'] as const;
 
-export const EXPENSE_PAYMENT_METHODS = ['cash', 'card', 'bank_transfer', 'check'] as const;
+export const EXPENSE_PAYMENT_METHODS = ['cash', 'visa', 'bank_transfer'] as const;
 
 export const ORDER_STATUSES = ['pending', 'processing', 'ready_for_pickup', 'completed', 'cancelled'] as const;
 

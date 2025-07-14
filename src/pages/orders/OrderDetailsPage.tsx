@@ -241,6 +241,8 @@ const OrderDetailsPage: React.FC = () => {
     mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
     onSuccess: () => {
       toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
+      // Refresh the order data to get updated WhatsApp status
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
     },
     onError: (error) => {
       toast.error(
@@ -338,14 +340,19 @@ const OrderDetailsPage: React.FC = () => {
           {t("printReceipt", { ns: "orders" })}
         </Button>
         {can("order:send-whatsapp") && order.customer?.phone && (
-          <Button variant="outline" onClick={() => setIsWhatsAppModalOpen(true)}>
+          <Button 
+            variant={order.whatsapp_text_sent ? "default" : "outline"}
+            className={order.whatsapp_text_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+            onClick={() => setIsWhatsAppModalOpen(true)}
+          >
             <WhatsAppIcon className="mr-2 h-4 w-4" />
-            {t("sendMessage", { ns: "orders" })}
+            {order.whatsapp_text_sent ? t("messageSent", { ns: "orders" }) : t("sendMessage", { ns: "orders" })}
           </Button>
         )}
         {can("order:send-whatsapp") && order.customer?.phone && (
           <Button 
-            variant="outline" 
+            variant={order.whatsapp_pdf_sent ? "default" : "outline"}
+            className={order.whatsapp_pdf_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
             onClick={handleSendWhatsAppInvoice}
             disabled={sendWhatsAppInvoiceMutation.isPending}
           >
@@ -353,7 +360,7 @@ const OrderDetailsPage: React.FC = () => {
             {sendWhatsAppInvoiceMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {t("sendInvoice", { ns: "orders" })}
+            {order.whatsapp_pdf_sent ? t("invoiceSent", { ns: "orders" }) : t("sendInvoice", { ns: "orders" })}
           </Button>
         )}
         {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
@@ -369,52 +376,54 @@ const OrderDetailsPage: React.FC = () => {
               })}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <h3 className="font-semibold mb-1">
+          <CardContent className="space-y-4 text-base">
+            <h3 className="font-bold text-lg mb-2">
               {t("customerDetails", { ns: "customers" })}
             </h3>
-            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
               <div>
-                <strong>{t("name", { ns: "common" })}:</strong>{" "}
-                {order.customer?.name}
+                <strong className="text-base">{t("name", { ns: "common" })}:</strong>{" "}
+                <span className="font-semibold">{order.customer?.name}</span>
               </div>
               <div>
-                <strong>{t("phone", { ns: "customers" })}:</strong>{" "}
-                {order.customer?.phone || t("notAvailable", { ns: "common" })}
+                <strong className="text-base">{t("phone", { ns: "customers" })}:</strong>{" "}
+                <span className="font-bold text-lg text-primary">{order.customer?.phone || t("notAvailable", { ns: "common" })}</span>
               </div>
               <div>
-                <strong>{t("email", { ns: "common" })}:</strong>{" "}
-                {order.customer?.email || t("notAvailable", { ns: "common" })}
+                <strong className="text-base">{t("email", { ns: "common" })}:</strong>{" "}
+                <span className="font-semibold">{order.customer?.email || t("notAvailable", { ns: "common" })}</span>
               </div>
             </div>
-            <Separator className="my-3" />
-            <h3 className="font-semibold mb-1">
+            <Separator className="my-4" />
+            <h3 className="font-bold text-lg mb-2">
               {t("orderSpecifics", {
                 ns: "orders",
                 defaultValue: "Order Specifics",
               })}
             </h3>
-            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1">
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
               <div>
-                <strong>{t("dueDate", { ns: "orders" })}:</strong>{" "}
-                {order.due_date
-                  ? format(new Date(order.due_date), "PPP", {
-                      locale: currentLocale,
-                    })
-                  : t("notSet", { ns: "common" })}
+                <strong className="text-base">{t("dueDate", { ns: "orders" })}:</strong>{" "}
+                <span className="font-semibold">
+                  {order.due_date
+                    ? format(new Date(order.due_date), "PPP", {
+                        locale: currentLocale,
+                      })
+                    : t("notSet", { ns: "common" })}
+                </span>
               </div>
               {order.staff_user && (
                 <div>
-                  <strong>{t("processedBy", { ns: "orders" })}:</strong>{" "}
-                  {order.staff_user.name}
+                  <strong className="text-base">{t("processedBy", { ns: "orders" })}:</strong>{" "}
+                  <span className="font-semibold">{order.staff_user.name}</span>
                 </div>
               )}
             </div>
 
             {/* Pickup Date Section */}
-            <Separator className="my-3" />
+            <Separator className="my-4" />
             <div>
-              <Label className="text-sm font-semibold mb-2 block">
+              <Label className="text-base font-bold mb-2 block">
                 {t("pickupDate", { ns: "orders" })}
               </Label>
               {can("order:update") ? (
@@ -448,12 +457,12 @@ const OrderDetailsPage: React.FC = () => {
             {order.notes && (
               <>
                 {" "}
-                <Separator className="my-3" />{" "}
+                <Separator className="my-4" />{" "}
                 <div>
-                  <strong>
+                  <strong className="text-base">
                     {t("overallOrderNotesOptional", { ns: "orders" })}:
                   </strong>{" "}
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                  <p className="text-base text-muted-foreground whitespace-pre-line">
                     {order.notes}
                   </p>{" "}
                 </div>

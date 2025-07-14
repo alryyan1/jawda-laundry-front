@@ -1,5 +1,4 @@
 {
-  "reports": "Reports",
   "reportsTitle": "Reports",
   "reportsDescription": "View and analyze financial data and performance",
   "reportsOverview": "Reports Overview",
@@ -23,9 +22,8 @@
   "service": "Service",
   "supplier": "Supplier",
   "quantitySold": "Quantity Sold",
-  "revenue": "Revenue",
   "totalAmount": "Total Amount",
-  "reports": "Reports",
+  "dailyCosts": "Daily Costs",
   "noDataForPeriod": "No data available for this period",
   "detailedReportsTitle": "Detailed Reports",
   "detailedReportsDescription": "Comprehensive reports for in-depth analysis and insights",
@@ -171,8 +169,5 @@
   "perOrder": "per order",
   "noDataForMonth": "No data available for {{month}}",
   "date": "Date",
-  "orders": "Orders",
-  "revenue": "Revenue",
-  "averagePerOrder": "Average per Order",
   "dateRange": "Date Range: {{from}} to {{to}}"
 } 

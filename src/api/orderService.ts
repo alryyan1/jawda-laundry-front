@@ -10,7 +10,8 @@ import type {
     ServiceOffering, // Needed for createOrder logic
     PricingStrategy,  // For QuoteItemResponse
     QuoteItemPayload,
-    QuoteItemResponse
+    QuoteItemResponse,
+    OrderStatistics
 } from '@/types';
 
 // --- Backend Payload Types for Order Creation/Update ---
@@ -305,6 +306,20 @@ export const updateOrderItemPickedUpQuantity = async (
     picked_up_quantity: pickedUpQuantity 
   });
   return data.order_item;
+};
+
+export const getOrderStatistics = async (
+  dateFrom?: string,
+  dateTo?: string
+): Promise<OrderStatistics> => {
+  const params = new URLSearchParams();
+  if (dateFrom) params.append('date_from', dateFrom);
+  if (dateTo) params.append('date_to', dateTo);
+
+  const { data } = await apiClient.get<OrderStatistics>(
+    `/orders/statistics?${params.toString()}`
+  );
+  return data;
 };
 
 

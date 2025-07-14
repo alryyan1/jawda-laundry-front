@@ -38,7 +38,7 @@ export const formatDateTime = (
 /**
  * Formats a number as currency.
  * @param amount The number to format.
- * @param currency The currency code (e.g., 'USD', 'EUR', 'SAR'). Defaults to 'USD'.
+ * @param currency The currency code (e.g., 'USD', 'EUR', 'SAR') or symbol (e.g., '$', '€', 'SAR'). Defaults to 'USD'.
  * @param lang Current language code ('en', 'ar') for locale-specific formatting.
  * @returns Formatted currency string.
  */
@@ -59,6 +59,15 @@ export const formatCurrency = (
     }
 
     const locale = lang.startsWith('ar') ? 'ar-SA' : 'en-US'; // Adjust for other Arabic locales if needed
+
+    // If currency is a symbol (not a 3-letter code), use custom formatting
+    if (currency.length <= 3 && !/^[A-Z]{3}$/.test(currency)) {
+        return new Intl.NumberFormat(locale, {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(amount) + ' ' + currency;
+    }
 
     return new Intl.NumberFormat(locale, {
         style: 'currency',

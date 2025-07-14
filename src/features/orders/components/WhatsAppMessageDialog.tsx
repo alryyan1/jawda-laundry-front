@@ -1,7 +1,7 @@
 // src/features/orders/components/WhatsAppMessageDialog.tsx
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import type { Order } from '@/types';
@@ -35,6 +35,7 @@ export const WhatsAppMessageDialog: React.FC<WhatsAppMessageDialogProps> = ({
 }) => {
   const { t } = useTranslation(['orders', 'common']);
   const { can } = useAuth();
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
 
   // Default message template
@@ -59,6 +60,8 @@ export const WhatsAppMessageDialog: React.FC<WhatsAppMessageDialogProps> = ({
     mutationFn: ({ orderId, message }) => sendOrderWhatsAppMessage(orderId, message),
     onSuccess: () => {
       toast.success(t('whatsappMessageSentSuccess'));
+      // Refresh the order data to get updated WhatsApp status
+      queryClient.invalidateQueries({ queryKey: ["order", order.id] });
       onOpenChange(false);
       setMessage('');
     },

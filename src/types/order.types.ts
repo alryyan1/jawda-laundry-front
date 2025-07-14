@@ -2,8 +2,9 @@
 import type { User } from './auth.types';
 import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
+import type { PAYMENT_METHODS } from '@/lib/constants';
 
-export type PaymentMethod = 'cash' | 'card' | 'online' | 'credit' | 'bank_transfer';
+export type PaymentMethod = typeof PAYMENT_METHODS[number];
 
 export interface Payment {
     id: number;
@@ -83,6 +84,8 @@ export interface Order {
     order_date: string;
     due_date?: string | null;
     pickup_date?: string | null;
+    whatsapp_text_sent?: boolean;
+    whatsapp_pdf_sent?: boolean;
     items: OrderItem[];
     payments?: Payment[];
     created_at: string;
@@ -114,4 +117,15 @@ export interface NewOrderFormData {
     notes?: string;
     due_date?: string;
     status?: OrderStatus; // Added for edit page
+}
+
+export interface OrderStatistics {
+  totalOrders: number;
+  totalAmountPaid: number;
+  paymentBreakdown: {
+    cash: number;
+    card: number;
+    online: number;
+    credit: number;
+  };
 }

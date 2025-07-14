@@ -3,7 +3,6 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { arSA, enUS } from "date-fns/locale";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,7 +13,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
 
 import {
@@ -22,17 +20,14 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardDescription,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
   DollarSign,
   Package,
-  Users,
   Hourglass,
   CheckCircle,
-  Zap,
   TrendingUp,
   BarChart3,
 } from "lucide-react";
@@ -40,10 +35,10 @@ import {
 import {
   fetchDashboardSummary,
   fetchOrdersTrend,
-  DashboardSummary,
-  OrderTrendItem,
 } from "@/api/dashboardService";
+import type { DashboardSummary, OrderTrendItem } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
+import { useSettings } from "@/context/SettingsContext";
 
 // A reusable StatCard component specific to this dashboard
 const StatCard: React.FC<{
@@ -82,7 +77,8 @@ const StatCard: React.FC<{
 
 const DashboardPage: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "dashboard", "orders"]);
-  const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
+  const { getSetting } = useSettings();
+  const currencySymbol = getSetting('currency_symbol', '$');
 
   const {
     data: summary,
@@ -154,7 +150,7 @@ const DashboardPage: React.FC = () => {
           title={t("monthlyRevenue", { ns: "dashboard" })}
           value={
             summary?.monthlyRevenue !== undefined
-              ? formatCurrency(summary.monthlyRevenue, "USD", i18n.language)
+              ? formatCurrency(summary.monthlyRevenue, currencySymbol, i18n.language)
               : undefined
           }
           icon={DollarSign}

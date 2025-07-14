@@ -23,6 +23,8 @@
   "startNewOrder": "بدء طلب جديد",
   "newUnsavedOrder": "طلب جديد غير محفوظ",
   "OrderStatusManagement": "إدارة الحالات المختلفة للطلبات",
+  "paymentRecordedSuccess": "تم سجل الدفع بنجاح",
+  "paymentReceipt": "إيصال الدفع",
   "orderDetailsTitle": "تفاصيل الطلب",
   "orderPlacedOn": "تم الطلب في {{date}}",
   "printInvoice": "طباعة الفاتورة",
@@ -178,7 +180,9 @@
   "whatsappMessageSendFailed": "فشل إرسال رسالة الواتساب",
   "customerPhoneMissing": "رقم هاتف العميل مفقود. لا يمكن إرسال رسالة واتساب.",
   "sendMessage": "إرسال رسالة",
+  "messageSent": "تم إرسال الرسالة",
   "sendInvoice": "إرسال الفاتورة",
+  "invoiceSent": "تم إرسال الفاتورة",
   "whatsappInvoiceSentSuccess": "تم إرسال الفاتورة بنجاح عبر الواتساب!",
   "whatsappInvoiceSendFailed": "فشل إرسال الفاتورة عبر الواتساب",
   "viewItems": "عرض العناصر",
@@ -201,5 +205,12 @@
   "lastPage": "الأخير",
   "pageWithTotal": "الصفحة {{currentPage}} من {{totalPages}}",
   "showingItems": "عرض {{first}} إلى {{last}} من {{total}} نتيجة",
-  "notAvailable": "غير متوفر"
+  "notAvailable": "غير متوفر",
+  "paymentMethod_cash": "نقداً",
+  "paymentMethod_card": "بطاقة",
+  "paymentMethod_online": "أونلاين",
+  "paymentMethod_credit": "آجل",
+  "totalOrders": "إجمالي الطلبات",
+  "totalAmountPaid": "إجمالي المبلغ المدفوع",
+  "paymentBreakdown": "تفصيل المدفوعات"
 }

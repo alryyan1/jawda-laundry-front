@@ -183,7 +183,9 @@
   "whatsappMessageSendFailed": "Failed to send WhatsApp message",
   "customerPhoneMissing": "Customer phone number is missing. Cannot send WhatsApp message.",
   "sendMessage": "Send Message",
+  "messageSent": "Message Sent",
   "sendInvoice": "Send Invoice",
+  "invoiceSent": "Invoice Sent",
   "whatsappInvoiceSentSuccess": "Invoice sent successfully via WhatsApp!",
   "whatsappInvoiceSendFailed": "Failed to send invoice via WhatsApp",
   "viewItems": "View Items",
@@ -195,6 +197,8 @@
   "totalItems": "Total Items (Total/Picked Up)",
   "actions": "Actions",
   "filters": "Filters",
+  "paymentRecordedSuccess": "Payment recorded successfully",
+  "paymentReceipt": "Payment Receipt",
   "openMenu": "Open menu",
   "viewDetails": "View Details",
   "allProducts": "All Products",
@@ -206,5 +210,12 @@
   "lastPage": "Last",
   "pageWithTotal": "Page {{currentPage}} of {{totalPages}}",
   "showingItems": "Showing {{first}} to {{last}} of {{total}} results",
-  "notAvailable": "N/A"
+  "notAvailable": "N/A",
+  "paymentMethod_cash": "Cash",
+  "paymentMethod_card": "Card",
+  "paymentMethod_online": "Online",
+  "paymentMethod_credit": "Credit",
+  "totalOrders": "Total Orders",
+  "totalAmountPaid": "Total Amount Paid",
+  "paymentBreakdown": "Payment Breakdown"
 }

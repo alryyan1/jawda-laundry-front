@@ -37,6 +37,8 @@ import { formatCurrency } from '@/lib/formatters';
 import type { Order, Payment, RecordPaymentFormData, PaymentMethod } from '@/types';
 import { recordOrderPayment } from '@/api/paymentService';
 import type { AxiosError } from 'axios';
+import { PAYMENT_METHODS } from '@/lib/constants';
+import { PdfDialog } from './PdfDialog';
 
 const paymentSchema = z.object({
   amount: z.preprocess(
@@ -44,7 +46,7 @@ const paymentSchema = z.object({
     z.number({ required_error: "validation.amountRequired", invalid_type_error: "validation.amountMustBeNumber" })
      .positive({ message: "validation.amountMustBePositive" })
   ),
-  method: z.enum(['cash', 'card', 'online', 'credit', 'bank_transfer'] as const, { required_error: "validation.paymentMethodRequired" }),
+  method: z.enum(PAYMENT_METHODS, { required_error: "validation.paymentMethodRequired" }),
   payment_date: z.string().nonempty({ message: "validation.dateRequired" }),
   transaction_id: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
@@ -68,6 +70,7 @@ interface RecordPaymentModalProps {
 export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, isOpen, onOpenChange }) => {
     const { t, i18n } = useTranslation(['common', 'orders', 'validation']);
     const queryClient = useQueryClient();
+    const [showPdfDialog, setShowPdfDialog] = React.useState(false);
 
     const {
         control,
@@ -76,7 +79,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
         reset,
         formState: { errors }
     } = useForm<PaymentFormValues>({
-        resolver: zodResolver(paymentSchema),
+        resolver: zodResolver(paymentSchema) as any,
         defaultValues: {
             amount: 0,
             method: 'cash' as PaymentMethod,
@@ -87,14 +90,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
     });
 
     const paymentMethodOptions = useMemo(() => {
-        // Use default payment methods since settings don't have payment_methods_ar
-        return [
-            { key: 'cash' as PaymentMethod, value: t('payment_method_cash', {ns:'orders'}) },
-            { key: 'card' as PaymentMethod, value: t('payment_method_card', {ns:'orders'}) },
-            { key: 'online' as PaymentMethod, value: t('payment_method_online', {ns:'orders'}) },
-            { key: 'credit' as PaymentMethod, value: t('payment_method_credit', {ns:'orders'}) },
-            { key: 'bank_transfer' as PaymentMethod, value: t('payment_method_bank_transfer', {ns:'orders'}) },
-        ];
+        return PAYMENT_METHODS.map(method => ({
+            key: method as PaymentMethod,
+            value: t(`${method}`, {ns:'orders'})
+        }));
     }, [t]);
 
     useEffect(() => {
@@ -106,6 +105,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                 payment_date: format(new Date(), 'yyyy-MM-dd'),
             });
         }
+        // Reset PDF dialog when payment modal closes
+        if (!isOpen) {
+            setShowPdfDialog(false);
+        }
     }, [order, isOpen, reset]);
 
 
@@ -116,9 +119,15 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
             queryClient.invalidateQueries({ queryKey: ['order', String(order!.id)] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             onOpenChange(false);
+            // Show PDF dialog after successful payment
+            setShowPdfDialog(true);
         },
-        onError: (error:AxiosError) => {
-            toast.error(error.response?.data.message || t('paymentRecordFailed', {ns:'orders'}));
+        onError: (error: Error) => {
+            const axiosError = error as AxiosError;
+            const message = axiosError.response?.data && typeof axiosError.response.data === 'object' && 'message' in axiosError.response.data 
+                ? (axiosError.response.data as any).message 
+                : t('paymentRecordFailed', {ns:'orders'});
+            toast.error(message);
         }
     });
 
@@ -130,7 +139,8 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
     if (!order) return null;
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -141,7 +151,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                         {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, 'USD', i18n.language)}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+                <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4 py-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-1.5">
                             <Label htmlFor="amount">{t('amountPaid', {ns:'orders'})}<span className="text-destructive">*</span></Label>
@@ -203,5 +213,15 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                 </form>
             </DialogContent>
         </Dialog>
+        
+        {/* PDF Dialog for showing receipt after successful payment */}
+        {order && (
+            <PdfDialog
+                orderId={order.id}
+                isOpen={showPdfDialog}
+                onOpenChange={setShowPdfDialog}
+            />
+        )}
+    </>
     );
 };
