@@ -48,6 +48,7 @@ import {
     Calculator,
     PanelLeftClose,
     PanelLeftOpen,
+    TrendingUp,
   } from "lucide-react";
 
 // MainLayout Component
@@ -58,6 +59,7 @@ const MainLayout: React.FC = () => {
   const { user, logout: storeLogout } = useAuthStore();
 
   const [isServiceAdminOpen, setIsServiceAdminOpen] = useState(false);
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
@@ -191,8 +193,6 @@ const MainLayout: React.FC = () => {
       icon: Shirt,
       type: "link" as const,
     },
-    // --- THE NEW LINK ---
-    { to: '/admin/expense-categories', labelKey: 'expenseCategories', ns: 'admin', icon: FolderKanban, permission: 'expense-category:manage' },
     {
       to: "/expenses",
       labelKey: "expenses",
@@ -207,7 +207,6 @@ const MainLayout: React.FC = () => {
       icon: ShoppingCart,
       type: "link" as const,
     },
-
     {
       to: "/suppliers",
       labelKey: "suppliers",
@@ -223,11 +222,32 @@ const MainLayout: React.FC = () => {
       type: "link" as const,
     },
     {
-      to: "/reports",
-      labelKey: "reports",
+      labelKey: "reportsGroup",
       namespace: "reports",
       icon: ChartBar,
-      type: "link" as const,
+      type: "collapsible" as const,
+      isOpen: isReportsOpen,
+      onToggle: () => setIsReportsOpen(!isReportsOpen),
+      subItems: [
+        {
+          to: "/reports",
+          labelKey: "reports",
+          namespace: "reports",
+          icon: ChartBar,
+        },
+        {
+          to: "/reports/daily-revenue",
+          labelKey: "dailyRevenue",
+          namespace: "reports",
+          icon: TrendingUp,
+        },
+        {
+          to: "/reports/daily-costs",
+          labelKey: "dailyCosts",
+          namespace: "reports",
+          icon: Calculator,
+        },
+      ],
     },
     {
       labelKey: "serviceAdmin",
@@ -239,12 +259,14 @@ const MainLayout: React.FC = () => {
         {
           to: "/admin/product-categories",
           labelKey: "productCategories",
+          namespace: "services",
           icon: Layers,
         },
-        { to: "/admin/product-types", labelKey: "productTypes", icon: Box },
+        { to: "/admin/product-types", labelKey: "productTypes", namespace: "services", icon: Box },
         {
           to: "/admin/service-actions",
           labelKey: "serviceActions",
+          namespace: "services",
           icon: Wand2,
         },
       ],
@@ -312,7 +334,7 @@ const MainLayout: React.FC = () => {
             key={item.labelKey}
             variant={isSubItemActive ? "secondary" : "ghost"}
             className="w-full justify-center px-2"
-            title={t(item.labelKey, { ns: "services" })}
+            title={t(item.labelKey, { ns: item.namespace || "common" })}
             onClick={() => item.onToggle?.()}
           >
             <item.icon
@@ -339,7 +361,7 @@ const MainLayout: React.FC = () => {
                       mobile ? "h-5 w-5" : ""
                     }`}
                   />
-                  {t(item.labelKey, { ns: "services" })}
+                  {t(item.labelKey, { ns: item.namespace || "common" })}
                 </span>
                 {item.isOpen ? (
                   <ChevronDown className="h-4 w-4" />
@@ -365,7 +387,7 @@ const MainLayout: React.FC = () => {
                         mobile ? "h-4 w-4" : ""
                       }`}
                     />
-                    {t(subItem.labelKey, { ns: "services" })}
+                    {t(subItem.labelKey, { ns: subItem.namespace || "common" })}
                   </Link>
                 </Button>
               ))}

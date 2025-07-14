@@ -51,6 +51,7 @@ export interface OrderItem {
     serviceOffering?: ServiceOffering;
     product_description_custom?: string | null;
     quantity: number;
+    picked_up_quantity?: number;
     length_meters?: number | null;
     width_meters?: number | null;
     calculated_price_per_unit_item: number;

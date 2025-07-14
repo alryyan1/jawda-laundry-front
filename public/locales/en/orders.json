@@ -191,11 +191,20 @@
   "customerName": "Customer Name",
   "status": "Status",
   "totalAmount": "Total Amount",
+  "amountPaid": "Amount Paid",
+  "totalItems": "Total Items (Total/Picked Up)",
   "actions": "Actions",
   "filters": "Filters",
   "openMenu": "Open menu",
   "viewDetails": "View Details",
   "allProducts": "All Products",
   "fromDate": "From Date",
-  "toDate": "To Date"
+  "toDate": "To Date",
+  "firstPage": "First",
+  "previous": "Previous",
+  "next": "Next",
+  "lastPage": "Last",
+  "pageWithTotal": "Page {{currentPage}} of {{totalPages}}",
+  "showingItems": "Showing {{first}} to {{last}} of {{total}} results",
+  "notAvailable": "N/A"
 }

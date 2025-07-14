@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import type { DateRange } from "react-day-picker";
+
 import {
   BarChart,
   Bar,
@@ -26,7 +26,9 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -65,23 +67,31 @@ const SalesSummaryPage: React.FC = () => {
   const { can } = useAuth();
   const queryClient = useQueryClient();
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().setDate(new Date().getDate() - 29)), // Default to last 30 days
-    to: new Date(),
-  });
+  const [viewType, setViewType] = useState<'monthly' | 'custom'>('monthly');
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    format(new Date(), "yyyy-MM")
+  );
+  const [dateFrom, setDateFrom] = useState<string>(
+    format(new Date(new Date().setDate(new Date().getDate() - 29)), "yyyy-MM-dd")
+  );
+  const [dateTo, setDateTo] = useState<string>(
+    format(new Date(), "yyyy-MM-dd")
+  );
 
-  const queryKey = ["salesSummaryReport", dateRange];
+  const queryKey = ["salesSummaryReport", viewType, selectedMonth, dateFrom, dateTo];
   const {
     data: report,
     isLoading,
     isFetching,
   } = useQuery<SalesSummaryReport, Error>({
     queryKey,
-    queryFn: () =>
-      getSalesSummaryReport(
-        dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined,
-        dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined
-      ),
+    queryFn: () => {
+      if (viewType === 'monthly') {
+        return getSalesSummaryReport(undefined, undefined, selectedMonth);
+      } else {
+        return getSalesSummaryReport(dateFrom || undefined, dateTo || undefined);
+      }
+    },
     enabled: can("report:view-financial"),
     staleTime: 5 * 60 * 1000,
   });
@@ -108,11 +118,56 @@ const SalesSummaryPage: React.FC = () => {
         onRefresh={() => queryClient.invalidateQueries({ queryKey })}
         isRefreshing={isFetching}
       >
-        <DatePickerWithRange
-          date={dateRange}
-          onDateChange={setDateRange}
-          className="w-full sm:w-auto"
-        />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col space-y-2">
+            <Label>{t("viewType", { ns: "reports" })}</Label>
+            <Select value={viewType} onValueChange={(value: 'monthly' | 'custom') => setViewType(value)}>
+              <SelectTrigger className="w-full sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">{t("monthlyView", { ns: "reports" })}</SelectItem>
+                <SelectItem value="custom">{t("customRange", { ns: "reports" })}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {viewType === 'monthly' ? (
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="month">{t("selectMonth", { ns: "reports" })}</Label>
+              <Input
+                id="month"
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full sm:w-auto"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="date-from">{t("fromDate", { ns: "reports" })}</Label>
+                <Input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full sm:w-auto"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="date-to">{t("toDate", { ns: "reports" })}</Label>
+                <Input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full sm:w-auto"
+                />
+              </div>
+            </>
+          )}
+        </div>
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
@@ -120,9 +175,9 @@ const SalesSummaryPage: React.FC = () => {
           title={t("totalRevenue")}
           icon={TrendingUp}
           value={
-            report?.summary.total_revenue !== undefined
+            report?.summary?.total_revenue !== undefined
               ? formatCurrency(
-                  report.summary.total_revenue,
+                  report.summary?.total_revenue,
                   "USD",
                   i18n.language
                 )
@@ -136,16 +191,16 @@ const SalesSummaryPage: React.FC = () => {
             defaultValue: "Completed Orders",
           })}
           icon={FileText}
-          value={report?.summary.total_orders}
+          value={report?.summary?.total_orders}
           isLoading={isLoading}
         />
         <StatCard
           title={t("averageOrderValue")}
           icon={Package}
           value={
-            report?.summary.average_order_value !== undefined
+            report?.summary?.average_order_value !== undefined
               ? formatCurrency(
-                  report.summary.average_order_value,
+                  report.summary?.average_order_value,
                   "USD",
                   i18n.language
                 )
@@ -155,15 +210,55 @@ const SalesSummaryPage: React.FC = () => {
         />
       </div>
 
+      {/* Daily Breakdown for Monthly View */}
+      {viewType === 'monthly' && report?.daily_breakdown && report.daily_breakdown.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>{t("dailyBreakdown", { ns: "reports" })}</CardTitle>
+            <CardDescription>
+              {t("dailyBreakdownDescription", { ns: "reports" })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("date", { ns: "reports" })}</TableHead>
+                    <TableHead className="text-center">{t("totalOrders", { ns: "reports" })}</TableHead>
+                    <TableHead className="text-right">{t("totalRevenue", { ns: "reports" })}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {report.daily_breakdown.map((day) => (
+                    <TableRow key={day.date}>
+                      <TableCell className="font-medium">
+                        {format(parseISO(day.date), "MMM dd, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {day.total_orders}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(day.total_revenue, "USD", i18n.language)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>{t("topServicesByRevenue")}</CardTitle>
           <CardDescription>
             {t("topServicesDescription", {
-              dateFrom: report?.date_range.from
+              dateFrom: report?.date_range?.from
                 ? format(parseISO(report.date_range.from), "PPP")
                 : "...",
-              dateTo: report?.date_range.to
+              dateTo: report?.date_range?.to
                 ? format(parseISO(report.date_range.to), "PPP")
                 : "...",
             })}
@@ -192,14 +287,14 @@ const SalesSummaryPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   ))
-                ) : report?.top_services.length === 0 ? (
+                ) : report?.top_services?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
                       {t("noDataForPeriod")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  report?.top_services.map((service) => (
+                  report?.top_services?.map((service) => (
                     <TableRow key={service.id}>
                       <TableCell className="font-medium text-sm">
                         {service.display_name}
@@ -226,7 +321,7 @@ const SalesSummaryPage: React.FC = () => {
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
-                  data={report?.top_services}
+                  data={report?.top_services || []}
                   layout="vertical"
                   margin={{ left: 10, right: 30, top: 5, bottom: 5 }}
                 >

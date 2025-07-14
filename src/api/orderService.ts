@@ -293,10 +293,17 @@ export const updateOrderItemStatus = async (
   orderItemId: number | string,
   status: string
 ): Promise<OrderItem> => {
-  const { data } = await apiClient.patch<{ order_item: OrderItem }>(
-    `/order-items/${orderItemId}/status`,
-    { status }
-  );
+  const { data } = await apiClient.patch<{ order_item: OrderItem }>(`/order-items/${orderItemId}/status`, { status });
+  return data.order_item;
+};
+
+export const updateOrderItemPickedUpQuantity = async (
+  orderItemId: number | string,
+  pickedUpQuantity: number
+): Promise<OrderItem> => {
+  const { data } = await apiClient.patch<{ order_item: OrderItem }>(`/order-items/${orderItemId}/picked-up-quantity`, { 
+    picked_up_quantity: pickedUpQuantity 
+  });
   return data.order_item;
 };
 

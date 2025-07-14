@@ -22,6 +22,7 @@ import type { Expense, PaginatedResponse } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatCurrency } from "@/lib/formatters";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSettings } from "@/context/SettingsContext";
 
 import {
   Table,
@@ -64,6 +65,10 @@ import {
 const ExpensesListPage: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "expenses"]);
   const { can } = useAuth();
+  const { getSetting } = useSettings();
+
+  // Get currency from settings, fallback to USD
+  const currency = getSetting('currency_symbol', 'USD');
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -160,20 +165,20 @@ const ExpensesListPage: React.FC = () => {
 
   const MemoizedTableRow = React.memo(({ expense }: { expense: Expense }) => (
     <TableRow key={expense.id}>
-      <TableCell>
+      <TableCell className="text-center">
         <div className="font-medium">{expense.name}</div>
         <div className="text-xs text-muted-foreground truncate max-w-xs">
           {expense.description}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-center">
         <div className="font-mono text-xs p-1 px-2 rounded-full bg-muted w-fit">
           {expense.expense_category_id ? 
             categoriesData?.find(cat => cat.id === expense.expense_category_id)?.name || "-" 
             : "-"}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-center">
         <div className="flex items-center gap-2 text-sm capitalize">
           {expense.payment_method === "cash" ? (
             <Banknote className="h-4 w-4 text-green-600" />
@@ -188,14 +193,14 @@ const ExpensesListPage: React.FC = () => {
           </span>
         </div>
       </TableCell>
-      <TableCell>{format(new Date(expense.expense_date), "PPP")}</TableCell>
-      <TableCell className="text-right rtl:text-left font-semibold">
-        {formatCurrency(expense.amount, "USD", i18n.language)}
+      <TableCell className="text-center">{format(new Date(expense.expense_date), "PPP")}</TableCell>
+      <TableCell className="text-center font-semibold">
+        {formatCurrency(expense.amount, currency, i18n.language)}
       </TableCell>
       <TableCell className="text-muted-foreground text-xs">
         {expense.user?.name || "-"}
       </TableCell>
-      <TableCell className="text-right rtl:text-left">
+      <TableCell className="text-center">
         {can("expense:update") || can("expense:delete") ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -296,19 +301,19 @@ const ExpensesListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <div className="rounded-md border bg-card">
+      <div className="rounded-md border bg-card max-w-7xl mx-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[250px]">
+              <TableHead className="min-w-[250px] text-center">
                 {t("expenseName", { ns: "expenses" })}
               </TableHead>
-              <TableHead>{t("category")}</TableHead>
-              <TableHead>{t("paymentMethod", { ns: "expenses" })}</TableHead>
-              <TableHead>{t("expenseDate", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-right">{t("amount")}</TableHead>
-              <TableHead>{t("recordedBy", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-right w-[80px]">
+              <TableHead className="text-center">{t("category")}</TableHead>
+              <TableHead className="text-center">{t("paymentMethod", { ns: "expenses" })}</TableHead>
+              <TableHead className="text-center">{t("expenseDate", { ns: "expenses" })}</TableHead>
+              <TableHead className="text-center">{t("amount")}</TableHead>
+              <TableHead className="text-center">{t("recordedBy", { ns: "expenses" })}</TableHead>
+              <TableHead className="text-center w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>

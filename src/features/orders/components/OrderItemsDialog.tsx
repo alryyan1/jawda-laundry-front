@@ -4,8 +4,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "@/lib/formatters";
 import type { Order, OrderItem, OrderStatus } from "@/types";
-import { updateOrderItemStatus } from "@/api/orderService";
+import { updateOrderItemStatus, updateOrderItemPickedUpQuantity, updateOrderStatus } from "@/api/orderService";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,6 +15,8 @@ interface OrderItemsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderItemStatusChange?: (itemId: number, newStatus: string) => void;
+  onOrderItemPickedUpQuantityChange?: (itemId: number, pickedUpQuantity: number) => void;
+  onOrderStatusChange?: (orderId: number, newStatus: string) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -39,9 +42,10 @@ function getStatusBorderColor(status: string) {
   }
 }
 
-const OrderItemsDialog: React.FC<OrderItemsDialogProps> = ({ order, open, onOpenChange, onOrderItemStatusChange }) => {
+const OrderItemsDialog: React.FC<OrderItemsDialogProps> = ({ order, open, onOpenChange, onOrderItemStatusChange, onOrderItemPickedUpQuantityChange, onOrderStatusChange }) => {
   const { t, i18n } = useTranslation(["orders", "services", "common"]);
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [loadingQuantityId, setLoadingQuantityId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<OrderItem[]>(order?.items || []);
 
@@ -49,21 +53,89 @@ const OrderItemsDialog: React.FC<OrderItemsDialogProps> = ({ order, open, onOpen
     setItems(order?.items || []);
   }, [order]);
 
+  // Check if all items are completed and update order status if needed
+  const checkAndUpdateOrderStatus = async (updatedItems: OrderItem[]) => {
+    if (!order) return;
+    
+    const allCompleted = updatedItems.every(item => item.status === "completed");
+    const hasItems = updatedItems.length > 0;
+    
+    if (allCompleted && hasItems && order.status !== "completed") {
+      try {
+        await updateOrderStatus(order.id, "completed");
+        if (onOrderStatusChange) {
+          onOrderStatusChange(order.id, "completed");
+        }
+      } catch (error) {
+        console.error("Failed to update order status:", error);
+        // Don't block the item status update if order status update fails
+      }
+    }
+  };
+
   const handleStatusChange = async (itemId: number, status: string) => {
     setLoadingId(itemId);
     setError(null);
     try {
       const updated = await updateOrderItemStatus(itemId, status);
       const newStatus = (updated.status || status) as OrderStatus;
-      setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status: newStatus } : it)));
+      
+      // If status is changed to "completed", automatically set picked_up_quantity to full quantity
+      let pickedUpQuantityUpdate: number | null = null;
+      if (newStatus === "completed") {
+        const item = items.find(it => it.id === itemId);
+        if (item && (item.picked_up_quantity || 0) !== item.quantity) {
+          try {
+            const quantityUpdated = await updateOrderItemPickedUpQuantity(itemId, item.quantity);
+            pickedUpQuantityUpdate = quantityUpdated.picked_up_quantity || item.quantity;
+          } catch (quantityError) {
+            console.error("Failed to update picked up quantity:", quantityError);
+            // Continue with status update even if quantity update fails
+          }
+        }
+      }
+      
+      const updatedItems = items.map((it) => (it.id === itemId ? { 
+        ...it, 
+        status: newStatus,
+        picked_up_quantity: pickedUpQuantityUpdate !== null ? pickedUpQuantityUpdate : it.picked_up_quantity
+      } : it));
+      
+      setItems(updatedItems);
+      
       if (onOrderItemStatusChange) {
         onOrderItemStatusChange(itemId, newStatus);
       }
+      
+      // If we updated the picked up quantity, also call that callback
+      if (pickedUpQuantityUpdate !== null && onOrderItemPickedUpQuantityChange) {
+        onOrderItemPickedUpQuantityChange(itemId, pickedUpQuantityUpdate);
+      }
+
+      // Check if all items are completed and update order status if needed
+      await checkAndUpdateOrderStatus(updatedItems);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to update status";
       setError(errorMessage);
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  const handlePickedUpQuantityChange = async (itemId: number, pickedUpQuantity: number) => {
+    setLoadingQuantityId(itemId);
+    setError(null);
+    try {
+      const updated = await updateOrderItemPickedUpQuantity(itemId, pickedUpQuantity);
+      setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, picked_up_quantity: updated.picked_up_quantity } : it)));
+      if (onOrderItemPickedUpQuantityChange) {
+        onOrderItemPickedUpQuantityChange(itemId, pickedUpQuantity);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update picked up quantity";
+      setError(errorMessage);
+    } finally {
+      setLoadingQuantityId(null);
     }
   };
 
@@ -120,6 +192,7 @@ const OrderItemsDialog: React.FC<OrderItemsDialogProps> = ({ order, open, onOpen
                 <TableHead className="text-center">{t("productType", { ns: "services", defaultValue: "Product Type" })}</TableHead>
                 <TableHead className="text-center"> {t("itemService", { ns: "orders", defaultValue: "Item / Service" })}</TableHead>
                 <TableHead className="text-center">{t("quantity", { ns: "services", defaultValue: "Qty" })}</TableHead>
+                <TableHead className="text-center">{t("pickedUpQuantity", { defaultValue: "Picked Up" })}</TableHead>
                 <TableHead className="text-center">{t("unitPrice", { ns: "orders", defaultValue: "Unit Price" })}</TableHead>
                 <TableHead className="text-center">{t("subtotal", { ns: "common", defaultValue: "Subtotal" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders", defaultValue: "Status" })}</TableHead>
@@ -132,6 +205,26 @@ const OrderItemsDialog: React.FC<OrderItemsDialogProps> = ({ order, open, onOpen
                   <TableCell className="text-center">{item.serviceOffering?.display_name || t("serviceOfferingDetailsMissing", { ns: "orders" })}</TableCell>
                 
                   <TableCell className="text-center">{item.quantity}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        onFocus={(e) => e.target.select()}
+                        max={item.quantity}
+                        value={item.picked_up_quantity || 0}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          if (value <= item.quantity) {
+                            handlePickedUpQuantityChange(item.id, value);
+                          }
+                        }}
+                        className="w-30 text-center"
+                        // disabled={loadingQuantityId === item.id}
+                      />
+                      {loadingQuantityId === item.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-center">{formatCurrency(item.calculated_price_per_unit_item, "USD", i18n.language)}</TableCell>
                   <TableCell className="text-center">{formatCurrency(item.sub_total, "USD", i18n.language)}</TableCell>
                   <TableCell className="text-center">

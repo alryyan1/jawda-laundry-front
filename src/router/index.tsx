@@ -82,11 +82,13 @@ const ServiceActionsListPage = React.lazy(
 );
 const CustomerLedgerPage = React.lazy(() => import('@/pages/customers/CustomerLedgerPage'));
 const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
+const DailyRevenuePage = React.lazy(() => import('@/pages/reports/DailyRevenuePage'));
 const CostSummaryPage = React.lazy(() => import('@/pages/reports/CostSummaryPage'));
 const ReportsMainPage = React.lazy(() => import('@/pages/reports/ReportsMainPage'));
 const DetailedReportsMainPage = React.lazy(() => import('@/pages/reports/DetailedReportsMainPage'));
 const DetailedOrdersReport = React.lazy(() => import('@/pages/reports/DetailedOrdersReport'));
 const OverduePickupsReport = React.lazy(() => import('@/pages/reports/OverduePickupsReport'));
+const DailyCostsPage = React.lazy(() => import('@/pages/reports/DailyCostsPage'));
 // Loading fallback component for Suspense
 const RouteSuspenseFallback = () => (
   <div className="flex items-center justify-center h-screen w-screen">
@@ -131,6 +133,10 @@ export const router = createHashRouter([
             ),
           },
           {
+            path: 'reports/daily-costs',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DailyCostsPage /></React.Suspense>,
+          },
+          {
             path: 'expenses',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpensesListPage /></React.Suspense>,
           },
@@ -149,6 +155,10 @@ export const router = createHashRouter([
           {
             path: 'reports/sales',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><SalesSummaryPage /></React.Suspense>,
+          },
+          {
+            path: 'reports/daily-revenue',
+            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DailyRevenuePage /></React.Suspense>,
           },
           {
             path: 'reports/costs',

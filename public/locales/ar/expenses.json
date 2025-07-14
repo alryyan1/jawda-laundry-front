@@ -41,5 +41,8 @@
   "categoryCreationFailed": "فشل في إنشاء الفئة. يرجى المحاولة مرة أخرى.",
   "method_null": "غير معروف",
   "expenseDescriptionPlaceholder": "أضف وصفًا لهذا المصروف (اختياري)",
-  "selectOrAddCategory": "اختر تصنيفًا"
+  "selectOrAddCategory": "اختر تصنيفًا",
+  "noExpensesFound": "لم يتم العثور على مصروفات",
+  "noExpensesFoundHint": "ابدأ بإضافة أول مصروف لتتبع الإنفاق",
+  "addFirstExpense": "أضف أول مصروف"
 } 
