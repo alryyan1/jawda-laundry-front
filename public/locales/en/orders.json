@@ -198,6 +198,11 @@
   "actions": "Actions",
   "filters": "Filters",
   "paymentRecordedSuccess": "Payment recorded successfully",
+  "table": "Table",
+  "orderType": "Order Type",
+  "inHouse": "In House",
+  "takeAway": "Take Away",
+  "delivery": "Delivery"
   "paymentReceipt": "Payment Receipt",
   "openMenu": "Open menu",
   "viewDetails": "View Details",

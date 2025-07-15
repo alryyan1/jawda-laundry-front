@@ -58,6 +58,40 @@ const settingService = {
         }
     },
 
+    /**
+     * Upload company logo.
+     * Requires 'update-settings' permission.
+     */
+    uploadLogo: async (file: File): Promise<{ logo_url: string }> => {
+        try {
+            const formData = new FormData();
+            formData.append('logo', file);
+
+            const response = await apiClient.post<{ message: string, logo_url: string }>('/settings/logo/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return { logo_url: response.data.logo_url };
+        } catch (error) {
+            console.error('Error uploading logo:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Delete company logo.
+     * Requires 'update-settings' permission.
+     */
+    deleteLogo: async (): Promise<void> => {
+        try {
+            await apiClient.delete('/settings/logo');
+        } catch (error) {
+            console.error('Error deleting logo:', error);
+            throw error;
+        }
+    },
+
 };
 
 

@@ -14,7 +14,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Suspense fallback="Loading translations...">
       <SettingsProvider>
-        <ThemeProvider defaultTheme="dark" storageKey="laundry-ui-theme">
+        <ThemeProvider defaultTheme="dark" storageKey="coffee-shop-ui-theme">
         <QueryClientProvider client={queryClient}>
           <App />
           <ReactQueryDevtools initialIsOpen={false} />

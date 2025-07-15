@@ -11,7 +11,8 @@ export const getProductTypesPaginated = async (
     perPage: number = 10, 
     search?: string,
     sortBy: string = 'id',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortOrder: 'asc' | 'desc' = 'desc',
+    productCategoryId?: number | string
 ): Promise<PaginatedResponse<ProductType>> => {
     const params: Record<string, string | number> = { 
         page, 
@@ -23,7 +24,9 @@ export const getProductTypesPaginated = async (
     if (search) {
         params.search = search;
     }
-    
+    if (productCategoryId) {
+        params.product_category_id = productCategoryId;
+    }
     const { data } = await apiClient.get<PaginatedResponse<ProductType>>('/product-types', {
         params
     });

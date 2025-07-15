@@ -19,7 +19,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2, Image as ImageIcon } from 'lucide-react';
 
 import type { ProductCategory } from '@/types';
 import {
@@ -31,6 +32,7 @@ import type { ProductCategoryFormData } from '@/api/productCategoryService';
 const categorySchema = z.object({
     name: z.string().nonempty({ message: "validation.nameRequired" }),
     description: z.string().optional(),
+    image: z.any().optional(),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -57,12 +59,19 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
     }
   });
 
+  const [selectedImage, setSelectedImage] = React.useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
   useEffect(() => {
     if (editingCategory && isOpen) {
       setValue('name', editingCategory.name);
       setValue('description', editingCategory.description || '');
+      setPreviewUrl(editingCategory.image_url || null);
+      setSelectedImage(null); // Reset selected image when editing
     } else if (!isOpen) { // Reset form when modal is closed or if not editing
       reset({ name: '', description: '' });
+      setSelectedImage(null);
+      setPreviewUrl(null);
     }
   }, [editingCategory, isOpen, setValue, reset]);
 
@@ -78,11 +87,23 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
     }
   });
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
   const onSubmit = (formData: CategoryFormValues) => {
-    // Only submit if form is dirty or it's a new item (editingCategory is null)
-    // This prevents submitting an unchanged edit form, though backend might handle it.
-    if(isDirty || !editingCategory) {
-        formMutation.mutate(formData);
+    // Submit if form is dirty, it's a new item, or an image was selected
+    if(isDirty || !editingCategory || selectedImage) {
+        const submitData = {
+          ...formData,
+          image: selectedImage
+        };
+        formMutation.mutate(submitData);
     } else {
         onOpenChange(false); // Close if no changes
     }
@@ -115,11 +136,36 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
             <Label htmlFor="category-description">{t('descriptionOptional', { ns: 'common' })}</Label>
             <Textarea id="category-description" {...register('description')} />
           </div>
+          <div>
+            <Label htmlFor="category-image">{t('image', { ns: 'common' })}</Label>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Input
+                  id="category-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="cursor-pointer"
+                />
+              </div>
+              {(previewUrl || editingCategory?.image_url) && (
+                <Avatar className="h-16 w-16 rounded-md">
+                  <AvatarImage
+                    src={previewUrl || editingCategory?.image_url || undefined}
+                    alt="Preview"
+                  />
+                  <AvatarFallback className="rounded-md bg-muted">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={formMutation.isPending}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={formMutation.isPending || (!isDirty && !!editingCategory) }>
+            <Button type="submit" disabled={formMutation.isPending || (!isDirty && !selectedImage && !!editingCategory) }>
               {formMutation.isPending && <Loader2 className="animate-spin h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
               {editingCategory ? t('saveChanges', { ns: 'common' }) : t('create', { ns: 'common' })}
             </Button>

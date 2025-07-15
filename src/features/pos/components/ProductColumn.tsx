@@ -108,7 +108,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
             ) : (
               <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 lg:gap-4" 
                    style={{ 
-                     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 150px))",
                      maxWidth: "100%"
                    }}>
                 {filteredProducts.map((product) => (

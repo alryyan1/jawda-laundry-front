@@ -16,8 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ShoppingCart, PlusCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, ShoppingCart, PlusCircle, MapPin } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
+import { restaurantTableService } from "@/api/restaurantTableService";
+import { RestaurantTable } from "@/types/restaurantTable.types";
+import { useEffect, useState } from "react";
 
 import type { NewOrderFormData } from "@/types";
 import { useNavigate } from "react-router-dom";
@@ -45,9 +49,28 @@ export const OrderCart: React.FC<OrderCartProps> = ({
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const navigate = useNavigate();
+  const [tables, setTables] = useState<RestaurantTable[]>([]);
+  const [loadingTables, setLoadingTables] = useState(false);
 
   const watchedItems = useWatch({ control, name: "items" });
   const watchedCustomerId = useWatch({ control, name: "customer_id" });
+
+  // Load available tables
+  useEffect(() => {
+    const loadTables = async () => {
+      setLoadingTables(true);
+      try {
+        const availableTables = await restaurantTableService.getAvailable();
+        setTables(availableTables);
+      } catch (error) {
+        console.error('Error loading tables:', error);
+      } finally {
+        setLoadingTables(false);
+      }
+    };
+
+    loadTables();
+  }, []);
 
   const isQuotingAnyItem = useMemo(
     () => watchedItems?.some((item) => item._isQuoting),
@@ -139,6 +162,45 @@ export const OrderCart: React.FC<OrderCartProps> = ({
             {errors.due_date && (
               <p className="text-sm text-destructive">
                 {t(errors.due_date.message as string)}
+              </p>
+            )}
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="order-table" className="text-xs font-semibold flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              {t("table", { ns: "orders", defaultValue: "Table" })} ({t("optional", { ns: "common" })})
+            </Label>
+            <Controller
+              name="table_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                  disabled={isSubmitting || loadingTables}
+                >
+                  <SelectTrigger id="order-table">
+                    <SelectValue placeholder={loadingTables ? "Loading tables..." : "Select a table..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No table selected</SelectItem>
+                    {tables.map((table) => (
+                      <SelectItem key={table.id} value={table.id.toString()}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{table.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({table.number})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.table_id && (
+              <p className="text-sm text-destructive">
+                {t(errors.table_id.message as string)}
               </p>
             )}
           </div>

@@ -168,7 +168,13 @@
               "allOfferingsCreatedSuccess": "All offerings were successfully created.",
               "searchProductTypes": "Search product types",
               "serviceOfferingsDescriptionNew": "Select a product type to manage its available services and prices.",
-              "manageOfferings": "Manage Offerings"
+              "manageOfferings": "Manage Offerings",
+            "menu": "Menu",
+            "menuPageTitle": "Service Menu",
+            "loadingServiceOfferings": "Loading service offerings...",
+            "noServiceOfferings": "No service offerings found.",
+            "squareMeter": "m²",
+            "piece": "piece"
             ,  "expenseCategories": "Expense Categories",
             "selectCategoryToViewProducts": "Select a category to view products",
             "availableServices": "Available Services",

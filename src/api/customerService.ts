@@ -9,6 +9,7 @@ export interface CustomerFormData {
     address?: string;
     notes?: string;
     customer_type_id?: number | string | null;
+    is_default?: boolean;
 }
 
 export const getCustomers = async (page: number = 1, perPage: number = 10, search: string = ''): Promise<PaginatedResponse<Customer>> => {

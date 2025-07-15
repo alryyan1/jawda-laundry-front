@@ -1,5 +1,6 @@
 {
-  "appName": "لوندري برو",
+  "appName": "شاي خضدري",
+  "appSubtitle": "مدير مقهى",
   "dashboard": "لوحة التحكم",
   "orders": "الطلبات",
   "customers": "العملاء",
@@ -213,6 +214,7 @@
   "error": "خطأ",
   "success": "نجح",
   "warning": "تحذير",
+  "username": "اسم المستخدم",
   "info": "معلومات",
   "pointOfSale": "نقطة البيع",
   "product": "المنتج",
@@ -222,7 +224,7 @@
   "checkout": "إتمام الشراء",
   "selectCategoryFirst": "الرجاء اختيار الفئة أولاً",
   "selectProductFirst": "الرجاء اختيار المنتج أولاً",
-  "appName": "لوندري برو",
+  "appName": "شاي خضدري",
   "reports": "التقارير",
   "kanban": "كانبان",
   "newOrder": "طلب جديد",
@@ -273,7 +275,7 @@
   "themeSystem": "النظام",
   "user": "المستخدم",
   "logout": "تسجيل الخروج",
-  "appName": "لوندري برو",
+  "appName": "شاي خضدري",
   "collapseSidebar": "طي الشريط الجانبي",
   "expandSidebar": "توسيع الشريط الجانبي",
   "toggleNavigationMenu": "تبديل قائمة التنقل",
@@ -302,5 +304,6 @@
   "recipient": "المستلم",
   "sending": "جارٍ الإرسال...",
   "sendMessage": "إرسال الرسالة",
-  "close": "إغلاق"
+  "close": "إغلاق",
+  "optional": "اختياري"
 }

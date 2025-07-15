@@ -25,6 +25,7 @@ import { formatCurrency } from "@/lib/formatters";
 import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
+import { useSettings } from "@/context/SettingsContext";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -65,8 +66,12 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   isReadOnly = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
+  const { getSetting } = useSettings();
   const [isDetailsOpen, setIsDetailsOpen] = useState(!!item.notes);
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
+
+  // Get currency from settings, fallback to USD
+  const currency = getSetting('currency_symbol', 'USD');
 
   const isDimensionBased = item.productType.is_dimension_based;
 
@@ -98,25 +103,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-1">
-            {!isReadOnly && onEditItem && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      onClick={() => onEditItem(item.id)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{t("changeService", { ns: "orders" })}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+           
             {!isReadOnly && (
               <Button
                 variant="ghost"
@@ -243,13 +230,13 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    {formatCurrency(item.price, "USD", i18n.language)} ×{" "}
+                    {formatCurrency(item.price, currency, i18n.language)} ×{" "}
                     {item.quantity}
                   </p>
                   <p className="font-medium">
                     {formatCurrency(
                       item._quotedSubTotal || item.price * item.quantity,
-                      "USD",
+                      currency,
                       i18n.language
                     )}
                   </p>
@@ -258,28 +245,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             </div>
           </div>
 
-          {/* Collapsible Details Button */}
-          {!isReadOnly && (
-            <div className="pt-2 border-t border-dashed">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-xs text-muted-foreground h-8 p-1"
-                onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-              >
-                {isDetailsOpen
-                  ? t("hideDetails", { ns: "orders" })
-                  : t("addNotes", { ns: "orders", defaultValue: "Add Notes" })}
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 ml-1 transition-transform",
-                    isDetailsOpen && "rotate-180"
-                  )}
-                />
-              </Button>
-            </div>
-          )}
 
           {/* Notes appear when toggled or if they already have content */}
           {(isDetailsOpen || item.notes) && (

@@ -11,7 +11,7 @@ const AuthLayout = () => {
     <div 
       className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative"
       style={{
-        backgroundImage: 'url(/assets/login-background.jpg)',
+        backgroundImage: 'url(/assets/login-background.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -27,12 +27,11 @@ const AuthLayout = () => {
       <div className="w-full max-w-md bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg"> {/* Constrain width of the form container */}
         {/* Branding - Centered above the form */}
         <div className="mb-8 flex flex-col items-center">
-          <Shirt className="h-12 w-12 text-primary mb-3" /> {/* Larger icon */}
           <h1 className="text-3xl font-bold tracking-tight">
             {t('appName')}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t('appSubtitle', { ns: 'auth', defaultValue: 'Laundry Management System' })}
+            {t('appSubtitle', { ns: 'auth', defaultValue: 'COFFEE SHOP MANAGER' })}
           </p>
         </div>
 

@@ -14,6 +14,7 @@ import UsersListPage from "@/pages/admin/users/UsersListPage";
 import UserFormPage from "@/pages/admin/users/UserFormPage";
 import RolesListPage from "@/pages/admin/roles/RolesListPage";
 import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
+import RestaurantTablesListPage from "@/pages/admin/RestaurantTablesListPage";
 import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
@@ -69,6 +70,9 @@ const NewServiceOfferingPage = React.lazy(
 );
 const EditServiceOfferingPage = React.lazy(
   () => import("@/pages/services/offerings/EditServiceOfferingPage")
+);
+const MenuPage = React.lazy(
+  () => import("@/pages/services/offerings/MenuPage")
 );
 
 const ProductCategoriesListPage = React.lazy(
@@ -353,6 +357,14 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
+          {
+            path: "admin/restaurant-tables",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <RestaurantTablesListPage />
+              </React.Suspense>
+            ),
+          },
           // ... (other admin service management routes: product-categories, etc.)
 
           // Service Offerings (User-facing list of services)
@@ -361,6 +373,14 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <ServiceOfferingsListPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "menu",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <MenuPage />
               </React.Suspense>
             ),
           },

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Jawda Laundry",
+    "appName": "SHAI KHADRI",
     "dashboard": "Dashboard",
     "orders": "Orders",
     "customers": "Customers",
@@ -389,7 +389,7 @@
     "haveAccount": "Already have an account?",
     "forgotPasswordQuestion": "Forgot your password?",
     "backToLogin": "Back to Login",
-    "appSubtitle": "Laundry Management System",
+    "appSubtitle": "COFFEE SHOP MANAGER",
     "emailPlaceholder": "name@example.com",
     "passwordPlaceholder": "Enter your password",
     "namePlaceholder": "e.g., John Doe",

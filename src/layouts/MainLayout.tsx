@@ -31,14 +31,13 @@ import {
     Settings as SettingsIcon,
     LogOut,
     Menu,
-    Shirt,
+    Coffee,
     Layers,
     Box,
     Wand2,
     ChevronDown,
     ChevronRight,
     Languages,
-    ShirtIcon,
     User2,
     Lock,
     DollarSign,
@@ -190,7 +189,13 @@ const MainLayout: React.FC = () => {
     {
       to: "/service-offerings",
       labelKey: "serviceOfferings",
-      icon: Shirt,
+      icon: Coffee,
+      type: "link" as const,
+    },
+    {
+      to: "/menu",
+      labelKey: "menu",
+      icon: Menu,
       type: "link" as const,
     },
     {
@@ -412,7 +417,7 @@ const MainLayout: React.FC = () => {
             <div className="flex items-center justify-between w-full">
               {!isSidebarCollapsed && (
                 <Link to="/" className="flex items-center gap-2 font-semibold">
-                  <ShirtIcon className="h-6 w-6 text-primary" />
+                  <Coffee className="h-6 w-6 text-primary" />
                   <span className="text-lg">{t("appName", { ns: "common" })}</span>
                 </Link>
               )}
@@ -462,7 +467,7 @@ const MainLayout: React.FC = () => {
               {/* Remove padding for full height nav */}
               <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6 self-start w-full">
                 <Link to="/" className="flex items-center gap-2 font-semibold">
-                  <ShirtIcon className="h-6 w-6 text-primary" />
+                  <Coffee className="h-6 w-6 text-primary" />
                   <span className="text-lg">
                     {t("appName", { ns: "common" })}
                   </span>

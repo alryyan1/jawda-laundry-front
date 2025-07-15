@@ -212,5 +212,10 @@
   "paymentMethod_credit": "آجل",
   "totalOrders": "إجمالي الطلبات",
   "totalAmountPaid": "إجمالي المبلغ المدفوع",
-  "paymentBreakdown": "تفصيل المدفوعات"
+  "paymentBreakdown": "تفصيل المدفوعات",
+  "table": "الطاولة",
+  "orderType": "نوع الطلب",
+  "inHouse": "في المطعم",
+  "takeAway": "للخارج",
+  "delivery": "توصيل"
 }

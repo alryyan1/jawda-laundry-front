@@ -26,6 +26,7 @@ export interface Customer {
   total_orders?: number;
   created_at: string;
   updated_at: string;
+  is_default?: boolean; // New field for default customer
 }
 
 // Form data for creating/editing customers
@@ -35,6 +36,7 @@ export interface CustomerFormData {
     address?: string;
     notes?: string;
     customer_type_id?: number | string | null; // string from form select
+    is_default?: boolean; // New field for default customer
 }
 
 

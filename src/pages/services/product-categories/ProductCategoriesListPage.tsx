@@ -16,11 +16,13 @@ import { DataTable } from "@/components/shared/DataTable";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { ProductCategoryFormModal } from "./ProductCategoryFormModal"; // Import the modal
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   PlusCircle,
   Edit3,
   Trash2,
   MoreHorizontal,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -83,6 +85,23 @@ const ProductCategoriesListPage: React.FC = () => {
 
   const columns: ColumnDef<ProductCategory>[] = useMemo(
     () => [
+      {
+        accessorKey: "image",
+        header: t("image", { ns: "common" }),
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center">
+            <Avatar className="h-10 w-10 rounded-md">
+              <AvatarImage
+                src={row.original.image_url || undefined}
+                alt={row.original.name}
+              />
+              <AvatarFallback className="rounded-md bg-muted">
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        ),
+      },
       {
         accessorKey: "name",
         header: t("name", { ns: "common" }),

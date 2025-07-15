@@ -41,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Import WhatsApp Settings Component
 import WhatsAppSettings from "./components/WhatsAppSettings";
+import { LogoUpload } from "@/components/ui/logo-upload";
 
 // --- Zod Schema for Settings Form (Matches AppSettings keys) ---
 // Make all fields optional for partial updates, but RHF will use defaultValues
@@ -52,12 +53,6 @@ const settingsFormSchema = z.object({
   company_email: z
     .string()
     .email({ message: "validation:email" })
-    .or(z.literal(""))
-    .nullable()
-    .optional(),
-  company_logo_url: z
-    .string()
-    .url({ message: "validation:url" })
     .or(z.literal(""))
     .nullable()
     .optional(),
@@ -82,7 +77,7 @@ type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 // --- Component ---
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation(["settings", "common", "validation"]);
-  const { settings, isLoadingSettings, updateSettings } =
+  const { settings, isLoadingSettings, updateSettings, updateLogoUrl } =
     useSettings(); // Get from context
 
   const [serverError, setServerError] = useState<string | null>(null);
@@ -95,7 +90,6 @@ const SettingsPage: React.FC = () => {
       company_address: "",
       company_phone: "",
       company_email: "",
-      company_logo_url: "",
       currency_symbol: "$",
       date_format: "YYYY-MM-DD",
       global_low_stock_threshold: 10,
@@ -124,7 +118,6 @@ const SettingsPage: React.FC = () => {
         company_address: settings.company_address || "",
         company_phone: settings.company_phone || "",
         company_email: settings.company_email || "",
-        company_logo_url: settings.company_logo_url || "",
         currency_symbol: settings.currency_symbol || "$",
         date_format: settings.date_format || "YYYY-MM-DD",
         global_low_stock_threshold: settings.global_low_stock_threshold ?? 10,
@@ -149,7 +142,6 @@ const SettingsPage: React.FC = () => {
       ...data,
       global_low_stock_threshold: Number(data.global_low_stock_threshold),
       company_email: data.company_email || undefined,
-      company_logo_url: data.company_logo_url || null,
     };
 
     try {
@@ -291,24 +283,18 @@ const SettingsPage: React.FC = () => {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="company_logo_url"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>{t("settings:companyLogoUrl")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="url"
-                              {...field}
-                              value={field.value || ""}
-                              placeholder="https://example.com/logo.png"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="md:col-span-2">
+                      <LogoUpload
+                        currentLogoUrl={settings?.company_logo_url || null}
+                        onLogoUpdate={(logoUrl) => {
+                          // Update the form value
+                          form.setValue('company_logo_url', logoUrl || '');
+                          // Also update the settings context immediately
+                          updateLogoUrl(logoUrl);
+                        }}
+                        disabled={isSubmitting || isLoadingSettings}
+                      />
+                    </div>
 
                     <FormField
                       control={form.control}

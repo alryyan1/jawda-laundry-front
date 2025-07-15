@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from 'uuid';
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
+
 import { materialColors } from "@/lib/colors";
 
 import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order } from '@/types';
@@ -17,6 +14,7 @@ import { CartColumn } from '@/features/pos/components/CartColumn';
 import { CustomerSelection } from '@/features/pos/components/CustomerSelection';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
 import { TodayOrders } from '@/features/pos/components/TodayOrders';
+import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
 import { createOrder, getOrderItemQuote } from "@/api/orderService";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -37,21 +35,19 @@ interface CartItem {
 
 const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
   const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [orderNotes, setOrderNotes] = useState<string>("");
-  const [dueDate, setDueDate] = useState<string>("");
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastQuotedInputs, setLastQuotedInputs] = useState<Record<string, string>>({});
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isTodayOrdersOpen, setIsTodayOrdersOpen] = useState(false);
-
+  console.log(selectedOrder,'selectedOrder')
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Fetch all service offerings for order creation
@@ -63,10 +59,18 @@ const POSPage: React.FC = () => {
 
   const createOrderMutation = useMutation({
     mutationFn: (orderData: NewOrderFormData) => createOrder(orderData, allServiceOfferings),
-    onSuccess: (response) => {
+    onSuccess: () => {
       toast.success(t("orderCreatedSuccessfully", { ns: "orders" }));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      navigate(`/orders/${response.id}`);
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      
+      // Clear the cart and reset selections
+      setCartItems([]);
+      setSelectedCustomerId(null);
+      setSelectedCategoryId(null);
+      setSelectedProductType(null);
+      setSelectedOfferingId(null);
+      setIsProcessing(false);
     },
     onError: (error) => {
       console.error('Failed to create order:', error);
@@ -231,19 +235,7 @@ const POSPage: React.FC = () => {
     setSelectedOrder(order);
   };
 
-  const handleBackToCart = () => {
-    setSelectedOrder(null);
-  };
 
-  const handleNewOrder = () => {
-    setSelectedCustomerId(null);
-    setSelectedCategoryId(null);
-    setSelectedProductType(null);
-    setCartItems([]);
-    setOrderNotes("");
-    setDueDate("");
-    toast.info(t("newOrderFormCleared", { ns: "orders" }));
-  };
 
   const handleCheckout = async () => {
     if (!selectedCustomerId) {
@@ -276,8 +268,9 @@ const POSPage: React.FC = () => {
     const orderData: NewOrderFormData = {
       customer_id: selectedCustomerId,
       items: orderItems,
-      notes: orderNotes || undefined,
-      due_date: dueDate || undefined,
+      notes: undefined, // TODO: Add UI for order notes
+      due_date: undefined, // TODO: Add UI for due date
+      order_type: 'in_house', // Default to in_house
     };
 
     createOrderMutation.mutate(orderData);
@@ -327,7 +320,7 @@ const POSPage: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-64px)]">
       {/* Customer Selection Bar */}
       <div className="border-b shadow-sm bg-background" style={{ borderColor: materialColors.divider }}>
-        <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-1 flex justify-between items-center">
           <CustomerSelection
             selectedCustomerId={selectedCustomerId}
             onCustomerSelected={setSelectedCustomerId}
@@ -335,20 +328,14 @@ const POSPage: React.FC = () => {
             disabled={!!selectedOrder}
             forcedCustomer={selectedOrder?.customer || null}
           />
-          <Button
-            variant="outline"
-            onClick={() => setIsTodayOrdersOpen(true)}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            {t("viewTodayOrders", { ns: "orders", defaultValue: "View Today's Orders" })}
-          </Button>
+        
         </div>
       </div>
 
       <main className="flex-1 container mx-auto px-4 py-4 min-h-0">
         <div className="flex gap-4 h-full">
           {/* Left Section: Categories */}
-          <div className="w-[150px] bg-background rounded-lg shadow-sm overflow-hidden">
+          <div className="w-[170px] bg-background rounded-lg shadow-sm overflow-hidden">
             <CategoryColumn
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategoryId}
@@ -358,7 +345,7 @@ const POSPage: React.FC = () => {
           {/* Middle Section: Products and Services */}
           <div className="flex-1 flex gap-4 min-h-0">
             {/* Products */}
-            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px]">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("product", { ns: "common" })}
               </h2>
@@ -372,7 +359,7 @@ const POSPage: React.FC = () => {
             </div>
 
             {/* Services */}
-            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px]">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("serviceOffering", { ns: "common" })}
               </h2>
@@ -388,6 +375,8 @@ const POSPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Today's Orders Column */}
+       
           {/* Right Section: Cart */}
           <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
             {selectedOrder ? (
@@ -405,11 +394,13 @@ const POSPage: React.FC = () => {
                 })) || []}
                 onRemoveItem={() => {}}
                 onUpdateQuantity={() => {}}
+                onUpdateDimensions={() => {}}
+                onUpdateNotes={() => {}}
+                onEditItem={() => {}}
                 onCheckout={() => {}}
                 isProcessing={false}
                 mode="order_view"
-                orderNumber={selectedOrder.order_number}
-                onBackToCart={handleBackToCart}
+                orderNumber={selectedOrder.daily_order_number?.toString() || selectedOrder.order_number}
               />
             ) : (
               <CartColumn
@@ -418,17 +409,27 @@ const POSPage: React.FC = () => {
                 onUpdateQuantity={handleUpdateQuantity}
                 onUpdateDimensions={handleUpdateDimensions}
                 onUpdateNotes={handleUpdateNotes}
-                onUpdateOrderNotes={setOrderNotes}
-                onUpdateDueDate={setDueDate}
-                onNewOrder={handleNewOrder}
-                orderNotes={orderNotes}
-                dueDate={dueDate}
+                onEditItem={() => {}}
                 onCheckout={handleCheckout}
                 isProcessing={isProcessing}
                 mode="cart"
               />
             )}
           </div>
+          <TodayOrdersColumn
+            onOrderSelect={handleOrderSelect}
+            selectedOrderId={selectedOrder?.id.toString()}
+            onNewOrder={() => {
+              setSelectedOrder(null);
+              setCartItems([]);
+              setSelectedCustomerId(null);
+              setSelectedCategoryId(null);
+              setSelectedProductType(null);
+              setSelectedOfferingId(null);
+            }}
+          />
+
+
         </div>
       </main>
 

@@ -173,6 +173,12 @@
   "searchProductTypes": "البحث في أنواع المنتجات",
   "serviceOfferingsDescriptionNew": "اختر نوع منتج لإدارة خدماته وأسعاره المتاحة.",
   "manageOfferings": "إدارة العروض",
+  "menu": "القائمة",
+  "menuPageTitle": "قائمة الخدمات",
+  "loadingServiceOfferings": "جارٍ تحميل عروض الخدمة...",
+  "noServiceOfferings": "لا توجد عروض خدمة.",
+  "squareMeter": "م²",
+  "piece": "قطعة"
   "selectCategoryToViewProducts": "اختر فئة لعرض المنتجات",
   "availableServices": "الخدمات المتاحة",
   "selectProductToViewServices": "اختر منتجاً لعرض الخدمات",

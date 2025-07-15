@@ -5,6 +5,7 @@ export interface ProductCategory {
     id: number;
     name: string;
     description?: string | null;
+    image_url?: string | null;
     product_types_count?: number;
 }
 
@@ -80,6 +81,7 @@ export interface PricingRule {
 export interface ProductCategoryFormData {
     name: string;
     description?: string;
+    image?: File | null;
 }
 
 export interface ProductTypeFormData {

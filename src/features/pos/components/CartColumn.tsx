@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { CartItemComponent, type CartItem } from "./CartItem";
+import { useSettings } from "@/context/SettingsContext";
 
 interface CartColumnProps {
   items: CartItem[];
@@ -33,6 +34,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   orderNumber,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
+  const { getSetting } = useSettings();
+  
+  // Get currency from settings, fallback to USD
+  const currency = getSetting('currency_symbol', 'USD');
 
   const total = items.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
 
@@ -52,7 +57,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
         </div>
       </header>
 
-      <ScrollArea className="flex-grow h-[calc(100vh-800px)]">
+      <ScrollArea className="flex-grow  h-[calc(100vh-500px)]">
         <div className="p-4 space-y-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
@@ -74,7 +79,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           )}
         </div>
       </ScrollArea>
-
+      
       {mode === 'cart' && (
         <div className="p-4 border-t space-y-4">
           <Separator />
@@ -82,7 +87,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           <div className="flex justify-between items-center text-lg font-bold">
             <span>{t("total", { ns: "common" })}:</span>
             <span className="text-primary">
-              {formatCurrency(total, "OMR", i18n.language)}
+              {formatCurrency(total, currency, i18n.language)}
             </span>
           </div>
 
@@ -104,7 +109,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           <div className="flex justify-between items-center text-lg font-bold">
             <span>{t("total", { ns: "common" })}:</span>
             <span className="text-primary">
-              {formatCurrency(total, "OMR", i18n.language)}
+              {formatCurrency(total, currency, i18n.language)}
             </span>
           </div>
         </div>

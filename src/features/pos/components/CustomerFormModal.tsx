@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, PlusCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { CustomerTypeFormModal } from '@/features/customers/components/CustomerTypeFormModal';
 
@@ -33,6 +34,7 @@ const customerSchema = z.object({
   address: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
   customer_type_id: z.union([z.string(), z.number(), z.null()]).optional(),
+  is_default: z.boolean().optional(),
 });
 
 interface CustomerFormModalProps {
@@ -59,9 +61,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   // Ensure customerTypesArray is always an array
   const customerTypesArray = Array.isArray(customerTypes) ? customerTypes : [];
 
-  const { control, register, handleSubmit, formState: { errors }, setValue, reset } = useForm<CustomerFormData>({
+  const { control, register, handleSubmit, formState: { errors }, setValue, reset, watch } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
-    defaultValues: { name: '', phone: '', address: '', notes: '', customer_type_id: '' },
+    defaultValues: { name: '', phone: '', address: '', notes: '', customer_type_id: '', is_default: false },
   });
 
   const mutation = useMutation<Customer, Error, CustomerFormData>({
@@ -162,6 +164,22 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               <div className="grid gap-2">
                 <Label htmlFor="notes">{t('notesOptional')}</Label>
                 <Textarea id="notes" {...register('notes')} rows={2} placeholder={t('customerNotesPlaceholder', { ns: 'customers' })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="is_default" className="flex items-center gap-2">
+                  <Controller
+                    name="is_default"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="is_default"
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                  {t('setAsDefault', { ns: 'customers', defaultValue: 'Set as default customer' })}
+                </Label>
               </div>
             </div>
             <DialogFooter>

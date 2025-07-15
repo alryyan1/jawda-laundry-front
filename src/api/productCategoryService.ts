@@ -5,6 +5,7 @@ import type { ProductCategory } from '@/types';
 export interface ProductCategoryFormData {
     name: string;
     description?: string;
+    image?: File | null;
 }
 
 export const getProductCategories = async (): Promise<ProductCategory[]> => {
@@ -13,7 +14,20 @@ export const getProductCategories = async (): Promise<ProductCategory[]> => {
 };
 
 export const createProductCategory = async (categoryData: ProductCategoryFormData): Promise<ProductCategory> => {
-    const { data } = await apiClient.post<{data: ProductCategory}>('/product-categories', categoryData);
+    const formData = new FormData();
+    formData.append('name', categoryData.name);
+    if (categoryData.description) {
+        formData.append('description', categoryData.description);
+    }
+    if (categoryData.image) {
+        formData.append('image', categoryData.image);
+    }
+    
+    const { data } = await apiClient.post<{data: ProductCategory}>('/product-categories', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return data.data;
 };
 
@@ -23,8 +37,21 @@ export const getProductCategoryById = async (id: number | string): Promise<Produ
 };
 
 export const updateProductCategory = async (id: number | string, categoryData: Partial<ProductCategoryFormData>): Promise<ProductCategory> => {
-    const { data } = await apiClient.post<{ data: ProductCategory }>(`/product-categories/${id}`, categoryData); // Should be PUT or PATCH
-    // const { data } = await apiClient.put<{ data: ProductCategory }>(`/product-categories/${id}`, categoryData);
+    const formData = new FormData();
+    formData.append('_method', 'PUT'); // Laravel expects this for PUT requests with file uploads
+    formData.append('name', categoryData.name || '');
+    if (categoryData.description !== undefined) {
+        formData.append('description', categoryData.description || '');
+    }
+    if (categoryData.image) {
+        formData.append('image', categoryData.image);
+    }
+    
+    const { data } = await apiClient.post<{ data: ProductCategory }>(`/product-categories/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return data.data;
 };
 

@@ -55,6 +55,15 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
       ]
     : customerOptions;
 
+  React.useEffect(() => {
+    if (!selectedCustomerId && !disabled && customersResponse?.data) {
+      const defaultCustomer = customersResponse.data.find(c => c.is_default);
+      if (defaultCustomer) {
+        onCustomerSelected(defaultCustomer.id.toString());
+      }
+    }
+  }, [selectedCustomerId, disabled, customersResponse, onCustomerSelected]);
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center gap-2">

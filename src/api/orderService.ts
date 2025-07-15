@@ -175,6 +175,20 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
 };
 
 /**
+ * Fetches today's orders.
+ */
+export const getTodayOrders = async (): Promise<Order[]> => {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { data } = await apiClient.get<{data: Order[]}>('/orders', { 
+        params: { 
+            created_date: today,
+            per_page: 100 // Get more orders for today
+        } 
+    });
+    return data.data;
+};
+
+/**
  * Deletes an order (if business logic allows).
  * Backend returns a message object.
  */
@@ -257,6 +271,7 @@ export interface OrderDetailsUpdatePayload {
     due_date?: string | null;
     status?: OrderStatus;
     pickup_date?: string | null; // e.g., "YYYY-MM-DD HH:mm:ss" UTC
+    order_type?: 'in_house' | 'take_away' | 'delivery';
 }
 
 export const updateOrderDetails = async (orderId: string | number, payload: OrderDetailsUpdatePayload): Promise<Order> => {

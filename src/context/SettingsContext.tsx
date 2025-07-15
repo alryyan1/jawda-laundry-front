@@ -10,6 +10,7 @@ interface SettingsContextType {
     isLoadingSettings: boolean;
     fetchSettings: () => Promise<void>;
     updateSettings: (data: Partial<AppSettings>) => Promise<AppSettings | null>; // Added update method
+    updateLogoUrl: (logoUrl: string | null) => void; // Add method to update logo URL
     getSetting: <K extends keyof AppSettings>(key: K, defaultValue?: AppSettings[K]) => AppSettings[K] | undefined;
 }
 
@@ -52,6 +53,12 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
     };
 
+    const updateLogoUrl = (logoUrl: string | null) => {
+        if (settings) {
+            setSettings({ ...settings, company_logo_url: logoUrl });
+        }
+    };
+
     const getSetting = <K extends keyof AppSettings>(key: K, defaultValue?: AppSettings[K]): AppSettings[K] | undefined => {
         return settings?.[key] ?? defaultValue;
     };
@@ -62,6 +69,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         isLoadingSettings,
         fetchSettings, // Expose if manual refresh is needed
         updateSettings,
+        updateLogoUrl,
         getSetting
     };
 

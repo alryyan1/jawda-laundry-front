@@ -58,7 +58,7 @@ const NewOrderPage: React.FC = () => {
 
   // --- Form Setup ---
   const methods = useForm<NewOrderFormData>({
-    defaultValues: { customer_id: "", items: [], notes: "", due_date: "" },
+    defaultValues: { customer_id: "", table_id: null, items: [], notes: "", due_date: "" },
   });
   const {
     control,

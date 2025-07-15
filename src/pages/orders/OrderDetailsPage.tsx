@@ -57,6 +57,7 @@ import { OrderPaymentsList } from "@/features/orders/components/OrderPaymentsLis
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { printPosPdfReceipt } from "@/lib/printUtils";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
+import { MapPin, Users } from "lucide-react";
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{
@@ -393,6 +394,24 @@ const OrderDetailsPage: React.FC = () => {
                 <strong className="text-base">{t("email", { ns: "common" })}:</strong>{" "}
                 <span className="font-semibold">{order.customer?.email || t("notAvailable", { ns: "common" })}</span>
               </div>
+              {order.table && (
+                <div className="sm:col-span-2">
+                  <strong className="text-base flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {t("table", { ns: "orders", defaultValue: "Table" })}:
+                  </strong>{" "}
+                  <span className="font-semibold flex items-center gap-2">
+                    {order.table.name}
+                    <span className="text-sm text-muted-foreground">
+                      ({order.table.number})
+                    </span>
+                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Users className="h-3 w-3" />
+                      {order.table.capacity}
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
             <Separator className="my-4" />
             <h3 className="font-bold text-lg mb-2">
@@ -411,6 +430,34 @@ const OrderDetailsPage: React.FC = () => {
                       })
                     : t("notSet", { ns: "common" })}
                 </span>
+              </div>
+              <div>
+                <strong className="text-base">{t("orderType", { ns: "orders", defaultValue: "Order Type" })}:</strong>{" "}
+                {can("order:update") ? (
+                  <Select
+                    value={order.order_type || 'in_house'}
+                    onValueChange={(newOrderType: 'in_house' | 'take_away' | 'delivery') => {
+                      updateOrderMutation.mutate({ order_type: newOrderType });
+                    }}
+                    disabled={updateOrderMutation.isPending}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in_house">{t('inHouse', { ns: 'orders', defaultValue: 'In House' })}</SelectItem>
+                      <SelectItem value="take_away">{t('takeAway', { ns: 'orders', defaultValue: 'Take Away' })}</SelectItem>
+                      <SelectItem value="delivery">{t('delivery', { ns: 'orders', defaultValue: 'Delivery' })}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className="font-semibold">
+                    {order.order_type === 'in_house' && t('inHouse', { ns: 'orders', defaultValue: 'In House' })}
+                    {order.order_type === 'take_away' && t('takeAway', { ns: 'orders', defaultValue: 'Take Away' })}
+                    {order.order_type === 'delivery' && t('delivery', { ns: 'orders', defaultValue: 'Delivery' })}
+                    {!order.order_type && t('inHouse', { ns: 'orders', defaultValue: 'In House' })}
+                  </span>
+                )}
               </div>
               {order.staff_user && (
                 <div>

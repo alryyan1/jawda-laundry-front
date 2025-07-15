@@ -1,5 +1,5 @@
 // src/pages/services/service-actions/ServiceActionsListPage.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,13 +9,11 @@ import {
   getServiceActions,
   deleteServiceAction,
 } from "@/api/serviceActionService";
-import { useDebounce } from "@/hooks/useDebounce";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { ServiceActionFormModal } from "./ServiceActionFormModal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,7 +21,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableCaption,
 } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -97,19 +94,10 @@ const ServiceActionsListPage: React.FC = () => {
   const MemoizedTableRow = React.memo(
     ({ action }: { action: ServiceAction }) => (
       <TableRow key={action.id}>
-        <TableCell className="font-medium">{action.name}</TableCell>
-        <TableCell className="text-muted-foreground">
-          {action.description || "-"}
-        </TableCell>
-        <TableCell className="text-center">
-          {action.base_duration_minutes
-            ? `${action.base_duration_minutes} ${t("minutesUnit", {
-                ns: "services",
-                defaultValue: "min",
-              })}`
-            : "-"}
-        </TableCell>
-        <TableCell className="text-right rtl:text-left">
+        <TableCell className="font-medium text-center">{action.name}</TableCell>
+        <TableCell className="text-muted-foreground text-center">{action.description || "-"}</TableCell>
+        <TableCell className="text-center">{action.base_duration_minutes ? `${action.base_duration_minutes} ${t("minutesUnit", { ns: "services", defaultValue: "min" })}` : "-"}</TableCell>
+        <TableCell className="text-center">{/* actions dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -161,14 +149,10 @@ const ServiceActionsListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[200px]">{t("name")}</TableHead>
-              <TableHead>{t("description")}</TableHead>
-              <TableHead className="w-[150px] text-center">
-                {t("durationMinutes", { ns: "services" })}
-              </TableHead>
-              <TableHead className="text-right rtl:text-left w-[80px]">
-                {t("actions")}
-              </TableHead>
+              <TableHead className="min-w-[200px] text-center">{t("name")}</TableHead>
+              <TableHead className="text-center">{t("description")}</TableHead>
+              <TableHead className="w-[150px] text-center">{t("durationMinutes", { ns: "services" })}</TableHead>
+              <TableHead className="text-center w-[80px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

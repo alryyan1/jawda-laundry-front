@@ -3,6 +3,7 @@ import type { User } from './auth.types';
 import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
 import type { PAYMENT_METHODS } from '@/lib/constants';
+import type { RestaurantTable } from './restaurantTable.types';
 
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 
@@ -72,7 +73,10 @@ export interface Order {
     overdue_days?: number; // <-- أضف هذا الحقل الاختياري
 
     order_number: string;
+    daily_order_number?: number;
     customer: Customer;
+    table_id?: number | null;
+    table?: RestaurantTable;
     staff_user?: User;
     status: OrderStatus;
     total_amount: number;
@@ -113,10 +117,12 @@ export interface OrderItemFormLine {
 
 export interface NewOrderFormData {
     customer_id: string;
+    table_id?: number | null;
     items: OrderItemFormLine[];
     notes?: string;
     due_date?: string;
     status?: OrderStatus; // Added for edit page
+    order_type?: 'in_house' | 'take_away' | 'delivery';
 }
 
 export interface OrderStatistics {

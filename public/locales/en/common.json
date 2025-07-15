@@ -198,6 +198,7 @@
   "logout": "Logout",
   "collapseSidebar": "Collapse sidebar",
   "expandSidebar": "Expand sidebar",
+  "optional": "Optional"
   "newOrder": "New Order",
   "filters": "Filters",
   "orderNumber": "Order Number",
@@ -271,7 +272,8 @@
   "languageEnglish": "English",
   "languageArabic": "العربية (Arabic)",
   "toggleNavigationMenu": "Toggle navigation menu",
-  "appName": "Jawda Laundry",
+  "appName": "SHAI KHADRI",
+  "appSubtitle": "COFFEE SHOP MANAGER",
   "reports": "Reports",
   "kanban": "Kanban",
   "expenses": "Expenses",

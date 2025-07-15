@@ -15,6 +15,9 @@ import {
   deleteProductType,
 } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
+import { getProductCategories } from '@/services/productCategoryService';
+import type { ProductCategory } from '@/types/service.types';
+import { ManageOfferingsDialog } from '../offerings/components/ManageOfferingsDialog';
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -65,11 +68,19 @@ const ProductTypesListPage: React.FC = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [offeringsDialogOpen, setOfferingsDialogOpen] = useState(false);
+  const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
 
   // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm]);
+
+  const { data: categories = [] } = useQuery<ProductCategory[]>({
+    queryKey: ['productCategories'],
+    queryFn: getProductCategories,
+  });
 
   const {
     data: paginatedData,
@@ -77,9 +88,9 @@ const ProductTypesListPage: React.FC = () => {
     isFetching,
     refetch,
   } = useQuery<PaginatedResponse<ProductType>, Error>({
-    queryKey: ["productTypes", currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder],
+    queryKey: ["productTypes", currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder, selectedCategory],
     queryFn: () =>
-      getProductTypesPaginated(currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder),
+      getProductTypesPaginated(currentPage, itemsPerPage, debouncedSearchTerm, sortBy, sortOrder, selectedCategory ?? undefined),
     placeholderData: keepPreviousData,
   });
 
@@ -167,6 +178,18 @@ const ProductTypesListPage: React.FC = () => {
               )}
             </div>
           </TableCell>
+          <TableCell className="text-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedProductType(productType);
+                setOfferingsDialogOpen(true);
+              }}
+            >
+              {t('manageOfferings', { ns: 'services', defaultValue: 'Manage Offerings' })}
+            </Button>
+          </TableCell>
           <TableCell className="text-right rtl:text-left">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -217,7 +240,7 @@ const ProductTypesListPage: React.FC = () => {
         isRefreshing={isFetching && !isLoading}
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
         <Input
           placeholder={t("searchProductTypes", {
             ns: "services",
@@ -227,6 +250,16 @@ const ProductTypesListPage: React.FC = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
+        <select
+          className="border rounded px-3 py-2 text-sm"
+          value={selectedCategory ?? ''}
+          onChange={e => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">{t('allCategories', { ns: 'services', defaultValue: 'All Categories' })}</option>
+          {categories.map((cat: ProductCategory) => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="rounded-md border">
@@ -234,7 +267,7 @@ const ProductTypesListPage: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead 
-                className="min-w-[250px] cursor-pointer hover:bg-muted/50"
+                className="min-w-[250px] cursor-pointer hover:bg-muted/50 text-center"
                 onClick={() => handleSort("id")}
               >
                 <div className="flex items-center gap-1">
@@ -243,7 +276,7 @@ const ProductTypesListPage: React.FC = () => {
                 </div>
               </TableHead>
               <TableHead 
-                className="min-w-[250px] cursor-pointer hover:bg-muted/50"
+                className="min-w-[250px] cursor-pointer hover:bg-muted/50 text-center"
                 onClick={() => handleSort("name")}
               >
                 <div className="flex items-center gap-1">
@@ -251,14 +284,17 @@ const ProductTypesListPage: React.FC = () => {
                   {getSortIcon("name")}
                 </div>
               </TableHead>
-              <TableHead>{t("category", { ns: "services" })}</TableHead>
-              <TableHead className="text-center">
+              <TableHead className="text-center">{t("category", { ns: "services" })}</TableHead>
+              {/* <TableHead className="text-center">
                 {t("dimensionBased", {
                   ns: "services",
                   defaultValue: "Dimension Based",
                 })}
+              </TableHead> */}
+              <TableHead className="text-center">
+                {t('serviceOfferings', { ns: 'services', defaultValue: 'Service Offerings' })}
               </TableHead>
-              <TableHead className="text-right rtl:text-left w-[80px]">
+              <TableHead className="text-center w-[80px]">
                 {t("actions")}
               </TableHead>
             </TableRow>
@@ -367,6 +403,13 @@ const ProductTypesListPage: React.FC = () => {
         itemType="productTypeLC"
         isPending={deleteMutation.isPending}
       />
+      {selectedProductType && (
+        <ManageOfferingsDialog
+          isOpen={offeringsDialogOpen}
+          onOpenChange={setOfferingsDialogOpen}
+          productType={selectedProductType}
+        />
+      )}
     </div>
   );
 };

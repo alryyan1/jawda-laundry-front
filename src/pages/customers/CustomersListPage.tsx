@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
 
 import type { Customer, PaginatedResponse } from '@/types';
-import { getCustomers, deleteCustomer } from '@/api/customerService';
+import { getCustomers, deleteCustomer, updateCustomer } from '@/api/customerService';
 import { useDebounce } from '@/hooks/useDebounce';
 
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -38,6 +38,8 @@ import {
     Edit3,
     Loader2,
     FileText,
+    Star,
+    StarOff,
 } from 'lucide-react';
 
 const CustomersListPage: React.FC = () => {
@@ -76,6 +78,16 @@ const CustomersListPage: React.FC = () => {
         onError: (err) => {
             toast.error(err.message || t('customerDeleteFailed', { ns: 'customers' }));
             setCustomerToDelete(null);
+        }
+    });
+
+    const setDefaultMutation = useMutation<void, Error, number>({
+        mutationFn: async (id) => {
+            await updateCustomer(id, { is_default: true });
+            await refetch();
+        },
+        onError: (err) => {
+            toast.error(err.message || t('errorSettingDefault', { ns: 'customers' }));
         }
     });
 
@@ -173,13 +185,14 @@ const CustomersListPage: React.FC = () => {
                                     <TableHead className="text-center">{t('phone', { ns: 'customers' })}</TableHead>
                                     <TableHead className="text-center">{t('totalOrders', { ns: 'customers' })}</TableHead>
                                     <TableHead className="text-center">{t('registeredDate', { ns: 'customers' })}</TableHead>
+                                    <TableHead className="text-center">{t('default', { ns: 'customers', defaultValue: 'Default' })}</TableHead>
                                     <TableHead className="text-center w-[80px]">{t('actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {(isLoading || isFetching) && customers.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center">
+                                        <TableCell colSpan={8} className="h-24 text-center">
                                             <div className="flex justify-center items-center">
                                                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                             </div>
@@ -187,7 +200,7 @@ const CustomersListPage: React.FC = () => {
                                     </TableRow>
                                 ) : customers.length > 0 ? (
                                     customers.map((customer: Customer) => (
-                                        <TableRow key={customer.id} data-state={selectedRows[customer.id] && "selected"}>
+                                        <TableRow key={customer.id} data-state={selectedRows[customer.id] && "selected"} className={customer.is_default ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}>
                                             <TableCell className='text-center'>
                                                 <Checkbox
                                                     checked={!!selectedRows[customer.id]}
@@ -201,6 +214,18 @@ const CustomersListPage: React.FC = () => {
                                             <TableCell className="text-center">{customer.total_orders ?? 0}</TableCell>
                                             <TableCell>
                                                 {format(new Date(customer.registered_date), "PP", { locale: currentLocale })}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {customer.is_default ? (
+                                                    <span className="inline-flex items-center gap-1 text-yellow-600 font-bold">
+                                                        <Star className="h-5 w-5 fill-yellow-400 text-yellow-600" />
+                                                        {t('default', { ns: 'customers', defaultValue: 'Default' })}
+                                                    </span>
+                                                ) : (
+                                                    <Button size="icon" variant="ghost" onClick={() => setDefaultMutation.mutate(customer.id)} title={t('setAsDefault', { ns: 'customers', defaultValue: 'Set as default' })}>
+                                                        <StarOff className="h-5 w-5 text-muted-foreground" />
+                                                    </Button>
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <DropdownMenu>
@@ -222,14 +247,13 @@ const CustomersListPage: React.FC = () => {
                                                             {t('ledger')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
-
                                                 </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center">
+                                        <TableCell colSpan={8} className="h-24 text-center">
                                             {t('noResults')}
                                         </TableCell>
                                     </TableRow>
