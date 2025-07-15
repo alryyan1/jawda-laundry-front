@@ -187,7 +187,7 @@ const NewServiceOfferingPage: React.FC = () => {
                         {/* Optional Overrides & Details */}
                         <div className="grid gap-1.5">
                             <Label htmlFor="name_override">{t('nameOverrideOptional', {ns:'services', defaultValue:'Name Override (Optional)'})}</Label>
-                            <Input id="name_override" {...register('name_override')} placeholder={t('nameOverridePlaceholder', {ns:'services', defaultValue: 'e.g., Premium T-Shirt Wash'})} />
+                            <Input id="name_override" {...register('name_override')} placeholder={t('nameOverridePlaceholder', {ns:'services', defaultValue: 'e.g., Premium Espresso Brew'})} />
                         </div>
                         <div className="grid gap-1.5">
                             <Label htmlFor="description_override">{t('descriptionOverrideOptional', {ns:'services', defaultValue:'Description Override (Optional)'})}</Label>

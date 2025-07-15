@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Shirt, Package } from "lucide-react"; // Package is a good generic icon
+import { Coffee, Package } from "lucide-react"; // Package is a good generic icon
 
 interface ProductTypeColumnProps {
   selectedCategoryId: string | null;
@@ -81,7 +81,7 @@ export const ProductTypeColumn: React.FC<ProductTypeColumnProps> = ({
                         alt={product.name}
                       />
                       <AvatarFallback className="rounded-md bg-secondary">
-                        <Shirt className="h-6 w-6 text-muted-foreground" />
+                        <Coffee className="h-6 w-6 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <p className="text-xs sm:text-sm font-medium text-center leading-tight">

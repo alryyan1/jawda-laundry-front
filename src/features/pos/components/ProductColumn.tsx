@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Shirt, Search } from "lucide-react";
+import { Coffee, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- MUI Import ---
@@ -130,7 +130,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                           <button
                             onClick={() => onSelectProduct(product)}
                             className={cn(
-                              "w-full flex flex-col items-center justify-center p-2 rounded-lg transition-all text-center",
+                              "w-full flex flex-col items-center justify-center p-2 rounded-lg transition-all text-center cursor-pointer",
                               "bg-card hover:bg-card/90",
                               "shadow-sm hover:shadow-md",
                               "transform hover:-translate-y-0.5",

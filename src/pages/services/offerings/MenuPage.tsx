@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
-import { Loader2, Shirt } from 'lucide-react';
+import { Loader2, Coffee } from 'lucide-react';
 import { getAllProductTypes } from '@/api/productTypeService';
 import { getServiceOfferings } from '@/api/serviceOfferingService';
 import type { ProductType, ServiceOffering } from '@/types';
@@ -53,7 +53,7 @@ const MenuPage: React.FC = () => {
                 <Avatar className="h-12 w-12 rounded-md">
                   <AvatarImage src={pt.image_url || undefined} alt={pt.name} />
                   <AvatarFallback className="rounded-md bg-muted">
-                    <Shirt className="h-6 w-6 text-muted-foreground" />
+                    <Coffee className="h-6 w-6 text-muted-foreground" />
                   </AvatarFallback>
                 </Avatar>
                 <div>

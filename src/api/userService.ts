@@ -4,6 +4,7 @@ import type { User, PaginatedResponse } from '@/types'; // Or from specific auth
 
 export interface UserFormData { // For admin creating/editing users
     name: string;
+    username: string;
     email: string;
     password?: string; // Optional on update
     password_confirmation?: string;
@@ -32,16 +33,14 @@ export const getUserById = async (id: number | string): Promise<User> => {
 
 // Admin: Create a user
 export const createUserAsAdmin = async (userData: UserFormData): Promise<User> => {
-    const payload = { ...userData, roles: userData.role_ids }; // Backend might expect 'roles' key with IDs
-    delete payload.role_ids;
+    const payload = { ...userData }; // Backend now expects 'role_ids' key
     const { data } = await apiClient.post<{ data: User }>('/admin/users', payload);
     return data.data;
 };
 
 // Admin: Update a user
 export const updateUserAsAdmin = async (id: number | string, userData: Partial<UserFormData>): Promise<User> => {
-    const payload = { ...userData, roles: userData.role_ids };
-    delete payload.role_ids;
+    const payload = { ...userData }; // Backend now expects 'role_ids' key
     // Remove password/password_confirmation if they are empty strings, so backend doesn't try to update with empty
     if (payload.password === '') delete payload.password;
     if (payload.password_confirmation === '') delete payload.password_confirmation;

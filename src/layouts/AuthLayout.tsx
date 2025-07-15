@@ -2,7 +2,7 @@
 import { Outlet } from 'react-router-dom';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useTranslation } from 'react-i18next';
-import { Shirt } from 'lucide-react';
+import { Coffee } from 'lucide-react';
 
 const AuthLayout = () => {
   const { t } = useTranslation('common');

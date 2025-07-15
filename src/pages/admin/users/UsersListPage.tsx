@@ -74,11 +74,17 @@ const UsersListPage: React.FC = () => {
             header: t('roles'),
             cell: ({ row }) => (
                 <div className="flex flex-wrap gap-1">
-                    {row.original.roles.map((role, index) => (
-                        <Badge key={`${role.id}-${index}`} variant="secondary" className="capitalize">
-                            {role.name}
-                        </Badge>
-                    ))}
+                    {row.original.roles.map((role, index) => {
+                        // Handle both Role objects and string role names
+                        const roleName = typeof role === 'string' ? role : role.name;
+                        const roleId = typeof role === 'string' ? index : role.id;
+                        
+                        return (
+                            <Badge key={`${roleId}-${index}`} variant="secondary" className="capitalize">
+                                {roleName}
+                            </Badge>
+                        );
+                    })}
                 </div>
             )
         },

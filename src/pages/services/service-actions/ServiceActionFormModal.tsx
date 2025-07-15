@@ -166,7 +166,7 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
               {...register("name")}
               placeholder={t("egServiceActionName", {
                 ns: "services",
-                defaultValue: "e.g., Standard Wash, Dry Cleaning",
+                defaultValue: "e.g., Espresso Brew, Cappuccino Preparation",
               })}
             />
             {errors.name && (

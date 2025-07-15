@@ -175,7 +175,7 @@ const OrderDetailsPage: React.FC = () => {
     isLoading,
     error,
     refetch,
-  } = useQuery<Order, Error>({
+  } = useQuery<Ordposer, Error>({
     queryKey: ["order", id],
     queryFn: () => getOrderById(id!),
     enabled: !!id,

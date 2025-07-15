@@ -162,6 +162,7 @@
   "cart": "Cart",
   "checkout": "Checkout",
   "printReceipt": "Print Receipt",
+  "viewReceipt": "View Receipt",
   "selectPickupDate": "Select pickup date and time",
   "pickupDateUpdatedSuccess": "Pickup date updated successfully",
   "pickupDateUpdateFailed": "Failed to update pickup date",
@@ -202,7 +203,7 @@
   "orderType": "Order Type",
   "inHouse": "In House",
   "takeAway": "Take Away",
-  "delivery": "Delivery"
+  "delivery": "Delivery",
   "paymentReceipt": "Payment Receipt",
   "openMenu": "Open menu",
   "viewDetails": "View Details",
@@ -222,5 +223,10 @@
   "paymentMethod_credit": "Credit",
   "totalOrders": "Total Orders",
   "totalAmountPaid": "Total Amount Paid",
-  "paymentBreakdown": "Payment Breakdown"
+  "paymentBreakdown": "Payment Breakdown",
+  "status": {
+    "pending": "pending",
+    "completed": "completed"
+  },
+  "selectCustomerRequired": "Customer Selection Required"
 }

@@ -5,6 +5,7 @@ import type { User, Role, PaginatedResponse } from '@/types';
 // Define a more specific type for the user form payload
 export interface UserFormData {
     name: string;
+    username: string;
     email: string;
     password?: string;
     password_confirmation?: string;

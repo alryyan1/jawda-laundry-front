@@ -21,6 +21,7 @@ import { ProfileSettings } from "@/features/settings/components/ProfileSettings"
 import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
 import KanbanPage from "@/pages/orders/KanbanPage";
 import POSPage from '@/pages/pos/POSPage';
+import DiningManagementPage from '@/pages/dining/DiningManagementPage';
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -255,6 +256,15 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <POSPage />
+              </React.Suspense>
+            ),
+          },
+          // Dining Management Route
+          {
+            path: "dining",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <DiningManagementPage />
               </React.Suspense>
             ),
           },

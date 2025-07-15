@@ -160,6 +160,7 @@
   "cart": "السلة",
   "checkout": "الدفع",
   "printReceipt": "طباعة الإيصال",
+  "viewReceipt": "عرض الإيصال",
   "selectPickupDate": "اختر تاريخ ووقت الاستلام",
   "pickupDateUpdatedSuccess": "تم تحديث تاريخ الاستلام بنجاح",
   "pickupDateUpdateFailed": "فشل تحديث تاريخ الاستلام",
@@ -217,5 +218,10 @@
   "orderType": "نوع الطلب",
   "inHouse": "في المطعم",
   "takeAway": "للخارج",
-  "delivery": "توصيل"
+  "delivery": "توصيل",
+  "status": {
+    "pending": "في الانتظار",
+    "completed": "مكتمل"
+  },
+  "orders": "الطلبات"
 }

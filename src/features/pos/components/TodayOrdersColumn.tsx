@@ -135,11 +135,11 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                   <React.Fragment key={order.id}>
                     <MuiBadge
                       badgeContent={order.items?.length || 0}
-                      color="error"
+                      color="info"
                       invisible={!order.items?.length || order.items.length === 0}
                       anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'left',
+                        vertical: 'top',
+                        horizontal: 'right',
                       }}
                     >
                       <div

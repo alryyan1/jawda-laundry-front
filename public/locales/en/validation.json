@@ -7,6 +7,8 @@
     "passwordsDoNotMatch": "Passwords do not match.",
     "nameRequired": "Name is required.",
     "nameMin": "Name must be at least 2 characters.",
+    "usernameRequired": "Username is required.",
+    "usernameInvalid": "Username can only contain letters, numbers, underscores, and hyphens.",
     "categoryRequired": "Category is required.",
     "productTypeRequired": "Product type is required.",
     "serviceActionRequired": "Service action is required.",
@@ -37,5 +39,6 @@
     "url": "Please enter a valid URL.",
     "required": "This field is required.",
     "phoneNumber": "Please enter a valid phone number (numbers only).",
-    "countryCode": "Please enter a valid country code (numbers only)."
+    "countryCode": "Please enter a valid country code (numbers only).",
+    "atLeastOneRoleRequired": "At least one role must be selected."
   }

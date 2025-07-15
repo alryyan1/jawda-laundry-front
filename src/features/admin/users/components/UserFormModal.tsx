@@ -20,36 +20,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 
 // Zod schema for validation
-const userFormSchemaBase = z.object({
+const userFormSchema = z.object({
   name: z.string().nonempty({ message: "validation.nameRequired" }),
+  username: z.string().nonempty({ message: "validation.usernameRequired" }).regex(/^[a-zA-Z0-9_-]+$/, { message: "validation.usernameInvalid" }),
   email: z.string().email({ message: "validation.emailInvalid" }),
   role_ids: z.array(z.number()).min(1, { message: "validation.roleRequired" }),
-});
-
-const userFormSchema = userFormSchemaBase.extend({
-    password: z.string().optional().or(z.literal('')),
-    password_confirmation: z.string().optional().or(z.literal('')),
-}).refine(data => {
-    // If password is provided, it must be valid and confirmed
-    if (data.password) {
-        return data.password.length >= 8 && data.password === data.password_confirmation;
-    }
-    return true; // Pass if no password is being set
-}, {
-    // This logic provides different messages based on which condition failed
-    message: "validation.passwordsDoNotMatch", // Default message
-    path: ["password_confirmation"],
-    // A more advanced refine could return different messages, but this is a good start
-}).refine(data => {
-    // This refine is specifically for the password length if it exists
-    if(data.password && data.password.length < 8) {
-        return false;
-    }
-    return true;
-}, {
-    message: "validation.passwordMin",
-    path: ["password"],
-});
+  password: z.string().optional(),
+  password_confirmation: z.string().optional(),
+})
 
 type UserFormValues = z.infer<typeof userFormSchema>;
 
@@ -70,24 +48,47 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
 
     const { control, handleSubmit, reset, formState: { errors, isDirty } } = useForm<UserFormValues>({
         resolver: zodResolver(userFormSchema),
-        defaultValues: { name: '', email: '', password: '', password_confirmation: '', role_ids: [] }
+        defaultValues: { name: '', username: '', email: '', password: '', password_confirmation: '', role_ids: [] }
     });
-
+    
+    // Debug logging to see what's happening with role_ids
+    console.log('Form errors:', errors);
+    console.log('Form values:', control._formValues);
+    console.log('role_ids details:', {
+        value: control._formValues.role_ids,
+        type: typeof control._formValues.role_ids,
+        isArray: Array.isArray(control._formValues.role_ids),
+        length: control._formValues.role_ids?.length,
+        items: control._formValues.role_ids?.map((item: unknown, index: number) => ({
+            index,
+            value: item,
+            type: typeof item
+        }))
+    });
     useEffect(() => {
         if (isOpen) {
             if (editingUser) {
+                // Handle both Role objects and string role names
+                const roleIds = editingUser.roles.map(role => {
+                    if (typeof role === 'string') {
+                        // Find the role ID by name from the available roles
+                        const foundRole = roles.find(r => r.name === role);
+                        return foundRole?.id || 0;
+                    }
+                    return role.id;
+                }).filter(id => id !== 0); // Remove any roles that weren't found
+                
                 reset({
                     name: editingUser.name,
+                    username: editingUser.username,
                     email: editingUser.email,
-                    role_ids: editingUser.roles.map(role => role.id),
-                    password: '',
-                    password_confirmation: '',
+                    role_ids: roleIds,
                 });
             } else {
-                reset({ name: '', email: '', password: '', password_confirmation: '', role_ids: [] });
+                reset({ name: '', username: '', email: '', role_ids: [] });
             }
         }
-    }, [editingUser, isOpen, reset]);
+    }, [editingUser, isOpen, reset, roles]);
 
     const mutation = useMutation<User, Error, Partial<UserFormData>>({
         mutationFn: (data) => editingUser ? updateUser(editingUser.id, data) : createUser(data as UserFormData),
@@ -100,12 +101,28 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
     });
 
     const onSubmit = (data: UserFormValues) => {
-        const payload: Partial<UserFormData> = { name: data.name, email: data.email, role_ids: data.role_ids };
-        // Only include password in the payload if it's being set/changed
-        if (data.password) {
+        console.log('Form data being submitted:', data);
+        console.log('role_ids type:', typeof data.role_ids, 'value:', data.role_ids);
+        
+        // Ensure role_ids is an array of numbers
+        const roleIds = Array.isArray(data.role_ids) 
+            ? data.role_ids.map(id => Number(id)).filter(id => !isNaN(id))
+            : [];
+        
+        const payload: Partial<UserFormData> = { 
+            name: data.name, 
+            username: data.username, 
+            email: data.email, 
+            role_ids: roleIds
+        };
+        
+        // Only include password in the payload if it's provided and not empty
+        if (data.password && data.password.trim() !== '') {
             payload.password = data.password;
             payload.password_confirmation = data.password_confirmation;
         }
+        
+        console.log('Final payload:', payload);
         mutation.mutate(payload);
     };
 
@@ -134,6 +151,23 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                             {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
                         </div>
                         <div className="grid gap-1.5">
+                            <Label htmlFor="user-username">{t('username')}<span className="text-destructive">*</span></Label>
+                            <Controller
+                                name="username"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input 
+                                        id="user-username" 
+                                        {...field}
+                                        placeholder={t('enterUsername', { ns: 'common', defaultValue: 'Enter username...' })}
+                                    />
+                                )}
+                            />
+                            {errors.username && <p className="text-sm text-destructive">{t(errors.username.message as string)}</p>}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="user-email">{t('email')}<span className="text-destructive">*</span></Label>
                             <Controller
                                 name="email"
@@ -150,45 +184,49 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                             {errors.email && <p className="text-sm text-destructive">{t(errors.email.message as string)}</p>}
                         </div>
                     </div>
-                    <Separator/>
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium">{editingUser ? t('changePasswordOptional') : t('setPassword')}</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                             <div className="grid gap-1.5">
-                                <Label htmlFor="user-password">{t('password')}</Label>
-                                <Controller
-                                    name="password"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Input 
-                                            id="user-password" 
-                                            type="password" 
-                                            {...field}
-                                            placeholder={editingUser ? t('leaveBlankToKeep', { ns: 'common', defaultValue: 'Leave blank to keep current' }) : t('enterPassword', { ns: 'common', defaultValue: 'Enter password...' })}
+                    {!editingUser && (
+                        <>
+                            <Separator/>
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium">{t('setPassword')}</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                     <div className="grid gap-1.5">
+                                        <Label htmlFor="user-password">{t('password')}</Label>
+                                        <Controller
+                                            name="password"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Input 
+                                                    id="user-password" 
+                                                    type="password" 
+                                                    {...field}
+                                                    placeholder={t('enterPassword', { ns: 'common', defaultValue: 'Enter password...' })}
+                                                />
+                                            )}
                                         />
-                                    )}
-                                />
-                                {errors.password && <p className="text-sm text-destructive">{t(errors.password.message as string)}</p>}
-                            </div>
-                             <div className="grid gap-1.5">
-                                <Label htmlFor="user-password-confirmation">{t('confirmPassword')}</Label>
-                                <Controller
-                                    name="password_confirmation"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Input 
-                                            id="user-password-confirmation" 
-                                            type="password" 
-                                            {...field}
-                                            placeholder={t('confirmPassword', { defaultValue: 'Confirm password...' })}
+                                        {errors.password && <p className="text-sm text-destructive">{t(errors.password.message as string)}</p>}
+                                    </div>
+                                     <div className="grid gap-1.5">
+                                        <Label htmlFor="user-password-confirmation">{t('confirmPassword')}</Label>
+                                        <Controller
+                                            name="password_confirmation"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Input 
+                                                    id="user-password-confirmation" 
+                                                    type="password" 
+                                                    {...field}
+                                                    placeholder={t('confirmPassword', { defaultValue: 'Confirm password...' })}
+                                                />
+                                            )}
                                         />
-                                    )}
-                                />
-                                {errors.password_confirmation && <p className="text-sm text-destructive">{t(errors.password_confirmation.message as string)}</p>}
+                                        {errors.password_confirmation && <p className="text-sm text-destructive">{t(errors.password_confirmation.message as string)}</p>}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <Separator/>
+                            <Separator/>
+                        </>
+                    )}
                     <div className="grid gap-1.5">
                         <Label>{t('roles')}<span className="text-destructive">*</span></Label>
                         <ScrollArea className="h-40 rounded-md border p-4">
@@ -196,24 +234,32 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                                 <Controller 
                                     name="role_ids" 
                                     control={control} 
-                                    render={({ field }) => (
-                                        <div className="space-y-2">
-                                            {roles.map(role => (
-                                                <div key={role.id} className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        id={`role-${role.id}`}
-                                                        checked={field.value?.includes(role.id)}
-                                                        onCheckedChange={(checked) => {
-                                                            const currentRoles = field.value || [];
-                                                            const newRoles = checked ? [...currentRoles, role.id] : currentRoles.filter(id => id !== role.id);
-                                                            field.onChange(newRoles);
-                                                        }}
-                                                    />
-                                                    <Label htmlFor={`role-${role.id}`} className="font-normal capitalize cursor-pointer">{role.name}</Label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )} 
+                                    render={({ field }) => {
+                                        // Ensure field.value is always an array of numbers
+                                        const currentRoles = Array.isArray(field.value) 
+                                            ? field.value.map(id => Number(id)).filter(id => !isNaN(id))
+                                            : [];
+                                        
+                                        return (
+                                            <div className="space-y-2">
+                                                {roles.map(role => (
+                                                    <div key={role.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`role-${role.id}`}
+                                                            checked={currentRoles.includes(role.id)}
+                                                            onCheckedChange={(checked) => {
+                                                                const newRoles = checked 
+                                                                    ? [...currentRoles, role.id] 
+                                                                    : currentRoles.filter(id => id !== role.id);
+                                                                field.onChange(newRoles);
+                                                            }}
+                                                        />
+                                                        <Label htmlFor={`role-${role.id}`} className="font-normal capitalize cursor-pointer">{role.name}</Label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    }} 
                                 />
                             )}
                         </ScrollArea>

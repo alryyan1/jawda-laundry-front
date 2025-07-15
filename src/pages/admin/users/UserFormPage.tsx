@@ -40,8 +40,9 @@ type ApiErrorResponse = {
 
 const userFormSchemaBase = {
     name: z.string().nonempty({ message: "validation.nameRequired" }).min(2, { message: "validation.nameMin" }),
+    username: z.string().nonempty({ message: "validation.usernameRequired" }).regex(/^[a-zA-Z0-9_-]+$/, { message: "validation.usernameInvalid" }),
     email: z.string().nonempty({ message: "validation.emailRequired" }).email({ message: "validation.emailInvalid" }),
-    role_ids: z.array(z.union([z.string(), z.number()])).optional(),
+    role_ids: z.array(z.union([z.string(), z.number()])).min(1, { message: "validation.atLeastOneRoleRequired" }),
 };
 
 const newUserSchema = z.object({
@@ -83,15 +84,23 @@ const UserFormPage: React.FC = () => {
     const currentSchema = isEditMode ? editUserSchema : newUserSchema;
     type UserFormValues = z.infer<typeof currentSchema>;
 
-    const { control, register, handleSubmit, reset, formState: { errors, isDirty }, setError } = useForm<UserFormValues>({
+    const { control, register, handleSubmit, reset, formState: { errors, isDirty, isValid }, setError, watch } = useForm<UserFormValues>({
         resolver: zodResolver(currentSchema),
-        defaultValues: { name: '', email: '', password: '', password_confirmation: '', role_ids: [] },
+        defaultValues: { name: '', username: '', email: '', password: '', password_confirmation: '', role_ids: [] },
+        mode: 'onSubmit',
     });
+    // alert('s')
+    // Watch form values for debugging
+    const watchedValues = watch();
+    console.log('Form errors:', errors);
+    console.log('Form values:', watchedValues);
+    console.log('Form is valid:', isValid);
 
     useEffect(() => {
         if (isEditMode && existingUser) {
             reset({
                 name: existingUser.name,
+                username: existingUser.username,
                 email: existingUser.email,
                 password: '',
                 password_confirmation: '',
@@ -124,15 +133,39 @@ const UserFormPage: React.FC = () => {
     });
 
     const onSubmit = (data: UserFormValues) => {
+        // Debug logging
+        console.log('Form data:', data);
+        console.log('Form errors:', errors);
+        console.log('Form is valid:', isValid);
+        
+        // Manual validation for role_ids
+        if (!data.role_ids || data.role_ids.length === 0) {
+            setError('role_ids', { 
+                type: 'manual', 
+                message: 'validation.atLeastOneRoleRequired' 
+            });
+            toast.error(t('validation.atLeastOneRoleRequired'));
+            return;
+        }
+        
+        // Ensure role_ids is always an array of numbers
+        const roleIds = Array.isArray(data.role_ids) 
+            ? data.role_ids.map(id => Number(id)).filter(id => !isNaN(id))
+            : [];
+            
         const payload: UserFormData = {
             name: data.name,
+            username: data.username,
             email: data.email,
-            role_ids: data.role_ids?.map(id => Number(id)),
+            role_ids: roleIds,
         };
         if (data.password && data.password.length > 0) {
             payload.password = data.password;
             payload.password_confirmation = data.password_confirmation;
         }
+        
+        console.log('Payload being sent:', payload);
+        
         mutation.mutate(payload);
     };
 
@@ -179,6 +212,11 @@ const UserFormPage: React.FC = () => {
                             {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
                         </div>
                         <div className="grid gap-1.5">
+                            <Label htmlFor="userUsername">{t('username', { ns: 'admin' })} <span className="text-destructive">*</span></Label>
+                            <Input id="userUsername" {...register('username')} />
+                            {errors.username && <p className="text-sm text-destructive">{t(errors.username.message as string)}</p>}
+                        </div>
+                        <div className="grid gap-1.5">
                             <Label htmlFor="userEmail">{t('email', { ns: 'common' })} <span className="text-destructive">*</span></Label>
                             <Input id="userEmail" type="email" {...register('email')} />
                             {errors.email && <p className="text-sm text-destructive">{t(errors.email.message as string)}</p>}
@@ -201,28 +239,39 @@ const UserFormPage: React.FC = () => {
                             <Controller
                                 name="role_ids"
                                 control={control}
-                                render={({ field }) => (
-                                    <div className="space-y-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-                                        {allRoles.map(role => (
-                                            <div key={role.id} className="flex items-center space-x-2 rtl:space-x-reverse">
-                                                <Checkbox
-                                                    id={`role-${role.id}`}
-                                                    checked={field.value?.map(String).includes(String(role.id))}
-                                                    onCheckedChange={(checked) => {
-                                                        const currentValues = field.value || [];
-                                                        const newValues = checked
-                                                            ? [...currentValues, role.id.toString()]
-                                                            : currentValues.filter(val => String(val) !== String(role.id));
-                                                        field.onChange(newValues);
-                                                    }}
-                                                />
-                                                <Label htmlFor={`role-${role.id}`} className="font-normal cursor-pointer">{role.name}</Label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                render={({ field, fieldState }) => {
+                                    // Ensure field.value is always an array
+                                    const currentValues = Array.isArray(field.value) ? field.value : [];
+                                    
+                                    console.log('Controller field value:', field.value);
+                                    console.log('Controller field state:', fieldState);
+                                    
+                                    return (
+                                        <div className="space-y-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                                            {allRoles.map(role => (
+                                                <div key={role.id} className="flex items-center space-x-2 rtl:space-x-reverse">
+                                                    <Checkbox
+                                                        id={`role-${role.id}`}
+                                                        checked={currentValues.map(String).includes(String(role.id))}
+                                                        onCheckedChange={(checked) => {
+                                                            const newValues = checked
+                                                                ? [...currentValues, role.id.toString()]
+                                                                : currentValues.filter(val => String(val) !== String(role.id));
+                                                            console.log('Setting new role_ids values:', newValues);
+                                                            field.onChange(newValues);
+                                                        }}
+                                                    />
+                                                    <Label htmlFor={`role-${role.id}`} className="font-normal cursor-pointer">{role.name}</Label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                }}
                             />
                             {errors.role_ids && <p className="text-sm text-destructive mt-2">{t(errors.role_ids.message as string)}</p>}
+                            {!errors.role_ids && watchedValues.role_ids?.length === 0 && (
+                                <p className="text-sm text-muted-foreground mt-2">{t('validation.atLeastOneRoleRequired')}</p>
+                            )}
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-2">

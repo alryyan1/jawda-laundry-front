@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // <-- Import Input
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Shirt, Package, ArrowLeft, Search } from "lucide-react"; // <-- Import Search icon
+import { Coffee, Package, ArrowLeft, Search } from "lucide-react"; // <-- Import Search icon
 
 interface StepProductTypeProps {
   categoryId: string;
@@ -120,7 +120,7 @@ export const StepProductType: React.FC<StepProductTypeProps> = ({
                         alt={product.name}
                       />
                       <AvatarFallback className="rounded-md bg-secondary">
-                        <Shirt className="h-7 w-7 text-muted-foreground" />
+                        <Coffee className="h-7 w-7 text-muted-foreground" />
                       </AvatarFallback>
                     </Avatar>
                     <p className="text-sm font-medium text-center leading-tight px-1">

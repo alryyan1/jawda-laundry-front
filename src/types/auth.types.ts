@@ -4,10 +4,11 @@ import type { Role } from './admin.types';
 export interface User {
   id: number;
   name: string;
+  username: string;
   email: string;
   avatar_url?: string | null;
   role?: string; // The primary display role, if you keep it
-  roles: Role[]; // List of all role objects from Spatie
+  roles: Role[] | string[]; // List of all role objects or role names from Spatie
   permissions: string[]; // List of all permission names from Spatie
   created_at: string;
   updated_at: string;
@@ -15,6 +16,7 @@ export interface User {
 
 export interface UserFormData {
   name: string;
+  username: string;
   email: string;
   password?: string;
   password_confirmation?: string;

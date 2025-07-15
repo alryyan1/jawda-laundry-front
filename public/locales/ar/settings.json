@@ -98,5 +98,12 @@
     "testMessageFailed": "فشل في إرسال الرسالة التجريبية",
     "pleaseEnterNotificationNumber": "يرجى إدخال رقم هاتف الإشعارات",
     "whatsappCountryCode": "رمز الدولة",
-    "whatsappCountryCodeDesc": "رمز الدولة الافتراضي لرسائل واتساب (مثال: 968 لعمان)"
+    "whatsappCountryCodeDesc": "رمز الدولة الافتراضي لرسائل واتساب (مثال: 968 لعمان)",
+    "posSettings": "إعدادات نقاط البيع",
+    "posSettingsTitle": "إعدادات نقطة البيع",
+    "posSettingsDesc": "تكوين خيارات عرض وسلوك نقطة البيع",
+    "posAutoShowPdf": "عرض PDF تلقائياً بعد اكتمال الطلب",
+    "posAutoShowPdfDesc": "عرض إيصال PDF تلقائياً بعد اكتمال الطلب",
+    "posShowProductsAsList": "عرض المنتجات كقائمة بدلاً من الشبكة",
+    "posShowProductsAsListDesc": "عرض المنتجات بتنسيق قائمة بدون صور بدلاً من تخطيط الشبكة"
 }

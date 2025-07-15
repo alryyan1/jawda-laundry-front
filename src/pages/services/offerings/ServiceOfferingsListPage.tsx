@@ -1,5 +1,5 @@
 // src/pages/services/offerings/ServiceOfferingsListPage.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, SlidersHorizontal, Shirt, Tag } from 'lucide-react';
+import { Loader2, SlidersHorizontal, Coffee, Tag, Search, X } from 'lucide-react';
 
 const ServiceOfferingsListPage: React.FC = () => {
     const { t } = useTranslation(['common', 'services']);
@@ -46,7 +46,7 @@ const ServiceOfferingsListPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 rounded-md">
                         <AvatarImage src={productType.image_url || undefined} alt={productType.name} />
-                        <AvatarFallback className="rounded-md bg-muted"><Shirt className="h-5 w-5 text-muted-foreground" /></AvatarFallback>
+                        <AvatarFallback className="rounded-md bg-muted"><Coffee className="h-5 w-5 text-muted-foreground" /></AvatarFallback>
                     </Avatar>
                     <div>
                         <div className="font-medium">{productType.name}</div>
@@ -79,13 +79,31 @@ const ServiceOfferingsListPage: React.FC = () => {
                 showRefreshButton onRefresh={refetch} isRefreshing={isFetching && !isLoading}
             />
 
-            <div className="mb-4">
-                <Input
-                    placeholder={t('searchProductTypes', {ns:'services'})}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                />
+            <div className="mb-4 flex gap-2 items-center">
+                <div className="relative max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder={t('searchProductTypes', {ns:'services'})}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 pr-10"
+                    />
+                    {searchTerm && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                            onClick={() => setSearchTerm('')}
+                        >
+                            <X className="h-3 w-3" />
+                        </Button>
+                    )}
+                </div>
+                {searchTerm && (
+                    <div className="text-sm text-muted-foreground">
+                        {t('searchingFor', { defaultValue: 'Searching for' })}: "{searchTerm}"
+                    </div>
+                )}
             </div>
 
             <div className="rounded-md border">

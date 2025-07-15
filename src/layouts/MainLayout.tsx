@@ -48,6 +48,7 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     TrendingUp,
+    Utensils,
   } from "lucide-react";
 
 // MainLayout Component
@@ -180,6 +181,7 @@ const MainLayout: React.FC = () => {
     { to: "/", labelKey: "dashboard", icon: Home, type: "link" as const },
     { to: "/orders", labelKey: "orders", icon: Package, type: "link" as const },
     { to: "/pos", labelKey: "pointOfSale", icon: Calculator, type: "link" as const },
+    { to: "/dining", labelKey: "diningManagement", icon: Utensils, type: "link" as const },
     {
       to: "/customers",
       labelKey: "customers",

@@ -57,7 +57,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 style={{
                   '--tw-gradient-from': selectedCategoryId === "" || !selectedCategoryId ? '#38BDF8' : materialColors.grey[50],
                   '--tw-gradient-to': selectedCategoryId === "" || !selectedCategoryId ? '#0284C7' : materialColors.grey[100],
-                }}
+                } as React.CSSProperties}
               >
                 <div className="w-20 h-20 mb-2 rounded-lg bg-white/90 flex items-center justify-center">
                   <span className="text-2xl">🏷️</span>
@@ -87,7 +87,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 style={{
                   '--tw-gradient-from': selectedCategoryId === category.id.toString() ? '#38BDF8' : materialColors.grey[50],
                   '--tw-gradient-to': selectedCategoryId === category.id.toString() ? '#0284C7' : materialColors.grey[100],
-                }}
+                } as React.CSSProperties}
               >
                 <div className="w-20 h-20 mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
                   {category.image_url ? (

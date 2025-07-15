@@ -35,6 +35,7 @@ import {
   Save,
   Building2,
   MessageSquare,
+  ShoppingCart,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +71,9 @@ const settingsFormSchema = z.object({
   whatsapp_api_token: z.string().optional(),
   whatsapp_notification_number: z.string().optional(),
   whatsapp_country_code: z.string().optional(),
+  // POS settings
+  pos_auto_show_pdf: z.boolean().optional(),
+  pos_show_products_as_list: z.boolean().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -101,6 +105,9 @@ const SettingsPage: React.FC = () => {
       whatsapp_api_token: "",
       whatsapp_notification_number: "",
       whatsapp_country_code: "968",
+      // POS settings
+      pos_auto_show_pdf: false,
+      pos_show_products_as_list: false,
     },
   });
   const {
@@ -129,6 +136,9 @@ const SettingsPage: React.FC = () => {
         whatsapp_api_token: settings.whatsapp_api_token || "",
         whatsapp_notification_number: settings.whatsapp_notification_number || "",
         whatsapp_country_code: settings.whatsapp_country_code || "968",
+        // POS settings
+        pos_auto_show_pdf: settings.pos_auto_show_pdf || false,
+        pos_show_products_as_list: settings.pos_show_products_as_list || false,
       });
     }
   }, [settings, reset]); // Depend on settings
@@ -202,7 +212,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             {t("settings:generalSettings")}
@@ -210,6 +220,10 @@ const SettingsPage: React.FC = () => {
           <TabsTrigger value="whatsapp" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             {t("settings:whatsappSettings")}
+          </TabsTrigger>
+          <TabsTrigger value="pos" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            {t("settings:posSettings")}
           </TabsTrigger>
         </TabsList>
 
@@ -395,6 +409,80 @@ const SettingsPage: React.FC = () => {
             isLoadingSettings={isLoadingSettings}
             updateSettings={updateSettings}
           />
+        </TabsContent>
+
+        <TabsContent value="pos">
+          <Card className="dark:bg-gray-900">
+            <CardHeader>
+              <CardTitle>{t("settings:posSettingsTitle")}</CardTitle>
+              <CardDescription>{t("settings:posSettingsDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="pos_auto_show_pdf"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t("settings:posAutoShowPdf")}</FormLabel>
+                            <FormDescription>
+                              {t("settings:posAutoShowPdfDesc")}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pos_show_products_as_list"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t("settings:posShowProductsAsList")}</FormLabel>
+                            <FormDescription>
+                              {t("settings:posShowProductsAsListDesc")}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isLoadingSettings}
+                    >
+                      {isSubmitting && (
+                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      )}
+                      <Save className="me-2 h-4 w-4" />
+                      {t("common:saveChanges")}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

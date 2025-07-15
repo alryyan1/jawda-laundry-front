@@ -18,6 +18,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { getProductCategories } from '@/services/productCategoryService';
 import type { ProductCategory } from '@/types/service.types';
 import { ManageOfferingsDialog } from '../offerings/components/ManageOfferingsDialog';
+import { updateFirstOfferingPrice } from '@/api/serviceOfferingService';
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -47,11 +48,12 @@ import {
   Trash2,
   MoreHorizontal,
   Loader2,
-  Shirt,
+  Utensils,
   Check,
   X,
   ChevronUp,
   ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
 
 const ProductTypesListPage: React.FC = () => {
@@ -63,7 +65,7 @@ const ProductTypesListPage: React.FC = () => {
     useState<ProductType | null>(null);
   const [itemToDelete, setItemToDelete] = useState<ProductType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -71,6 +73,7 @@ const ProductTypesListPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [offeringsDialogOpen, setOfferingsDialogOpen] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
+  const [editingPrice, setEditingPrice] = useState<{ id: number; price: number } | null>(null);
 
   // Reset to page 1 when search term changes
   useEffect(() => {
@@ -134,6 +137,19 @@ const ProductTypesListPage: React.FC = () => {
     },
   });
 
+  const updatePriceMutation = useMutation<void, Error, { productTypeId: number; price: number }>({
+    mutationFn: ({ productTypeId, price }) => updateFirstOfferingPrice(productTypeId, price).then(() => {}),
+    onSuccess: () => {
+      toast.success(t("priceUpdatedSuccess", { ns: "services", defaultValue: "Price updated successfully" }));
+      queryClient.invalidateQueries({ queryKey: ["productTypes"] });
+      setEditingPrice(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || t("priceUpdateFailed", { ns: "services", defaultValue: "Failed to update price" }));
+      setEditingPrice(null);
+    },
+  });
+
   const handleOpenAddModal = () => {
     setEditingProductType(null);
     setIsFormModalOpen(true);
@@ -146,8 +162,13 @@ const ProductTypesListPage: React.FC = () => {
 
   const MemoizedTableRow = React.memo(
     ({ productType }: { productType: ProductType }) => {
+      const hasMultipleOfferings = Number(productType.service_offerings_count) > 1;
+      
       return (
-        <TableRow key={productType.id}>
+        <TableRow 
+          key={productType.id}
+          className={hasMultipleOfferings ? "bg-amber-50/50 hover:bg-amber-100/50" : ""}
+        >
           <TableCell>
             {productType.id}
           </TableCell>
@@ -159,24 +180,125 @@ const ProductTypesListPage: React.FC = () => {
                   alt={productType.name}
                 />
                 <AvatarFallback className="rounded-md bg-muted">
-                  <Shirt className="h-5 w-5 text-muted-foreground" />
+                  <Utensils className="h-5 w-5 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
-              <span className="font-medium">{productType.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{productType.name}</span>
+                {Number(productType.service_offerings_count) > 1 && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>{productType.service_offerings_count}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </TableCell>
           <TableCell>
             {productType.category?.name ||
               t("uncategorized", { ns: "services" })}
           </TableCell>
-          <TableCell>
-            <div className="flex items-center justify-center">
-              {productType.is_dimension_based ? (
-                <Check className="h-5 w-5 text-green-500" />
+          <TableCell className="text-center">
+            {productType.first_service_offering && productType.first_service_offering.default_price !== null ? (
+              editingPrice?.id === productType.id ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editingPrice.price}
+                    onChange={(e) => setEditingPrice({ id: productType.id, price: parseFloat(e.target.value) || 0 })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updatePriceMutation.mutate({
+                          productTypeId: productType.id,
+                          price: editingPrice.price
+                        });
+                      } else if (e.key === 'Escape') {
+                        setEditingPrice(null);
+                      }
+                    }}
+                    className="w-20 h-8 text-sm"
+                    disabled={updatePriceMutation.isPending}
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (editingPrice) {
+                        updatePriceMutation.mutate({
+                          productTypeId: productType.id,
+                          price: editingPrice.price
+                        });
+                      }
+                    }}
+                    disabled={updatePriceMutation.isPending}
+                  >
+                    {updatePriceMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Check className="h-3 w-3" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingPrice(null)}
+                    disabled={updatePriceMutation.isPending}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               ) : (
-                <X className="h-5 w-5 text-slate-400" />
-              )}
-            </div>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-medium">
+                    {(() => {
+                      try {
+                        return (Number(productType.first_service_offering.default_price) || 0).toFixed(2);
+                      } catch (error) {
+                        return '0.00';
+                      }
+                    })()}
+                  </span>
+                  {Number(productType.service_offerings_count) === 1 ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        try {
+                          setEditingPrice({
+                            id: productType.id,
+                            price: Number(productType.first_service_offering?.default_price) || 0
+                          });
+                        } catch (error) {
+                          setEditingPrice({
+                            id: productType.id,
+                            price: 0
+                          });
+                        }
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  ) : Number(productType.service_offerings_count) > 1 ? (
+                    <div className="flex items-center gap-1 text-amber-600" title={t('multipleOfferings', { ns: 'services', defaultValue: 'Multiple service offerings' })}>
+                      <AlertTriangle className="h-3 w-3" />
+                      <span className="text-xs font-medium">{productType.service_offerings_count}</span>
+                    </div>
+                  ) : null}
+                </div>
+              )
+            ) : productType.first_service_offering ? (
+              <span className="text-muted-foreground text-sm">
+                {t('noPrice', { ns: 'services', defaultValue: 'No price set' })}
+              </span>
+            ) : (
+              <span className="text-muted-foreground text-sm">
+                {t('noOfferings', { ns: 'services', defaultValue: 'No offerings' })}
+              </span>
+            )}
           </TableCell>
           <TableCell className="text-center">
             <Button
@@ -260,9 +382,40 @@ const ProductTypesListPage: React.FC = () => {
             <option key={cat.id} value={cat.id}>{cat.name}</option>
           ))}
         </select>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-muted-foreground whitespace-nowrap">
+            {t('rowsPerPage', { defaultValue: 'Rows per page' })}:
+          </label>
+          <select
+            className="border rounded px-3 py-2 text-sm"
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1); // Reset to first page when changing items per page
+            }}
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+          </select>
+        </div>
       </div>
 
       <div className="rounded-md border">
+        {/* Legend for multiple offerings indicator */}
+        <div className="p-3 border-b bg-muted/30">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                <span>2</span>
+              </div>
+              <span>{t('multipleOfferingsLegend', { ns: 'services', defaultValue: 'Multiple service offerings (price editing disabled)' })}</span>
+            </div>
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -285,12 +438,9 @@ const ProductTypesListPage: React.FC = () => {
                 </div>
               </TableHead>
               <TableHead className="text-center">{t("category", { ns: "services" })}</TableHead>
-              {/* <TableHead className="text-center">
-                {t("dimensionBased", {
-                  ns: "services",
-                  defaultValue: "Dimension Based",
-                })}
-              </TableHead> */}
+              <TableHead className="text-center">
+                {t('price', { ns: 'common', defaultValue: 'Price' })}
+              </TableHead>
               <TableHead className="text-center">
                 {t('serviceOfferings', { ns: 'services', defaultValue: 'Service Offerings' })}
               </TableHead>
@@ -302,7 +452,7 @@ const ProductTypesListPage: React.FC = () => {
           <TableBody>
             {isLoading && productTypes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-32 text-center">
+                <TableCell colSpan={5} className="h-32 text-center">
                   <div className="flex justify-center items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span>
@@ -321,7 +471,7 @@ const ProductTypesListPage: React.FC = () => {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="h-32 text-center text-muted-foreground"
                 >
                   {t("noResults")}

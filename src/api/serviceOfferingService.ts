@@ -143,6 +143,20 @@ export const updateServiceOffering = async (
 };
 
 /**
+ * Updates the first service offering's price for a product type.
+ */
+export const updateFirstOfferingPrice = async (
+  productTypeId: string | number,
+  defaultPrice: number
+): Promise<ServiceOffering> => {
+  const { data } = await apiClient.put<{ data: ServiceOffering }>(
+    `/product-types/${productTypeId}/first-offering-price`,
+    { default_price: defaultPrice }
+  );
+  return data.data;
+};
+
+/**
  * Deletes a service offering by its ID.
  * Backend returns a message object.
  */

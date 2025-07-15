@@ -20,6 +20,9 @@ export interface AppSettings {
     whatsapp_api_token: string;
     whatsapp_notification_number: string;
     whatsapp_country_code: string;
+    // POS settings
+    pos_auto_show_pdf: boolean;
+    pos_show_products_as_list: boolean;
     // Add other settings as defined in your config
 }
 

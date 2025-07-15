@@ -19,6 +19,7 @@ export interface ProductType {
     is_dimension_based: boolean; // Replaces base_measurement_unit
     is_active: boolean;
     service_offerings_count?: number;
+    first_service_offering?: ServiceOffering | null;
 }
 
 

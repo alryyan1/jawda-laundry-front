@@ -73,6 +73,7 @@ export interface Order {
     overdue_days?: number; // <-- أضف هذا الحقل الاختياري
 
     order_number: string;
+    order_type: 'in_house' | 'take_away' | 'delivery';
     daily_order_number?: number;
     customer: Customer;
     table_id?: number | null;

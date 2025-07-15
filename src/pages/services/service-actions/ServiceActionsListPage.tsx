@@ -36,6 +36,8 @@ import {
   Trash2,
   MoreHorizontal,
   Loader2,
+  Search,
+  X,
 } from "lucide-react";
 
 const ServiceActionsListPage: React.FC = () => {
@@ -47,6 +49,7 @@ const ServiceActionsListPage: React.FC = () => {
     null
   );
   const [itemToDelete, setItemToDelete] = useState<ServiceAction | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Service Actions list is usually small, so we fetch all without pagination.
   // If it becomes large, add pagination state and update getServiceActions service.
@@ -58,6 +61,16 @@ const ServiceActionsListPage: React.FC = () => {
   } = useQuery<ServiceAction[], Error>({
     queryKey: ["serviceActions"],
     queryFn: getServiceActions,
+  });
+
+  // Filter actions based on search term
+  const filteredActions = actions.filter((action) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      action.name.toLowerCase().includes(searchLower) ||
+      (action.description && action.description.toLowerCase().includes(searchLower))
+    );
   });
 
   const deleteMutation = useMutation<void, Error, number>({
@@ -142,8 +155,39 @@ const ServiceActionsListPage: React.FC = () => {
         isRefreshing={isFetching && !isLoading}
       />
 
-      {/* A simple filter bar can be added if list grows */}
-      {/* <div className="mb-4"> ... </div> */}
+      {/* Search Bar */}
+      <div className="mb-4 flex gap-2 items-center">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder={t("searchServiceActions", { ns: "services", defaultValue: "Search service actions..." })}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setSearchTerm("")}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="text-sm text-muted-foreground">
+            {t("searchingFor", { defaultValue: "Searching for" })}: "{searchTerm}"
+            {filteredActions.length !== actions.length && (
+              <span className="ml-2">
+                ({filteredActions.length} of {actions.length} results)
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="rounded-md border">
         <Table>
@@ -170,8 +214,8 @@ const ServiceActionsListPage: React.FC = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : actions.length > 0 ? (
-              actions.map((action) => (
+            ) : filteredActions.length > 0 ? (
+              filteredActions.map((action) => (
                 <MemoizedTableRow key={action.id} action={action} />
               ))
             ) : (
@@ -180,7 +224,7 @@ const ServiceActionsListPage: React.FC = () => {
                   colSpan={4}
                   className="h-32 text-center text-muted-foreground"
                 >
-                  {t("noResults")}
+                  {searchTerm ? t("noSearchResults", { defaultValue: "No service actions found matching your search." }) : t("noResults")}
                 </TableCell>
               </TableRow>
             )}

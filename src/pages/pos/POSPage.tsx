@@ -3,21 +3,41 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from 'uuid';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 import { materialColors } from "@/lib/colors";
+import { ORDER_STATUSES } from "@/lib/constants";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
-import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order } from '@/types';
+import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, OrderStatus } from '@/types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
+import { ProductListColumn } from '@/features/pos/components/ProductListColumn';
 import { ServiceOfferingColumn } from '@/features/pos/components/ServiceOfferingColumn';
 import { CartColumn } from '@/features/pos/components/CartColumn';
 import { CustomerSelection } from '@/features/pos/components/CustomerSelection';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
 import { TodayOrders } from '@/features/pos/components/TodayOrders';
 import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
-import { createOrder, getOrderItemQuote } from "@/api/orderService";
+import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
+import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice } from "@/api/orderService";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { useDebounce } from "@/hooks/useDebounce";
+import settingService from "@/services/settingService";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Loader2,
+  Printer,
+} from "lucide-react";
 
 interface CartItem {
   id: string;
@@ -33,20 +53,55 @@ interface CartItem {
   _quotedSubTotal?: number;
 }
 
+// Re-usable OrderStatusBadgeComponent
+const OrderStatusBadgeComponent: React.FC<{
+  status: OrderStatus;
+  className?: string;
+}> = ({ status, className }) => {
+  const { t } = useTranslation("orders");
+  let bgColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+  if (status === "pending")
+    bgColor =
+      "bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/50";
+  if (status === "processing")
+    bgColor =
+      "bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50";
+  if (status === "ready_for_pickup")
+    bgColor =
+      "bg-green-400/20 text-green-600 dark:text-green-400 border border-green-500/50";
+  if (status === "completed")
+    bgColor =
+      "bg-slate-400/20 text-slate-600 dark:text-slate-400 border border-slate-500/50";
+  if (status === "cancelled")
+    bgColor =
+      "bg-red-400/20 text-red-600 dark:text-red-400 border border-red-500/50";
+
+  return (
+    <Badge
+      className={`capitalize px-2.5 py-1 text-xs font-medium ${bgColor} ${className}`}
+    >
+      {t(`status_${status}`)}
+    </Badge>
+  );
+};
+
 const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
+  const { can } = useAuth();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
   const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [orderType, setOrderType] = useState<'in_house' | 'take_away' | 'delivery'>('in_house');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastQuotedInputs, setLastQuotedInputs] = useState<Record<string, string>>({});
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isTodayOrdersOpen, setIsTodayOrdersOpen] = useState(false);
+  const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
   console.log(selectedOrder,'selectedOrder')
   const debouncedCartItems = useDebounce(cartItems, 500);
 
@@ -57,9 +112,16 @@ const POSPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch settings to determine POS display options
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: settingService.getSettings,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const createOrderMutation = useMutation({
     mutationFn: (orderData: NewOrderFormData) => createOrder(orderData, allServiceOfferings),
-    onSuccess: () => {
+    onSuccess: (createdOrder) => {
       toast.success(t("orderCreatedSuccessfully", { ns: "orders" }));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
@@ -70,12 +132,74 @@ const POSPage: React.FC = () => {
       setSelectedCategoryId(null);
       setSelectedProductType(null);
       setSelectedOfferingId(null);
+      setOrderType('in_house');
       setIsProcessing(false);
+      
+      // Automatically select the newly created order
+      if (createdOrder) {
+        setSelectedOrder(createdOrder);
+        
+        // Auto-show PDF if setting is enabled
+        if (settings?.pos_auto_show_pdf) {
+          setIsPdfDialogOpen(true);
+        }
+      }
     },
     onError: (error) => {
       console.error('Failed to create order:', error);
       toast.error(t("failedToCreateOrder", { ns: "orders" }));
       setIsProcessing(false);
+    },
+  });
+
+  // Mutation for updating order status
+  const updateStatusMutation = useMutation<
+    Order,
+    Error,
+    { orderId: string | number; status: OrderStatus }
+  >({
+    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
+    onSuccess: (updatedOrder) => {
+      toast.success(
+        t("orderStatusUpdatedSuccess", {
+          ns: "orders",
+          status: t(`status_${updatedOrder.status}`, { ns: "orders" }),
+        })
+      );
+      queryClient.setQueryData(["order", updatedOrder.id], updatedOrder);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      // Update the selected order if it's the same one
+      if (selectedOrder && selectedOrder.id === updatedOrder.id) {
+        setSelectedOrder(updatedOrder);
+      }
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("orderStatusUpdateFailed", { ns: "orders" })
+      );
+    },
+  });
+
+  // Mutation for sending WhatsApp invoice
+  const sendWhatsAppInvoiceMutation = useMutation<
+    { message: string },
+    Error,
+    string | number
+  >({
+    mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
+    onSuccess: () => {
+      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
+      // Refresh the order data to get updated WhatsApp status
+      if (selectedOrder) {
+        queryClient.invalidateQueries({ queryKey: ["order", selectedOrder.id] });
+        queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      }
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("whatsappInvoiceSendFailed", { ns: "orders" })
+      );
     },
   });
 
@@ -235,6 +359,18 @@ const POSPage: React.FC = () => {
     setSelectedOrder(order);
   };
 
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    if (selectedOrder && newStatus !== selectedOrder.status) {
+      updateStatusMutation.mutate({ orderId: selectedOrder.id, status: newStatus });
+    }
+  };
+
+  const handleSendWhatsAppInvoice = () => {
+    if (selectedOrder) {
+      sendWhatsAppInvoiceMutation.mutate(selectedOrder.id);
+    }
+  };
+
 
 
   const handleCheckout = async () => {
@@ -270,7 +406,7 @@ const POSPage: React.FC = () => {
       items: orderItems,
       notes: undefined, // TODO: Add UI for order notes
       due_date: undefined, // TODO: Add UI for due date
-      order_type: 'in_house', // Default to in_house
+      order_type: orderType,
     };
 
     createOrderMutation.mutate(orderData);
@@ -321,14 +457,122 @@ const POSPage: React.FC = () => {
       {/* Customer Selection Bar */}
       <div className="border-b shadow-sm bg-background" style={{ borderColor: materialColors.divider }}>
         <div className="container mx-auto px-4 py-1 flex justify-between items-center">
-          <CustomerSelection
-            selectedCustomerId={selectedCustomerId}
-            onCustomerSelected={setSelectedCustomerId}
-            onNewCustomerClick={() => setIsCustomerModalOpen(true)}
-            disabled={!!selectedOrder}
-            forcedCustomer={selectedOrder?.customer || null}
-          />
-        
+          <div className="flex items-center gap-4">
+            <CustomerSelection
+              selectedCustomerId={selectedCustomerId}
+              onCustomerSelected={setSelectedCustomerId}
+              onNewCustomerClick={() => setIsCustomerModalOpen(true)}
+              disabled={!!selectedOrder}
+              forcedCustomer={selectedOrder?.customer || null}
+            />
+            
+            {/* Order Type Selection - Only show when not viewing an existing order */}
+            {!selectedOrder && (
+              <div className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                  {t("orderType", { ns: "orders", defaultValue: "Order Type" })}:
+                </Label>
+                <Select
+                  value={orderType}
+                  onValueChange={(newOrderType: 'in_house' | 'take_away' | 'delivery') => {
+                    setOrderType(newOrderType);
+                  }}
+                  disabled={isProcessing}
+                >
+                  <SelectTrigger className="w-32 h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_house">{t('inHouse', { ns: 'orders', defaultValue: 'In House' })}</SelectItem>
+                    <SelectItem value="take_away">{t('takeAway', { ns: 'orders', defaultValue: 'Take Away' })}</SelectItem>
+                    <SelectItem value="delivery">{t('delivery', { ns: 'orders', defaultValue: 'Delivery' })}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          
+          {/* Order Action Buttons - Only show when an order is selected */}
+          {selectedOrder && (
+            <div className="flex items-center gap-2">
+              {/* Status Badge */}
+              <OrderStatusBadgeComponent
+                status={selectedOrder.status}
+                className="text-sm px-2 py-1"
+              />
+              
+              {/* Status Change Select */}
+              {can("order:update-status") && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                    {t("changeStatus", { ns: "orders" })}:
+                  </Label>
+                  <Select
+                    value={selectedOrder.status}
+                    onValueChange={(newStatus: OrderStatus) =>
+                      handleStatusChange(newStatus)
+                    }
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <SelectTrigger className="w-32 h-8">
+                      <SelectValue
+                        placeholder={t("changeStatus", { ns: "orders" })}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {t(`status_${status}`, { ns: "orders" })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {updateStatusMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                </div>
+              )}
+              
+              {/* Print and Download Buttons */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsPdfDialogOpen(true)}
+              >
+                <Printer className="h-4 w-4 mr-1" />
+              </Button>
+             
+              
+              {/* WhatsApp Buttons */}
+              {can("order:send-whatsapp") && selectedOrder.customer?.phone && (
+                <>
+                  <Button
+                    size="sm"
+                    variant={selectedOrder.whatsapp_text_sent ? "default" : "outline"}
+                    className={selectedOrder.whatsapp_text_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                    disabled
+                  >
+                    <WhatsAppIcon className="h-4 w-4 mr-1" />
+                    {selectedOrder.whatsapp_text_sent ? t("messageSent", { ns: "orders" }) : t("sendMessage", { ns: "orders" })}
+                  </Button>
+                  
+                  <Button
+                    size="sm"
+                    variant={selectedOrder.whatsapp_pdf_sent ? "default" : "outline"}
+                    className={selectedOrder.whatsapp_pdf_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                    onClick={handleSendWhatsAppInvoice}
+                    disabled={sendWhatsAppInvoiceMutation.isPending}
+                  >
+                    <WhatsAppIcon className="h-4 w-4 mr-1" />
+                    {sendWhatsAppInvoiceMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    {selectedOrder.whatsapp_pdf_sent ? t("invoiceSent", { ns: "orders" }) : t("sendInvoice", { ns: "orders" })}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -350,11 +594,19 @@ const POSPage: React.FC = () => {
                 {t("product", { ns: "common" })}
               </h2>
               <div className="flex-1 min-h-0">
-                <ProductColumn
-                  categoryId={selectedCategoryId}
-                  onSelectProduct={handleSelectProduct}
-                  activeProductId={selectedProductType?.id.toString()}
-                />
+                {settings?.pos_show_products_as_list ? (
+                  <ProductListColumn
+                    categoryId={selectedCategoryId}
+                    onSelectProduct={handleSelectProduct}
+                    activeProductId={selectedProductType?.id.toString()}
+                  />
+                ) : (
+                  <ProductColumn
+                    categoryId={selectedCategoryId}
+                    onSelectProduct={handleSelectProduct}
+                    activeProductId={selectedProductType?.id.toString()}
+                  />
+                )}
               </div>
             </div>
 
@@ -426,6 +678,7 @@ const POSPage: React.FC = () => {
               setSelectedCategoryId(null);
               setSelectedProductType(null);
               setSelectedOfferingId(null);
+              setOrderType('in_house');
             }}
           />
 
@@ -447,6 +700,15 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsTodayOrdersOpen}
         onOrderSelect={handleOrderSelect}
         selectedOrderId={selectedOrder?.id.toString()}
+      />
+
+      <PdfPreviewDialog
+        isOpen={isPdfDialogOpen}
+        onOpenChange={setIsPdfDialogOpen}
+        pdfUrl={selectedOrder ? `${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}/orders/${selectedOrder.id}/pos-invoice-pdf` : null}
+        title={t("paymentReceipt", { ns: "orders", defaultValue: "Payment Receipt" })}
+        fileName={`receipt-${selectedOrder?.id || 'order'}.pdf`}
+        widthClass="w-[300px]"
       />
     </div>
   );

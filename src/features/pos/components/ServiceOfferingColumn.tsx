@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatCurrency } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/context/SettingsContext";
 
 interface ServiceOfferingColumnProps {
   productType: ProductType | null;
@@ -27,6 +28,10 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
   activeOfferingId,
 }) => {
   const { t, i18n } = useTranslation(["services", "common", "orders"]);
+  const { getSetting } = useSettings();
+  
+  // Get currency from settings, fallback to USD
+  const currency = getSetting('currency_symbol', 'USD');
 
   const { data: offerings = [], isLoading } = useQuery<ServiceOffering[], Error>({
     queryKey: ["allServiceOfferingsForSelect", productType?.id],
@@ -38,11 +43,11 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
     if (productType?.is_dimension_based) {
       return `${formatCurrency(
         offering.default_price_per_sq_meter,
-        "USD",
+        currency,
         i18n.language
       )} / ${t("units.sq_meter")}`;
     }
-    return formatCurrency(offering.default_price, "USD", i18n.language);
+    return formatCurrency(offering.default_price, currency, i18n.language);
   };
 
   return (

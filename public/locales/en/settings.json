@@ -98,5 +98,12 @@
     "testMessageFailed": "Failed to send test message",
     "pleaseEnterNotificationNumber": "Please enter a notification phone number",
     "whatsappCountryCode": "Country Code",
-    "whatsappCountryCodeDesc": "Default country code for WhatsApp messages (e.g., 968 for Oman)"
+    "whatsappCountryCodeDesc": "Default country code for WhatsApp messages (e.g., 968 for Oman)",
+    "posSettings": "POS Settings",
+    "posSettingsTitle": "Point of Sale Settings",
+    "posSettingsDesc": "Configure Point of Sale display and behavior options",
+    "posAutoShowPdf": "Auto-show PDF after order completion",
+    "posAutoShowPdfDesc": "Automatically display the PDF receipt after an order is completed",
+    "posShowProductsAsList": "Show products as list instead of grid",
+    "posShowProductsAsListDesc": "Display products in a list format without images instead of the grid layout"
 }
