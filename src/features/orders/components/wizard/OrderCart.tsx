@@ -175,15 +175,15 @@ export const OrderCart: React.FC<OrderCartProps> = ({
               control={control}
               render={({ field }) => (
                 <Select
-                  value={field.value?.toString() || ""}
-                  onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                  value={field.value?.toString() || "none"}
+                  onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
                   disabled={isSubmitting || loadingTables}
                 >
                   <SelectTrigger id="order-table">
                     <SelectValue placeholder={loadingTables ? "Loading tables..." : "Select a table..."} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No table selected</SelectItem>
+                    <SelectItem value="none">No table selected</SelectItem>
                     {tables.map((table) => (
                       <SelectItem key={table.id} value={table.id.toString()}>
                         <div className="flex items-center justify-between w-full">

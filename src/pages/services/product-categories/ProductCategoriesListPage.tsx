@@ -106,14 +106,14 @@ const ProductCategoriesListPage: React.FC = () => {
         accessorKey: "name",
         header: t("name", { ns: "common" }),
         cell: ({ row }) => (
-          <div className="font-medium">{row.original.name}</div>
+          <div className="font-medium text-center">{row.original.name}</div>
         ),
       },
       {
         accessorKey: "description",
         header: t("description", { ns: "common" }),
         cell: ({ row }) => (
-          <p className="truncate max-w-sm text-sm text-muted-foreground">
+          <p className="truncate max-w-sm text-sm text-muted-foreground text-center">
             {row.original.description || "-"}
           </p>
         ),
@@ -127,12 +127,12 @@ const ProductCategoriesListPage: React.FC = () => {
       {
         id: "actions",
         header: () => (
-          <div className="text-right rtl:text-left">
+          <div className="text-center">
             {t("actions", { ns: "common" })}
           </div>
         ),
         cell: ({ row }) => (
-          <div className="text-right rtl:text-left">
+          <div className="text-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">

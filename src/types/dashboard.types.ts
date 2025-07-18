@@ -5,7 +5,7 @@ export interface DashboardSummary {
     processingOrders: number;
     readyForPickupOrders: number;
     completedTodayOrders: number;
-    cancelledOrders?: number;
+    cancelledOrders: number;
     totalActiveCustomers: number;
     monthlyRevenue: number;
 }
@@ -13,6 +13,12 @@ export interface DashboardSummary {
 export interface OrderTrendItem {
     date: string; // YYYY-MM-DD
     count: number;
+}
+
+export interface OrderItemTrendItem {
+    date: string; // YYYY-MM-DD
+    count: number;
+    totalQuantity: number;
 }
 
 export interface RevenueBreakdownItem {

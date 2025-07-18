@@ -1,3 +1,5 @@
+import type { Order } from "./order.types";
+
 export interface TopService {
     id: number;
     display_name: string;
@@ -96,4 +98,15 @@ export interface DailyCostsReport {
         average_daily_cost: number;
     };
     daily_data: DailyCostRecord[];
+}
+
+export interface OrdersReportData {
+  orders: Order[];
+  summary: {
+    total_orders: number;
+    total_amount: number;
+    average_order_value: number;
+    date_from: string;
+    date_to: string;
+  };
 }

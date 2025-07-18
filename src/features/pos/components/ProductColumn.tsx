@@ -7,19 +7,15 @@ import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Coffee, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- MUI Import ---
 import Badge from '@mui/material/Badge';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { materialColors } from "@/lib/colors";
 
 // A minimal MUI theme to make the badge fit the Shadcn theme
 // You could define this in a central place if you use more MUI components

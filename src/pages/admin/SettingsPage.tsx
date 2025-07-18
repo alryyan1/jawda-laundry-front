@@ -211,39 +211,39 @@ const SettingsPage: React.FC = () => {
         </h1>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            {t("settings:generalSettings")}
-          </TabsTrigger>
-          <TabsTrigger value="whatsapp" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            {t("settings:whatsappSettings")}
-          </TabsTrigger>
-          <TabsTrigger value="pos" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            {t("settings:posSettings")}
-          </TabsTrigger>
-        </TabsList>
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {serverError && !isSubmitting && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{t("common:error")}</AlertTitle>
+              <AlertDescription>{serverError}</AlertDescription>
+            </Alert>
+          )}
 
-        <TabsContent value="general">
-          <Card className="dark:bg-gray-900">
-            <CardHeader>
-              <CardTitle>{t("settings:appSettingsTitle")}</CardTitle>
-              <CardDescription>{t("settings:appSettingsDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                  {serverError && !isSubmitting && (
-                    <Alert variant="destructive" className="mb-4">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>{t("common:error")}</AlertTitle>
-                      <AlertDescription>{serverError}</AlertDescription>
-                    </Alert>
-                  )}
+          <Tabs defaultValue="general" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="general" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                {t("settings:generalSettings")}
+              </TabsTrigger>
+              <TabsTrigger value="whatsapp" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                {t("settings:whatsappSettings")}
+              </TabsTrigger>
+              <TabsTrigger value="pos" className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                {t("settings:posSettings")}
+              </TabsTrigger>
+            </TabsList>
 
+            <TabsContent value="general">
+              <Card className="dark:bg-gray-900">
+                <CardHeader>
+                  <CardTitle>{t("settings:appSettingsTitle")}</CardTitle>
+                  <CardDescription>{t("settings:appSettingsDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -384,42 +384,25 @@ const SettingsPage: React.FC = () => {
                       )}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                  <div className="flex justify-end pt-4">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || isLoadingSettings}
-                    >
-                      {isSubmitting && (
-                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      )}
-                      <Save className="me-2 h-4 w-4" />
-                      {t("common:saveChanges")}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="whatsapp">
+              <WhatsAppSettings
+                settings={settings}
+                isLoadingSettings={isLoadingSettings}
+                updateSettings={updateSettings}
+              />
+            </TabsContent>
 
-        <TabsContent value="whatsapp">
-          <WhatsAppSettings
-            settings={settings}
-            isLoadingSettings={isLoadingSettings}
-            updateSettings={updateSettings}
-          />
-        </TabsContent>
-
-        <TabsContent value="pos">
-          <Card className="dark:bg-gray-900">
-            <CardHeader>
-              <CardTitle>{t("settings:posSettingsTitle")}</CardTitle>
-              <CardDescription>{t("settings:posSettingsDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <TabsContent value="pos">
+              <Card className="dark:bg-gray-900">
+                <CardHeader>
+                  <CardTitle>{t("settings:posSettingsTitle")}</CardTitle>
+                  <CardDescription>{t("settings:posSettingsDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -466,25 +449,25 @@ const SettingsPage: React.FC = () => {
                       )}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-                  <div className="flex justify-end pt-4">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || isLoadingSettings}
-                    >
-                      {isSubmitting && (
-                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      )}
-                      <Save className="me-2 h-4 w-4" />
-                      {t("common:saveChanges")}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <div className="flex justify-end pt-4">
+            <Button
+              type="submit"
+              disabled={isSubmitting || isLoadingSettings}
+            >
+              {isSubmitting && (
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
+              )}
+              <Save className="me-2 h-4 w-4" />
+              {t("common:saveChanges")}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 };

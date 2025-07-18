@@ -4,11 +4,13 @@
     "pendingOrders": "Pending Orders",
     "ordersAwaitingProcessing": "Orders awaiting processing",
     "processingOrders": "Processing Orders",
-    "ordersCurrentlyInProgress": "Orders currently in progress",
+    "ordersInProcessing": "Orders currently in progress",
     "readyForPickup": "Ready for Pickup",
     "ordersReadyForCustomer": "Orders ready for customer pickup",
     "completedToday": "Completed Today",
     "ordersCompletedTodayDesc": "Orders marked as completed today",
+    "cancelledOrders": "Cancelled Orders",
+    "ordersCancelled": "Orders that have been cancelled",
     "totalCustomers": "Total Active Customers",
     "activeCustomerAccounts": "Active customer accounts",
     "monthlyRevenue": "Monthly Revenue",
@@ -43,5 +45,8 @@
     "performanceMetrics": "Performance Metrics",
     "businessInsights": "Business Insights",
     "ordersLast7Days": "Orders Last 7 Days",
-    "orderStatusOverview": "Order Status Overview"
+    "orderItemsLast7Days": "Order Items Last 7 Days",
+    "orderStatusOverview": "Order Status Overview",
+    "totalQuantity": "Total Quantity",
+    "orderItems": "Order Items"
 }

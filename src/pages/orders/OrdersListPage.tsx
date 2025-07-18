@@ -53,6 +53,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   PlusCircle,
@@ -62,6 +68,11 @@ import {
   CreditCard,
   Loader2,
   CheckCircle,
+  Calendar,
+  Package,
+  Search,
+  Filter,
+  Calculator,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import  OrderItemsDialog  from "@/features/orders/components/OrderItemsDialog";
@@ -90,6 +101,8 @@ const OrdersListPage: React.FC = () => {
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
   const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -222,6 +235,34 @@ const OrdersListPage: React.FC = () => {
     return order.items.reduce((total, item) => total + (item.picked_up_quantity || 0), 0);
   };
 
+  // Calculate payment breakdown for statistics
+  const calculatePaymentBreakdown = () => {
+    if (!statistics) {
+      return {
+        totalPaid: 0,
+        breakdown: PAYMENT_METHODS.map(method => ({
+          method,
+          amount: 0,
+          percentage: 0
+        }))
+      };
+    }
+
+    const totalPaid = statistics.totalAmountPaid;
+    const breakdown = PAYMENT_METHODS.map(method => {
+      const amount = statistics.paymentBreakdown[method as keyof typeof statistics.paymentBreakdown] || 0;
+      const percentage = totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
+      
+      return {
+        method,
+        amount,
+        percentage
+      };
+    });
+
+    return { totalPaid, breakdown };
+  };
+
   // --- Data Fetching ---
   const { data: customers = [] } = useQuery<Customer[], Error>({
     queryKey: ["allCustomersForSelect"],
@@ -275,6 +316,131 @@ const OrdersListPage: React.FC = () => {
   const orders = paginatedData?.data || [];
   const totalItems = paginatedData?.meta?.total || 0;
   const totalPages = paginatedData?.meta?.last_page || 1;
+
+  // Mobile Order Card Component
+  const MobileOrderCard = ({ order }: { order: Order }) => {
+    const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+    
+    return (
+      <Card 
+        className={`mb-2 sm:mb-4 p-1 sm:p-2 cursor-pointer transition-all hover:shadow-md ${
+          orderItemsDialogOrder?.id === order.id ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950/20' : ''
+        } ${
+          isFullyPaid ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/10' : ''
+        }`}
+        onClick={() => navigate(`/orders/${order.id}`)}
+      >
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-start justify-between mb-2 sm:mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+                <span className="text-xs sm:text-sm font-mono text-muted-foreground">#{order.id}</span>
+                <OrderStatusBadge status={order.status} />
+              </div>
+              <h3 className="font-semibold text-sm sm:text-base mb-1">
+                {order.customer?.name || t("notAvailable")}
+              </h3>
+              <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-1">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{format(new Date(order.order_date), "PP", { locale: currentLocale })}</span>
+                </div>
+                {order.pickup_date && (
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3 w-3" />
+                    <span>{format(new Date(order.pickup_date), "PP", { locale: currentLocale })}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate(`/orders/${order.id}`)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  {t("viewDetails")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOrderItemsDialogOrder(order);
+                  }}
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  {t("viewItems", { defaultValue: "View Items" })}
+                </DropdownMenuItem>
+                {can("order:record-payment") && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOrderForPayments(order);
+                    }}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {t("viewPayments")}
+                  </DropdownMenuItem>
+                )}
+                {can("order:update") && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/orders/${order.id}/edit`)}
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      {t("editOrder")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 mb-2 sm:mb-3">
+            <div className="text-center p-1.5 sm:p-2 bg-muted rounded-lg min-w-0">
+              <div className="text-xs text-muted-foreground mb-0.5 sm:mb-1 truncate">
+                {t("totalItems", { defaultValue: "Total Items" })}
+              </div>
+              <div className="font-semibold text-sm sm:text-base truncate">
+                {calculateTotalQuantities(order)} / {calculateTotalPickedUpQuantities(order)}
+              </div>
+            </div>
+            <div className="text-center p-1.5 sm:p-2 bg-muted rounded-lg min-w-0">
+              <div className="text-xs text-muted-foreground mb-0.5 sm:mb-1 truncate">
+                {t("totalAmount", { ns: "orders" })}
+              </div>
+              <div className="font-semibold text-sm sm:text-base truncate">
+                {formatCurrency(order.total_amount, currencySymbol, i18n.language)}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-1.5 sm:p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
+            <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-300">
+              {t("amountPaid")}
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-sm sm:text-base text-green-600 dark:text-green-400">
+                {formatCurrency(order.paid_amount, currencySymbol, i18n.language)}
+              </span>
+              {isFullyPaid && (
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-500" />
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const MemoizedTableRow = React.memo(({ order }: { order: Order }) => {
     // Check if order is fully paid
@@ -373,7 +539,7 @@ const OrdersListPage: React.FC = () => {
   });
 
   return (
-    <div>
+    <div className="space-y-2 sm:space-y-4 p-0 sm:p-2 max-w-full overflow-hidden">
       <PageHeader
         title={t("title")}
         description={t("orderListDescription")}
@@ -386,147 +552,149 @@ const OrdersListPage: React.FC = () => {
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
       >
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              {t("fromDate", { defaultValue: "From Date" })}
-            </label>
-            <Input
-              type="date"
-              value={filters.dateFrom || ""}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
-              }
-              className="w-40"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-muted-foreground">
-              {t("toDate", { defaultValue: "To Date" })}
-            </label>
-            <Input
-              type="date"
-              value={filters.dateTo || ""}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-              }
-              className="w-40"
-            />
+        {/* Calculator Button */}
+        {statistics && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCalculatorOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Calculator className="h-4 w-4" />
+            {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
+          </Button>
+        )}
+        
+        {/* Mobile Date Range Picker */}
+        {/* Mobile Date Range Picker */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full">
+          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-none">
+              <Input
+                type="date"
+                value={filters.dateFrom || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
+                }
+                className="w-full sm:w-40 text-xs sm:text-sm"
+              />
+            </div>
+            <div className="flex-1 sm:flex-none">
+              <Input
+                type="date"
+                value={filters.dateTo || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
+                }
+                className="w-full sm:w-40 text-xs sm:text-sm"
+              />
+            </div>
           </div>
         </div>
       </PageHeader>
 
-      {/* Summary Statistics */}
-      {statistics && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Orders */}
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {t("totalOrders", { defaultValue: "Total Orders" })}
-                  </p>
-                  <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
-                    {statistics.totalOrders.toLocaleString()}
-                  </p>
-                </div>
-                <div className="h-10 w-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Amount Paid */}
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
-                  </p>
-                  <p className="text-xl font-bold text-green-900 dark:text-green-100">
-                    {formatCurrency(statistics.totalAmountPaid, currencySymbol, i18n.language)}
-                  </p>
-                </div>
-                <div className="h-10 w-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                  <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Methods Breakdown */}
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-800 col-span-1 md:col-span-2">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                  {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
-                </p>
-                <div className="h-10 w-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                  <svg className="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-              </div>
-                            <div className="grid grid-cols-4 gap-3">
-                {PAYMENT_METHODS.map((method) => {
-                  const amount = statistics.paymentBreakdown[method as keyof typeof statistics.paymentBreakdown] || 0;
-                  const percentage = statistics.totalAmountPaid > 0 ? (amount / statistics.totalAmountPaid) * 100 : 0;
-                  
-                  return (
-                    <div key={method} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
-                          {t(`paymentMethod_${method}`, { defaultValue: method })}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {formatCurrency(amount, currencySymbol, i18n.language)}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Mobile Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchOrdersPlaceholder")}
+            value={filters.search || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
+            className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
+          />
         </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 text-xs sm:text-sm"
+        >
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">{t("filters")}</span>
+        </Button>
+      </div>
+
+      {/* Mobile Filters Panel */}
+      {showFilters && (
+        <Card className="sm:hidden">
+          <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <Select
+              value={filters.status || ""}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  status: value === "all" ? undefined : (value as OrderStatus),
+                }))
+              }
+            >
+              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
+                <SelectValue placeholder={t("filterByStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allStatuses")}</SelectItem>
+                {orderStatusOptions.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {t(`status_${opt}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select
+              value={filters.customerId || ""}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  customerId: value === "all" ? undefined : value,
+                }))
+              }
+            >
+              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
+                <SelectValue placeholder={t("filterByCustomer")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("allCustomers", { ns: "customers" })}
+                </SelectItem>
+                {customers.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select
+              value={filters.productTypeId || ""}
+              onValueChange={(value) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  productTypeId: value === "all" ? undefined : value,
+                }))
+              }
+            >
+              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
+                <SelectValue placeholder={t("filterByProduct")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("allProducts")}
+                </SelectItem>
+                {productTypes.map((pt) => (
+                  <SelectItem key={pt.id} value={pt.id.toString()}>
+                    {pt.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Loading state for statistics */}
-      {isLoadingStats && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-                  </div>
-                  <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <Card className="mb-4">
+      {/* Desktop Filters */}
+      <Card className="hidden sm:block mb-4">
         <CardHeader>
           <CardTitle className="text-lg">{t("filters")}</CardTitle>
         </CardHeader>
@@ -612,78 +780,114 @@ const OrdersListPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[60px] text-center">ID</TableHead>
-              <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
-              <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
-              <TableHead className="text-center">{t("pickupDate", { defaultValue: "Pickup Date" })}</TableHead>
-              <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
-              <TableHead className="text-center">
-                {t("totalItems", { defaultValue: "Total Items (Total/Picked Up)" })}
-              </TableHead>
-              <TableHead className="text-center">
-                {t("totalAmount", { ns: "orders" })}
-              </TableHead>
-              <TableHead className="text-center">
-                {t("amountPaid")}
-              </TableHead>
-              <TableHead className="text-center w-12">
-                {t("actions", { ns: "orders" })}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                </TableCell>
-              </TableRow>
-            ) : orders.length > 0 ? (
-              orders.map((order) => (
-                <MemoizedTableRow key={order.id} order={order} />
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center">
-                  {t("noResults")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      {/* Loading state for statistics */}
+      {isLoadingStats && (
+        <div className="flex items-center justify-center h-24">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      )}
+
+      {/* Mobile Orders List */}
+      <div className="sm:hidden px-1 sm:px-0">
+        {isLoading && orders.length === 0 ? (
+          <div className="flex items-center justify-center h-24 sm:h-32">
+            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+          </div>
+        ) : orders.length > 0 ? (
+          <div className="space-y-1 sm:space-y-2">
+            {orders.map((order) => (
+              <MobileOrderCard key={order.id} order={order} />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6 sm:p-8 text-center">
+              <p className="text-muted-foreground text-sm sm:text-base">{t("noResults")}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
+      {/* Desktop Orders Table */}
+      <div className="hidden sm:block">
+        <div className="rounded-md border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[60px] text-center">ID</TableHead>
+                <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
+                <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
+                <TableHead className="text-center">{t("pickupDate", { defaultValue: "Pickup Date" })}</TableHead>
+                <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
+                <TableHead className="text-center">
+                  {t("totalItems", { defaultValue: "Total Items (Total/Picked Up)" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("totalAmount", { ns: "orders" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("amountPaid")}
+                </TableHead>
+                <TableHead className="text-center w-12">
+                  {t("actions", { ns: "orders" })}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading && orders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-32 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : orders.length > 0 ? (
+                orders.map((order) => (
+                  <MemoizedTableRow key={order.id} order={order} />
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-32 text-center">
+                    {t("noResults")}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Mobile Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-4">
+          <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left px-2 sm:px-0">
             {t("showingItems", {
               first: paginatedData?.meta.from || 0,
               last: paginatedData?.meta.to || 0,
               total: totalItems,
             })}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1 || isFetching}
+              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
             >
-              {t("firstPage")}
+              <span className="hidden sm:inline">{t("firstPage")}</span>
+              <span className="sm:hidden">1</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1 || isFetching}
+              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
             >
-              {t("previous")}
+              <span className="hidden sm:inline">{t("previous")}</span>
+              <span className="sm:hidden">‹</span>
             </Button>
-            <span className="text-sm font-medium">
+            <span className="text-xs sm:text-sm font-medium px-1 sm:px-2 min-w-0">
               {t("pageWithTotal", { currentPage, totalPages })}
             </span>
             <Button
@@ -693,20 +897,25 @@ const OrdersListPage: React.FC = () => {
                 setCurrentPage((prev) => Math.min(totalPages, prev + 1))
               }
               disabled={currentPage === totalPages || isFetching}
+              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
             >
-              {t("next")}
+              <span className="hidden sm:inline">{t("next")}</span>
+              <span className="sm:hidden">›</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages || isFetching}
+              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
             >
-              {t("lastPage")}
+              <span className="hidden sm:inline">{t("lastPage")}</span>
+              <span className="sm:hidden">{totalPages}</span>
             </Button>
           </div>
         </div>
       )}
+      
       {selectedOrderForPayments && (
         <PaymentsListDialog
           order={selectedOrderForPayments}
@@ -725,7 +934,89 @@ const OrdersListPage: React.FC = () => {
         />
       )}
 
-      {/* TODO: Add PaymentsListDialog component when available */}
+      {/* Calculator Dialog */}
+      <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Total Paid Summary */}
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                      {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
+                    </p>
+                    <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                      {formatCurrency(calculatePaymentBreakdown().totalPaid, currencySymbol, i18n.language)}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                    <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment Methods Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {t("paymentMethods", { defaultValue: "Payment Methods" })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {calculatePaymentBreakdown().breakdown.map((item) => (
+                  <div key={item.method} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                        {t(`paymentMethod_${item.method}`, { defaultValue: item.method })}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(item.amount, currencySymbol, i18n.language)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${item.percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {item.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Date Range Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {t("dateRange", { defaultValue: "Date Range" })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("from", { defaultValue: "From" })}: {filters.dateFrom && format(new Date(filters.dateFrom), "PP", { locale: currentLocale })}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("to", { defaultValue: "To" })}: {filters.dateTo && format(new Date(filters.dateTo), "PP", { locale: currentLocale })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

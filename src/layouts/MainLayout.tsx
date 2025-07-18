@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import apiClient from "@/api/apiClient";
 import { toast } from "sonner";
@@ -49,7 +50,50 @@ import {
     PanelLeftOpen,
     TrendingUp,
     Utensils,
+  Loader2,
   } from "lucide-react";
+
+import { getUserNavigation } from "@/api/navigationService";
+import type { NavigationItem } from "@/types/navigation.types";
+
+// Icon mapping for navigation items
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home,
+  Package,
+  Users,
+  Settings: SettingsIcon,
+  Menu,
+  Coffee,
+  Layers,
+  Box,
+  Wand2,
+  User2,
+  Lock,
+  DollarSign,
+  ShoppingCart,
+  FolderKanban,
+  ChartBar,
+  Calculator,
+  TrendingUp,
+  Utensils,
+  // Navigation item icon mappings
+  LayoutDashboard: Home,
+  Briefcase: Coffee,
+  Receipt: DollarSign,
+  Truck: Users,
+  BarChart3: ChartBar,
+  Shield: Lock,
+  Plus: Package,
+  List: Package,
+  Kanban: FolderKanban,
+  UserPlus: Users,
+  Grid3x3: Layers,
+  Tags: Box,
+  FolderOpen: DollarSign,
+  TrendingDown: TrendingUp,
+  FileText: ChartBar,
+  UtensilsCrossed: Utensils,
+};
 
 // MainLayout Component
 const MainLayout: React.FC = () => {
@@ -58,9 +102,15 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout: storeLogout } = useAuthStore();
 
-  const [isServiceAdminOpen, setIsServiceAdminOpen] = useState(false);
-  const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [collapsedStates, setCollapsedStates] = useState<Record<number, boolean>>({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Fetch user navigation
+  const { data: navigationItems = [], isLoading: isNavigationLoading } = useQuery({
+    queryKey: ['user-navigation'],
+    queryFn: getUserNavigation,
+    enabled: !!user,
+  });
 
   const handleLogout = async () => {
     try {
@@ -75,6 +125,25 @@ const MainLayout: React.FC = () => {
       toast.info(t("loggedOut", { ns: "auth" }));
       navigate("/auth/login");
     }
+  };
+
+  // Toggle collapsible state
+  const toggleCollapsible = (itemId: number) => {
+    setCollapsedStates(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
+
+  // Get icon component for navigation item
+  const getIconComponent = (iconName: string | undefined) => {
+    if (!iconName) return Home;
+    return iconMap[iconName] || Home;
+  };
+
+  // Get title for navigation item
+  const getItemTitle = (item: NavigationItem) => {
+    return item.title[i18n.language as keyof typeof item.title] || item.title.en;
   };
 
   // --- User Navigation Dropdown ---
@@ -175,186 +244,47 @@ const MainLayout: React.FC = () => {
     );
   };
 
-  // --- Sidebar Navigation Structure (as defined before) ---
-  const navItems = [
-    /* ... your navItems array ... */
-    { to: "/", labelKey: "dashboard", icon: Home, type: "link" as const },
-    { to: "/orders", labelKey: "orders", icon: Package, type: "link" as const },
-    { to: "/pos", labelKey: "pointOfSale", icon: Calculator, type: "link" as const },
-    { to: "/dining", labelKey: "diningManagement", icon: Utensils, type: "link" as const },
-    {
-      to: "/customers",
-      labelKey: "customers",
-      icon: Users,
-      type: "link" as const,
-    },
-    {
-      to: "/service-offerings",
-      labelKey: "serviceOfferings",
-      icon: Coffee,
-      type: "link" as const,
-    },
-    {
-      to: "/menu",
-      labelKey: "menu",
-      icon: Menu,
-      type: "link" as const,
-    },
-    {
-      to: "/expenses",
-      labelKey: "expenses",
-      namespace: "expenses",
-      icon: DollarSign,
-      type: "link" as const,
-    },
-    {
-      to: "/purchases",
-      labelKey: "purchases",
-      namespace: "purchases",
-      icon: ShoppingCart,
-      type: "link" as const,
-    },
-    {
-      to: "/suppliers",
-      labelKey: "suppliers",
-      namespace: "suppliers",
-      icon: Users,
-      type: "link" as const,
-    },
-    {
-      to: "/orders/kanban",
-      labelKey: "OrderStatusManagement",
-      namespace: "orders",
-      icon: FolderKanban,
-      type: "link" as const,
-    },
-    {
-      labelKey: "reportsGroup",
-      namespace: "reports",
-      icon: ChartBar,
-      type: "collapsible" as const,
-      isOpen: isReportsOpen,
-      onToggle: () => setIsReportsOpen(!isReportsOpen),
-      subItems: [
-        {
-          to: "/reports",
-          labelKey: "reports",
-          namespace: "reports",
-          icon: ChartBar,
-        },
-        {
-          to: "/reports/daily-revenue",
-          labelKey: "dailyRevenue",
-          namespace: "reports",
-          icon: TrendingUp,
-        },
-        {
-          to: "/reports/daily-costs",
-          labelKey: "dailyCosts",
-          namespace: "reports",
-          icon: Calculator,
-        },
-      ],
-    },
-    {
-      labelKey: "serviceAdmin",
-      icon: SettingsIcon,
-      type: "collapsible" as const,
-      isOpen: isServiceAdminOpen,
-      onToggle: () => setIsServiceAdminOpen(!isServiceAdminOpen),
-      subItems: [
-        {
-          to: "/admin/product-categories",
-          labelKey: "productCategories",
-          namespace: "services",
-          icon: Layers,
-        },
-        { to: "/admin/product-types", labelKey: "productTypes", namespace: "services", icon: Box },
-        {
-          to: "/admin/service-actions",
-          labelKey: "serviceActions",
-          namespace: "services",
-          icon: Wand2,
-        },
-      ],
-    },
-    {
-      to: "/settings",
-      labelKey: "settingsPageTitle",
-      icon: SettingsIcon,
-      type: "link" as const,
-    }, 
-    {
-      to: "/admin/users",
-      labelKey: "users",
-      icon: User2,
-      type: "link" as const,
-    }, 
-    {
-      to: "/admin/roles",
-      labelKey: "roles",
-      icon: Lock,
-      type: "link" as const,
-    }, // Use a different key if "Settings" is used for admin
-  ];
-
+  // --- Dynamic Sidebar Navigation ---
   const SidebarNav: React.FC<{ mobile?: boolean; closeSheet?: () => void; collapsed?: boolean }> = ({
     mobile = false,
     closeSheet,
     collapsed = false,
-  }) => (
-    <nav
-      className={`grid items-start gap-1 px-2 text-sm font-medium lg:px-4 ${
-        mobile ? "text-lg py-4" : "py-2"
-      }`}
-    >
-      {navItems.map((item) => {
-        const isActive = item.type === "link" && location.pathname === item.to;
-        const isSubItemActive =
-          item.type === "collapsible" &&
-          item.subItems?.some((sub) => location.pathname.startsWith(sub.to!));
+  }) => {
+    if (isNavigationLoading) {
+      return (
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">{t('loading')}</span>
+        </div>
+      );
+    }
 
-        return item.type === "link" ? (
+    const renderNavigationItem = (item: NavigationItem, level: number = 0) => {
+      const IconComponent = getIconComponent(item.icon);
+      const title = getItemTitle(item);
+      const hasChildren = item.children && item.children.length > 0;
+      const isActive = location.pathname === item.route;
+      const isSubItemActive = hasChildren && item.children?.some(child => 
+        location.pathname === child.route
+      );
+      const isCollapsed = collapsedStates[item.id] || false;
+
+      if (hasChildren) {
+        return collapsed ? (
           <Button
-            key={item.labelKey}
-            variant={isActive ? "secondary" : "ghost"}
-            className={`w-full justify-start ${collapsed ? "justify-center px-2" : ""}`}
-            asChild
-            onClick={() => mobile && closeSheet?.()}
-            title={collapsed ? t(item.labelKey, {
-              ns: item.namespace || (item.labelKey.includes("settings") ? "settings" : "common"),
-            }) : undefined}
-          >
-            <Link to={item.to!}>
-              <item.icon
-                className={`h-4 w-4 ${
-                  mobile ? "h-5 w-5" : ""
-                } ${collapsed ? "" : "mr-3 rtl:ml-3 rtl:mr-0"}`}
-              />
-              {!collapsed && t(item.labelKey, {
-                ns: item.namespace || (item.labelKey.includes("settings") ? "settings" : "common"),
-              })}
-            </Link>
-          </Button>
-        ) : collapsed ? (
-          <Button
-            key={item.labelKey}
+            key={item.id}
             variant={isSubItemActive ? "secondary" : "ghost"}
             className="w-full justify-center px-2"
-            title={t(item.labelKey, { ns: item.namespace || "common" })}
-            onClick={() => item.onToggle?.()}
+            title={title}
+            onClick={() => toggleCollapsible(item.id)}
           >
-            <item.icon
-              className={`h-4 w-4 ${
-                mobile ? "h-5 w-5" : ""
-              }`}
-            />
+            <IconComponent className="h-4 w-4" />
           </Button>
         ) : (
           <Collapsible
-            key={item.labelKey}
-            open={item.isOpen}
-            onOpenChange={item.onToggle}
+            key={item.id}
+            open={!isCollapsed}
+            onOpenChange={() => toggleCollapsible(item.id)}
             className="w-full"
           >
             <CollapsibleTrigger asChild>
@@ -363,14 +293,14 @@ const MainLayout: React.FC = () => {
                 className="w-full justify-between"
               >
                 <span className="flex items-center">
-                  <item.icon
+                  <IconComponent
                     className={`mr-3 h-4 w-4 rtl:ml-3 rtl:mr-0 ${
                       mobile ? "h-5 w-5" : ""
                     }`}
                   />
-                  {t(item.labelKey, { ns: item.namespace || "common" })}
+                  {title}
                 </span>
-                {item.isOpen ? (
+                {!isCollapsed ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
                   <ChevronRight className="h-4 w-4" />
@@ -378,32 +308,43 @@ const MainLayout: React.FC = () => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pl-7 rtl:pr-7 pt-1 space-y-1">
-              {item.subItems?.map((subItem) => (
-                <Button
-                  key={subItem.labelKey}
-                  variant={
-                    location.pathname === subItem.to ? "secondary" : "ghost"
-                  }
-                  className="w-full justify-start text-xs"
-                  asChild
-                  onClick={() => mobile && closeSheet?.()}
-                >
-                  <Link to={subItem.to!}>
-                    <subItem.icon
-                      className={`mr-2 h-3 w-3 rtl:ml-2 rtl:mr-0 ${
-                        mobile ? "h-4 w-4" : ""
-                      }`}
-                    />
-                    {t(subItem.labelKey, { ns: subItem.namespace || "common" })}
-                  </Link>
-                </Button>
-              ))}
+              {item.children?.map((child) => renderNavigationItem(child, level + 1))}
             </CollapsibleContent>
           </Collapsible>
         );
-      })}
+      }
+
+      return (
+        <Button
+          key={item.id}
+          variant={isActive ? "secondary" : "ghost"}
+          className={`w-full justify-start ${collapsed ? "justify-center px-2" : ""}`}
+          asChild
+          onClick={() => mobile && closeSheet?.()}
+          title={collapsed ? title : undefined}
+        >
+          <Link to={item.route || "#"}>
+            <IconComponent
+              className={`h-4 w-4 ${
+                mobile ? "h-5 w-5" : ""
+              } ${collapsed ? "" : "mr-3 rtl:ml-3 rtl:mr-0"}`}
+            />
+            {!collapsed && title}
+          </Link>
+        </Button>
+      );
+    };
+
+    return (
+      <nav
+        className={`grid items-start gap-1 px-2 text-sm font-medium lg:px-4 ${
+          mobile ? "text-lg py-4" : "py-2"
+        }`}
+      >
+        {navigationItems.map((item) => renderNavigationItem(item))}
     </nav>
   );
+  };
 
   // --- Main Layout JSX ---
   return (
@@ -496,7 +437,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6 bg-muted/20 dark:bg-background overflow-y-auto">
+        <main className="flex flex-1 flex-col gap-4 md:gap-6   bg-muted/20 dark:bg-background overflow-y-auto">
           <Outlet />
         </main>
       </div>

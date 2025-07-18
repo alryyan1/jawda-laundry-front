@@ -107,12 +107,12 @@ const OrdersPage = () => {
       {
         accessorKey: "total_amount",
         header: () => (
-          <div className="text-right rtl:text-left">
+          <div className="text-center">
             {t("totalAmount", { ns: "common" })}
           </div>
         ),
         cell: ({ row }) => (
-          <div className="text-right rtl:text-left">
+          <div className="text-center">
             {new Intl.NumberFormat(i18n.language, {
               style: "currency",
               currency: "USD",
@@ -139,14 +139,14 @@ const OrdersPage = () => {
       {
         id: "actions",
         header: () => (
-          <div className="text-right rtl:text-left">
+          <div className="text-center">
             {t("actions", { ns: "common" })}
           </div>
         ),
         cell: ({ row }) => {
           const order = row.original;
           return (
-            <div className="text-right rtl:text-left">
+            <div className="text-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 p-0">

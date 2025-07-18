@@ -224,9 +224,12 @@
   "totalOrders": "Total Orders",
   "totalAmountPaid": "Total Amount Paid",
   "paymentBreakdown": "Payment Breakdown",
-  "status": {
-    "pending": "pending",
-    "completed": "completed"
-  },
-  "selectCustomerRequired": "Customer Selection Required"
+  "selectCustomerRequired": "Customer Selection Required",
+  "paymentMethods": "Payment Methods",
+  "paymentMethod_visa": "Visa",
+  "paymentMethod_bank_transfer": "Bank Transfer",
+  "from": "From",
+  "to": "To",
+  "dateRange": "Date Range",
+  "orders": "Orders"
 }

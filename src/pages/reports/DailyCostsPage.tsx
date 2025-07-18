@@ -15,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { useCurrency } from '@/hooks/useCurrency';
 import { TrendingDown, ClipboardList, CalendarDays } from 'lucide-react';
 
 const StatCard: React.FC<{ title: string; value?: string | number; isLoading?: boolean; icon: React.ElementType }> = ({ title, value, isLoading, icon: Icon }) => (
@@ -33,6 +34,7 @@ const DailyCostsPage: React.FC = () => {
     const { t, i18n } = useTranslation(['reports', 'common', 'expenses']);
     const { can } = useAuth();
     const queryClient = useQueryClient();
+    const { currencyCode } = useCurrency();
 
     const [date, setDate] = useState({ month: getMonth(new Date()) + 1, year: getYear(new Date()) });
 
@@ -73,7 +75,7 @@ const DailyCostsPage: React.FC = () => {
                 <StatCard
                     title={t('totalCost')}
                     icon={TrendingDown}
-                    value={report?.summary.total_cost !== undefined ? formatCurrency(report.summary.total_cost, 'USD', i18n.language) : undefined}
+                    value={report?.summary.total_cost !== undefined ? formatCurrency(report.summary.total_cost, currencyCode, i18n.language) : undefined}
                     isLoading={isLoading}
                 />
                 <StatCard
@@ -85,7 +87,7 @@ const DailyCostsPage: React.FC = () => {
                 <StatCard
                     title={t('averageDailyCost')}
                     icon={CalendarDays}
-                    value={report?.summary.average_daily_cost !== undefined ? formatCurrency(report.summary.average_daily_cost, 'USD', i18n.language) : undefined}
+                    value={report?.summary.average_daily_cost !== undefined ? formatCurrency(report.summary.average_daily_cost, currencyCode, i18n.language) : undefined}
                     isLoading={isLoading}
                 />
             </div>
@@ -100,9 +102,9 @@ const DailyCostsPage: React.FC = () => {
                             <BarChart data={report?.daily_data}>
                                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                                 <XAxis dataKey="date" tickFormatter={(dateStr) => format(parseISO(dateStr), 'd')} fontSize={12} />
-                                <YAxis tickFormatter={(val) => formatCurrency(val, 'USD', i18n.language).replace(/\.00$/, '')} fontSize={12} />
+                                <YAxis tickFormatter={(val) => formatCurrency(val, currencyCode, i18n.language).replace(/\.00$/, '')} fontSize={12} />
                                 <Tooltip
-                                    formatter={(value: number) => [formatCurrency(value, 'USD', i18n.language), t('cost')]}
+                                    formatter={(value: number) => [formatCurrency(value, currencyCode, i18n.language), t('cost')]}
                                     labelFormatter={(label) => format(parseISO(label), 'EEEE, MMM d')}
                                 />
                                 <Legend verticalAlign="top" height={36}/>
@@ -138,7 +140,7 @@ const DailyCostsPage: React.FC = () => {
                                         {day.expense_count}
                                     </TableCell>
                                     <TableCell className={`text-right font-mono ${day.daily_cost > 0 ? 'font-bold text-lg text-red-600' : ''}`}>
-                                        {formatCurrency(day.daily_cost, 'USD', i18n.language)}
+                                                                                    {formatCurrency(day.daily_cost, currencyCode, i18n.language)}
                                     </TableCell>
                                 </TableRow>
                             ))}

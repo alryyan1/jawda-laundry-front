@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { SalesSummaryReport, CostSummaryReport, Order, PaginatedResponse, DailyRevenueReport } from '@/types';
+import type { SalesSummaryReport, CostSummaryReport, Order, PaginatedResponse, DailyRevenueReport, OrdersReportData } from '@/types';
 
 export const getSalesSummaryReport = async (
     dateFrom?: string,
@@ -15,17 +15,11 @@ export const getSalesSummaryReport = async (
     return data.data;
 };
 
-
-
 export const getCostSummaryReport = async (dateFrom?: string, dateTo?: string): Promise<CostSummaryReport> => {
     const params = { date_from: dateFrom, date_to: dateTo };
     const { data } = await apiClient.get<{ data: CostSummaryReport }>('/reports/cost-summary', { params });
     return data.data;
 };
-
-
-// src/api/reportService.ts
-// ... (existing functions)
 
 // Define filters type for clarity
 export interface OrderReportFilters {
@@ -65,18 +59,41 @@ export const getOverduePickupOrders = async (
     return data;
 };
 
-
 export const getDailyRevenueReport = async (month: number, year: number): Promise<DailyRevenueReport> => {
     const params = { month, year };
     const { data } = await apiClient.get<{ data: DailyRevenueReport }>('/reports/daily-revenue', { params });
     return data.data;
 };
 
-// src/api/reportService.ts
 import type { DailyCostsReport } from '@/types';
-// ...
+
 export const getDailyCostsReport = async (month: number, year: number): Promise<DailyCostsReport> => {
     const params = { month, year };
     const { data } = await apiClient.get<{ data: DailyCostsReport }>('/reports/daily-costs', { params });
     return data.data;
+};
+
+// New orders report functions
+export const getOrdersReport = async (dateFrom: string, dateTo: string): Promise<OrdersReportData> => {
+  const response = await apiClient.get('/reports/orders', {
+    params: { date_from: dateFrom, date_to: dateTo }
+  });
+  return response.data;
+};
+
+export const exportOrdersReportPdf = async (dateFrom: string, dateTo: string): Promise<Blob> => {
+  const response = await apiClient.get('/reports/orders/pdf', {
+    params: { date_from: dateFrom, date_to: dateTo },
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
+export const getOrdersReportPdfViewUrl = (dateFrom: string, dateTo: string): string => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const params = new URLSearchParams({
+    date_from: dateFrom,
+    date_to: dateTo
+  });
+  return `${baseUrl}/reports/orders/pdf/view?${params.toString()}`;
 };

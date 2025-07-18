@@ -32,6 +32,8 @@ interface BackendOrderPayload {
     items: BackendOrderItemPayload[];
     notes?: string | null;
     due_date?: string | null; // Expects 'YYYY-MM-DD'
+    order_type?: 'in_house' | 'take_away' | 'delivery';
+    dining_table_id?: number | null; // Add dining table ID for in-house orders
     // For updates, other fields might be included
     status?: OrderStatus;
     payment_method?: string | null;
@@ -126,6 +128,8 @@ export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOf
         items: itemsPayload,
         notes: orderData.notes || null,
         due_date: orderData.due_date && orderData.due_date.trim() !== '' ? orderData.due_date : null,
+        order_type: orderData.order_type || 'in_house', // Default to in_house if not provided
+        dining_table_id: orderData.dining_table_id || null, // Include dining table ID if provided
     };
 
     console.log('Final payload:', payload);
@@ -178,10 +182,10 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
  * Fetches today's orders.
  */
 export const getTodayOrders = async (): Promise<Order[]> => {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    // Option 1: Let the backend determine today's date (recommended)
     const { data } = await apiClient.get<{data: Order[]}>('/orders', { 
         params: { 
-            created_date: today,
+            today: true, // Tell backend to use today's date
             per_page: 100 // Get more orders for today
         } 
     });

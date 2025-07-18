@@ -55,10 +55,10 @@ const ExpenseCategoriesListPage: React.FC = () => {
 
     const MemoizedTableRow = React.memo(({ category }: { category: ExpenseCategory }) => (
         <TableRow key={category.id}>
-            <TableCell className="font-medium">{category.name}</TableCell>
-            <TableCell className="text-muted-foreground">{category.description || '-'}</TableCell>
+            <TableCell className="font-medium text-center">{category.name}</TableCell>
+            <TableCell className="text-muted-foreground text-center">{category.description || '-'}</TableCell>
             <TableCell className="text-center font-mono">{category.expenses_count ?? 0}</TableCell>
-            <TableCell className="text-right rtl:text-left">
+            <TableCell className="text-center">
                 {can('expense-category:manage') && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -116,10 +116,10 @@ const ExpenseCategoriesListPage: React.FC = () => {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="min-w-[200px]">{t("name")}</TableHead>
-                            <TableHead>{t("description")}</TableHead>
-                            <TableHead className="text-center w-[150px]">{t("expenseCount", { ns: 'expenses' })}</TableHead>
-                            <TableHead className="text-right w-[80px]">{t("actions")}</TableHead>
+                                                <TableHead className="min-w-[200px] text-center">{t("name")}</TableHead>
+                    <TableHead className="text-center">{t("description")}</TableHead>
+                    <TableHead className="text-center w-[150px]">{t("expenseCount", { ns: 'expenses' })}</TableHead>
+                    <TableHead className="text-center w-[80px]">{t("actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -71,5 +71,8 @@
   "reservation_status_confirmed": "Confirmed",
   "reservation_status_seated": "Seated",
   "reservation_status_completed": "Completed",
-  "reservation_status_cancelled": "Cancelled"
+  "reservation_status_cancelled": "Cancelled",
+  "table": "Table",
+  "noTable": "No Table",
+  "pleaseSelectTable": "Please select a table for in-house orders"
 } 

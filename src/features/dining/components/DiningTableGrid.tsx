@@ -180,6 +180,7 @@ export const DiningTableGrid: React.FC<DiningTableGridProps> = ({
             {/* Active Order */}
             {table.active_order && (
               <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                {console.log('Active order data:', table.active_order)}
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="h-4 w-4 text-green-600" />
                   <span className="text-sm font-medium text-green-800 dark:text-green-200">
@@ -192,7 +193,7 @@ export const DiningTableGrid: React.FC<DiningTableGridProps> = ({
                 <div className="flex items-center justify-between text-xs text-green-600 dark:text-green-400">
                   <span>#{table.active_order.daily_order_number || table.active_order.order_number}</span>
                   <span className="font-medium">
-                    ${table.active_order.total_amount.toFixed(2)}
+                    ${table.active_order.total_amount ? Number(table.active_order.total_amount).toFixed(2) : '0.00'}
                   </span>
                 </div>
               </div>

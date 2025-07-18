@@ -42,8 +42,8 @@ const ServiceOfferingsListPage: React.FC = () => {
 
     const MemoizedTableRow = React.memo(({ productType }: { productType: ProductType }) => (
         <TableRow key={productType.id}>
-            <TableCell>
-                <div className="flex items-center gap-3">
+            <TableCell className="text-center">
+                <div className="flex items-center justify-center gap-3">
                     <Avatar className="h-10 w-10 rounded-md">
                         <AvatarImage src={productType.image_url || undefined} alt={productType.name} />
                         <AvatarFallback className="rounded-md bg-muted"><Coffee className="h-5 w-5 text-muted-foreground" /></AvatarFallback>
@@ -62,7 +62,7 @@ const ServiceOfferingsListPage: React.FC = () => {
                 </div>
             </TableCell>
 
-            <TableCell className="text-right rtl:text-left">
+            <TableCell className="text-center">
                 <Button variant="outline" size="sm" onClick={() => handleManageOfferings(productType)}>
                     <SlidersHorizontal className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0"/>
                     {t('manageOfferings', {ns: 'services', defaultValue: 'Manage Offerings'})}
@@ -72,7 +72,7 @@ const ServiceOfferingsListPage: React.FC = () => {
     ));
 
     return (
-        <div>
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
             <PageHeader
                 title={t('serviceOfferingsTitle', { ns: 'services' })}
                 description={t('serviceOfferingsDescriptionNew', { ns: 'services', defaultValue: 'Select a product type to manage its available services and prices.' })}
@@ -110,9 +110,9 @@ const ServiceOfferingsListPage: React.FC = () => {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>{t("productType", {ns:'services'})}</TableHead>
+                            <TableHead className="text-center">{t("productType", {ns:'services'})}</TableHead>
                             <TableHead className="text-center">{t("offeringsCount", {ns:'services'})}</TableHead>
-                                <TableHead className="text-right rtl:text-left">{t("actions")}</TableHead>
+                                <TableHead className="text-center">{t("actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -16,6 +16,7 @@ import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/formatters';
+import { useCurrency } from '@/hooks/useCurrency';
 import { TrendingDown, FileText, ShoppingCart } from 'lucide-react';
 
 const StatCard: React.FC<{ title: string; value?: string | number; isLoading?: boolean; icon: React.ElementType }> = ({ title, value, isLoading, icon: Icon }) => (
@@ -32,6 +33,7 @@ const StatCard: React.FC<{ title: string; value?: string | number; isLoading?: b
 
 const CostSummaryPage: React.FC = () => {
     const { t, i18n } = useTranslation(['reports', 'common']);
+    const { currencyCode } = useCurrency();
     const { can } = useAuth();
     const queryClient = useQueryClient();
     
@@ -72,19 +74,19 @@ const CostSummaryPage: React.FC = () => {
                 <StatCard
                     title={t('totalCost')}
                     icon={TrendingDown}
-                    value={report?.summary.total_cost !== undefined ? formatCurrency(report.summary.total_cost, 'USD', i18n.language) : undefined}
+                    value={report?.summary.total_cost !== undefined ? formatCurrency(report.summary.total_cost, currencyCode, i18n.language) : undefined}
                     isLoading={isLoading}
                 />
                 <StatCard
                     title={t('totalExpenses')}
                     icon={FileText}
-                    value={report?.summary.total_expenses !== undefined ? formatCurrency(report.summary.total_expenses, 'USD', i18n.language) : undefined}
+                    value={report?.summary.total_expenses !== undefined ? formatCurrency(report.summary.total_expenses, currencyCode, i18n.language) : undefined}
                     isLoading={isLoading}
                 />
                 <StatCard
                     title={t('totalPurchases')}
                     icon={ShoppingCart}
-                    value={report?.summary.total_purchases !== undefined ? formatCurrency(report.summary.total_purchases, 'USD', i18n.language) : undefined}
+                    value={report?.summary.total_purchases !== undefined ? formatCurrency(report.summary.total_purchases, currencyCode, i18n.language) : undefined}
                     isLoading={isLoading}
                 />
             </div>
@@ -108,7 +110,7 @@ const CostSummaryPage: React.FC = () => {
                                     <YAxis type="category" dataKey="category" width={120} tick={{ fontSize: 12 }} interval={0} />
                                     <Tooltip
                                         cursor={{ fill: 'hsl(var(--muted))' }}
-                                        formatter={(value: number) => formatCurrency(value, 'USD', i18n.language)}
+                                        formatter={(value: number) => formatCurrency(value, currencyCode, i18n.language)}
                                     />
                                     <Bar dataKey="total_amount" name={t('totalAmount')} radius={[0, 4, 4, 0]}>
                                         {report?.expenses_by_category.map((entry, index) => (
@@ -136,7 +138,7 @@ const CostSummaryPage: React.FC = () => {
                                 ) : report?.purchases_by_supplier.map((item, index) => (
                                     <TableRow key={index}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
-                                        <TableCell className="text-right font-mono">{formatCurrency(item.total_amount, 'USD', i18n.language)}</TableCell>
+                                        <TableCell className="text-right font-mono">{formatCurrency(item.total_amount, currencyCode, i18n.language)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

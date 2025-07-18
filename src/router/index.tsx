@@ -1,10 +1,11 @@
 // src/router/index.tsx
 import React from "react";
-import { createBrowserRouter, createHashRouter, Navigate } from "react-router-dom";
+import { createHashRouter, Navigate } from "react-router-dom";
 
 // Layouts
 import MainLayout from "@/layouts/MainLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+import ErrorBoundary from "@/components/shared/ErrorBoundary";
 
 // Protected Route Wrapper
 import { ProtectedRoute } from "./ProtectedRoute"; // Assuming ProtectedRoute.tsx is in the same folder
@@ -15,6 +16,7 @@ import UserFormPage from "@/pages/admin/users/UserFormPage";
 import RolesListPage from "@/pages/admin/roles/RolesListPage";
 import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
 import RestaurantTablesListPage from "@/pages/admin/RestaurantTablesListPage";
+import NavigationManagementPage from "@/pages/admin/NavigationManagementPage";
 import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
@@ -22,6 +24,9 @@ import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPag
 import KanbanPage from "@/pages/orders/KanbanPage";
 import POSPage from '@/pages/pos/POSPage';
 import DiningManagementPage from '@/pages/dining/DiningManagementPage';
+
+// Test Error Page for demonstrating ErrorBoundary
+const TestErrorPage = React.lazy(() => import("@/pages/TestErrorPage"));
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -94,6 +99,8 @@ const DetailedReportsMainPage = React.lazy(() => import('@/pages/reports/Detaile
 const DetailedOrdersReport = React.lazy(() => import('@/pages/reports/DetailedOrdersReport'));
 const OverduePickupsReport = React.lazy(() => import('@/pages/reports/OverduePickupsReport'));
 const DailyCostsPage = React.lazy(() => import('@/pages/reports/DailyCostsPage'));
+const OrdersReportPage = React.lazy(() => import('@/pages/reports/OrdersReportPage'));
+
 // Loading fallback component for Suspense
 const RouteSuspenseFallback = () => (
   <div className="flex items-center justify-center h-screen w-screen">
@@ -124,16 +131,26 @@ const RouteSuspenseFallback = () => (
 export const router = createHashRouter([
   {
     // Routes that use the MainLayout (typically protected)
-    element: <MainLayout />, // MainLayout itself is not protected here, but its Outlet will be.
+    element: (
+      <ErrorBoundary componentName="MainLayout">
+        <MainLayout />
+      </ErrorBoundary>
+    ), // MainLayout itself is not protected here, but its Outlet will be.
     children: [
       {
-        element: <ProtectedRoute />, // This component protects all its nested children
+        element: (
+          <ErrorBoundary componentName="ProtectedRoute">
+            <ProtectedRoute />
+          </ErrorBoundary>
+        ), // This component protects all its nested children
         children: [
           {
             path: "/",
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <DashboardPage />
+                <ErrorBoundary componentName="DashboardPage">
+                  <DashboardPage />
+                </ErrorBoundary>
               </React.Suspense>
             ),
           },
@@ -176,6 +193,14 @@ export const router = createHashRouter([
           {
             path: 'reports/detailed-orders',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><DetailedOrdersReport /></React.Suspense>,
+          },
+          {
+            path: 'reports/orders',
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <OrdersReportPage />
+              </React.Suspense>
+            ),
           },
           // Suppliers
           {
@@ -323,7 +348,9 @@ export const router = createHashRouter([
             // element: <AdminRoute><React.Suspense fallback={<RouteSuspenseFallback />}><UsersListPage /></React.Suspense></AdminRoute>, // Example with AdminRoute
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <UsersListPage />
+                <ErrorBoundary componentName="UsersListPage">
+                  <UsersListPage />
+                </ErrorBoundary>
               </React.Suspense>
             ), // Assuming UsersListPage handles its own auth check or ProtectedRoute covers it
           },
@@ -372,6 +399,26 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <RestaurantTablesListPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/navigation",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ErrorBoundary componentName="NavigationManagementPage">
+                  <NavigationManagementPage />
+                </ErrorBoundary>
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "test-error",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ErrorBoundary componentName="TestErrorPage">
+                  <TestErrorPage />
+                </ErrorBoundary>
               </React.Suspense>
             ),
           },
@@ -461,13 +508,19 @@ export const router = createHashRouter([
   {
     // Authentication routes (use AuthLayout, typically not protected by ProtectedRoute)
     path: "/auth",
-    element: <AuthLayout />,
+    element: (
+      <ErrorBoundary componentName="AuthLayout">
+        <AuthLayout />
+      </ErrorBoundary>
+    ),
     children: [
       {
         path: "login",
         element: (
           <React.Suspense fallback={<RouteSuspenseFallback />}>
-            <LoginPage />
+            <ErrorBoundary componentName="LoginPage">
+              <LoginPage />
+            </ErrorBoundary>
           </React.Suspense>
         ),
       },
@@ -475,7 +528,9 @@ export const router = createHashRouter([
         path: "register",
         element: (
           <React.Suspense fallback={<RouteSuspenseFallback />}>
-            <RegisterPage />
+            <ErrorBoundary componentName="RegisterPage">
+              <RegisterPage />
+            </ErrorBoundary>
           </React.Suspense>
         ),
       },
@@ -495,7 +550,9 @@ export const router = createHashRouter([
     path: "*",
     element: (
       <React.Suspense fallback={<RouteSuspenseFallback />}>
-        <NotFoundPage />
+        <ErrorBoundary componentName="NotFoundPage">
+          <NotFoundPage />
+        </ErrorBoundary>
       </React.Suspense>
     ),
   },

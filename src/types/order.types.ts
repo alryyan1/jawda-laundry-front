@@ -4,6 +4,7 @@ import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
 import type { PAYMENT_METHODS } from '@/lib/constants';
 import type { RestaurantTable } from './restaurantTable.types';
+import type { DiningTable } from './dining.types';
 
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 
@@ -78,6 +79,8 @@ export interface Order {
     customer: Customer;
     table_id?: number | null;
     table?: RestaurantTable;
+    dining_table_id?: number | null;
+    dining_table?: DiningTable;
     staff_user?: User;
     status: OrderStatus;
     total_amount: number;
@@ -119,6 +122,7 @@ export interface OrderItemFormLine {
 export interface NewOrderFormData {
     customer_id: string;
     table_id?: number | null;
+    dining_table_id?: number | null; // Add dining table ID for in-house orders
     items: OrderItemFormLine[];
     notes?: string;
     due_date?: string;
@@ -126,13 +130,20 @@ export interface NewOrderFormData {
     order_type?: 'in_house' | 'take_away' | 'delivery';
 }
 
+export interface PaymentBreakdownItem {
+  amount: number;
+  percentage: number;
+  method: string;
+}
+
 export interface OrderStatistics {
   totalOrders: number;
   totalAmountPaid: number;
+  averagePerOrder: number;
   paymentBreakdown: {
-    cash: number;
-    card: number;
-    online: number;
-    credit: number;
+    cash: PaymentBreakdownItem;
+    card: PaymentBreakdownItem;
+    online: PaymentBreakdownItem;
+    credit: PaymentBreakdownItem;
   };
 }

@@ -1,6 +1,6 @@
 // src/api/dashboardService.ts
 import apiClient from './apiClient';
-import type { DashboardSummary, OrderTrendItem, RevenueBreakdownItem, TodaySummary } from '@/types';
+import type { DashboardSummary, OrderTrendItem, OrderItemTrendItem, RevenueBreakdownItem, TodaySummary } from '@/types';
 
 /**
  * Fetches the main summary statistics for the dashboard cards.
@@ -31,6 +31,18 @@ export const fetchOrdersTrend = async (days: number = 7): Promise<OrderTrendItem
  */
 export const fetchRevenueBreakdown = async (): Promise<RevenueBreakdownItem[]> => {
     const { data } = await apiClient.get<{ data: RevenueBreakdownItem[] }>('/dashboard/revenue-breakdown');
+    return data.data;
+};
+
+/**
+ * Fetches data for the "Order Items Trend" chart showing order items for the past 7 days.
+ * @param days The number of days to look back for the trend data. Defaults to 7.
+ * @returns A promise that resolves to an array of OrderItemTrendItem objects.
+ */
+export const fetchOrderItemsTrend = async (days: number = 7): Promise<OrderItemTrendItem[]> => {
+    const { data } = await apiClient.get<{ data: OrderItemTrendItem[] }>('/dashboard/order-items-trend', {
+        params: { days }
+    });
     return data.data;
 };
 

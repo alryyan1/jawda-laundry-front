@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
+import { getTodayDate } from "@/lib/dateUtils";
 
 import type { Order } from "@/types";
 import { getOrders } from "@/api/orderService";
@@ -55,8 +56,8 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const ordersPerPage = 12; // Show 12 orders at a time in dialog
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
+  // Get today's date in YYYY-MM-DD format (using local timezone)
+  const today = getTodayDate();
 
   const { data: ordersResponse, isLoading } = useQuery({
     queryKey: ["todayOrders", today],

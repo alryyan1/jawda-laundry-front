@@ -58,6 +58,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { printPosPdfReceipt } from "@/lib/printUtils";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
 import { MapPin, Users } from "lucide-react";
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{
@@ -98,6 +99,7 @@ const PaymentStatusAlert: React.FC<{
   i18n: { language: string };
 }> = ({ order, className, i18n }) => {
   const { t } = useTranslation("orders");
+  const { currencyCode } = useCurrency();
   if (!order.payment_status) return null;
 
   // Only use allowed variants: "default" | "destructive" | null | undefined
@@ -132,7 +134,7 @@ const PaymentStatusAlert: React.FC<{
         {t("paidAmount")}:{" "}
         {new Intl.NumberFormat(i18n.language, {
           style: "currency",
-          currency: "USD",
+          currency: currencyCode,
         }).format(order.paid_amount)}
         {order.payment_method &&
           ` (${t("via", { ns: "common" })} ${t(
@@ -145,7 +147,7 @@ const PaymentStatusAlert: React.FC<{
             <span className="font-semibold text-destructive">
               {new Intl.NumberFormat(i18n.language, {
                 style: "currency",
-                currency: "USD",
+                currency: currencyCode,
               }).format(order.amount_due)}
             </span>
           </span>
@@ -166,6 +168,7 @@ const OrderDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
+  const { currencyCode } = useCurrency();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [pickupDate, setPickupDate] = useState<Date | undefined>(undefined);
@@ -543,7 +546,7 @@ const OrderDetailsPage: React.FC = () => {
                     onValueChange={(newStatus: OrderStatus) =>
                       handleStatusChange(newStatus)
                     }
-                    disabled={updateStatusMutation.isPending}
+                    disabled={updateStatusMutation.isPending || order.status === 'completed'}
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue
@@ -592,7 +595,7 @@ const OrderDetailsPage: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40%]">
+                <TableHead className="w-[40%] text-center">
                   {t("itemService", {
                     ns: "orders",
                     defaultValue: "Item / Service",
@@ -607,10 +610,10 @@ const OrderDetailsPage: React.FC = () => {
                     defaultValue: "Dimensions (LxW)",
                   })}
                 </TableHead>
-                <TableHead className="text-right rtl:text-left">
+                <TableHead className="text-center">
                   {t("unitPrice", { ns: "orders", defaultValue: "Unit Price" })}
                 </TableHead>
-                <TableHead className="text-right rtl:text-left">
+                <TableHead className="text-center">
                   {t("subtotal", { ns: "common" })}
                 </TableHead>
               </TableRow>
@@ -647,16 +650,16 @@ const OrderDetailsPage: React.FC = () => {
                         ? `${item.length_meters}m x ${item.width_meters}m`
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-right rtl:text-left">
+                    <TableCell className="text-center">
                       {new Intl.NumberFormat(i18n.language, {
                         style: "currency",
-                        currency: "USD",
+                        currency: currencyCode,
                       }).format(item.calculated_price_per_unit_item)}
                     </TableCell>
-                    <TableCell className="text-right rtl:text-left">
+                    <TableCell className="text-center">
                       {new Intl.NumberFormat(i18n.language, {
                         style: "currency",
-                        currency: "USD",
+                        currency: currencyCode,
                       }).format(item.sub_total)}
                     </TableCell>
                   </TableRow>
@@ -665,13 +668,13 @@ const OrderDetailsPage: React.FC = () => {
             </TableBody>
             <TableFooter>
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-right rtl:text-left">
+                <TableCell colSpan={4} className="text-center">
                   {t("grandTotal", { ns: "common" })}
                 </TableCell>
-                <TableCell className="text-right rtl:text-left text-lg">
+                <TableCell className="text-center text-lg">
                   {new Intl.NumberFormat(i18n.language, {
                     style: "currency",
-                    currency: "USD",
+                    currency: currencyCode,
                   }).format(order.total_amount)}
                 </TableCell>
               </TableRow>

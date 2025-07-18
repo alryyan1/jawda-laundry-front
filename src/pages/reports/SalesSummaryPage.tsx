@@ -17,6 +17,7 @@ import {
 import type { SalesSummaryReport } from "@/types";
 import { getSalesSummaryReport } from "@/api/reportService";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useCurrency } from '@/hooks/useCurrency';
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -66,6 +67,7 @@ const SalesSummaryPage: React.FC = () => {
   const { t, i18n } = useTranslation(["reports", "common"]);
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const { currencyCode } = useCurrency();
 
   const [viewType, setViewType] = useState<'monthly' | 'custom'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<string>(
@@ -178,7 +180,7 @@ const SalesSummaryPage: React.FC = () => {
             report?.summary?.total_revenue !== undefined
               ? formatCurrency(
                   report.summary?.total_revenue,
-                  "USD",
+                  currencyCode,
                   i18n.language
                 )
               : undefined
@@ -201,7 +203,7 @@ const SalesSummaryPage: React.FC = () => {
             report?.summary?.average_order_value !== undefined
               ? formatCurrency(
                   report.summary?.average_order_value,
-                  "USD",
+                  currencyCode,
                   i18n.language
                 )
               : undefined
@@ -239,7 +241,7 @@ const SalesSummaryPage: React.FC = () => {
                         {day.total_orders}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {formatCurrency(day.total_revenue, "USD", i18n.language)}
+                        {formatCurrency(day.total_revenue, currencyCode, i18n.language)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -305,7 +307,7 @@ const SalesSummaryPage: React.FC = () => {
                       <TableCell className="text-right font-mono">
                         {formatCurrency(
                           service.total_revenue,
-                          "USD",
+                          currencyCode,
                           i18n.language
                         )}
                       </TableCell>
@@ -338,7 +340,7 @@ const SalesSummaryPage: React.FC = () => {
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted))" }}
                     formatter={(value: number) =>
-                      formatCurrency(value, "USD", i18n.language)
+                      formatCurrency(value, currencyCode, i18n.language)
                     }
                     labelStyle={{
                       color: "hsl(var(--foreground))",

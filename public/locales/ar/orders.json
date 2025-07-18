@@ -219,9 +219,11 @@
   "inHouse": "في المطعم",
   "takeAway": "للخارج",
   "delivery": "توصيل",
-  "status": {
-    "pending": "في الانتظار",
-    "completed": "مكتمل"
-  },
+ "paymentMethods": "طرق الدفع",
+  "paymentMethod_visa": "فيزا",
+  "paymentMethod_bank_transfer": "تحويل بنكي",
+  "from": "من",
+  "to": "إلى",
+  "dateRange": "نطاق التاريخ",
   "orders": "الطلبات"
 }

@@ -103,7 +103,7 @@ const RolesListPage: React.FC = () => {
         {
             id: "actions",
             cell: ({ row }) => (
-                <div className="text-right rtl:text-left">
+                <div className="text-center">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

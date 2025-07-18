@@ -6,18 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Loader2,
   X,
   Plus,
   Minus,
-  Edit,
-  ChevronDown,
   Ruler,
   AlertCircle,
 } from "lucide-react";
@@ -41,6 +33,7 @@ export interface CartItem {
   _isQuoting?: boolean;
   _quoteError?: string | null;
   _quotedSubTotal?: number;
+  _isExistingOrderItem?: boolean; // Flag to identify existing order items
 }
 
 interface CartItemProps {
@@ -52,7 +45,6 @@ interface CartItemProps {
     dimensions: { length?: number; width?: number }
   ) => void;
   onUpdateNotes: (id: string, notes: string) => void;
-  onEditItem: (itemId: string) => void;
   isReadOnly?: boolean;
 }
 
@@ -62,12 +54,13 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   onUpdateQuantity,
   onUpdateDimensions,
   onUpdateNotes,
-  onEditItem,
   isReadOnly = false,
 }) => {
+  // Existing order items should always be read-only
+  const effectiveReadOnly = isReadOnly || item._isExistingOrderItem;
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
   const { getSetting } = useSettings();
-  const [isDetailsOpen, setIsDetailsOpen] = useState(!!item.notes);
+  const [isDetailsOpen] = useState(!!item.notes);
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
 
   // Get currency from settings, fallback to USD
@@ -101,10 +94,15 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             <p className="text-xs text-muted-foreground">
               {item.productType.name}
             </p>
+            {item.productType.category && (
+              <p className="text-xs font-bold text-sky-500">
+                {item.productType.category.name}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-1">
            
-            {!isReadOnly && (
+            {!effectiveReadOnly && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -139,7 +137,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                   }
                   onFocus={(e) => e.target.select()}
                   className="h-8"
-                  disabled={isReadOnly || item._isQuoting}
+                  disabled={effectiveReadOnly || item._isQuoting}
                 />
               </div>
               <div className="col-span-2">
@@ -159,7 +157,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                   }
                   onFocus={(e) => e.target.select()}
                   className="h-8"
-                  disabled={isReadOnly || item._isQuoting}
+                  disabled={effectiveReadOnly || item._isQuoting}
                 />
               </div>
               <div className="col-span-1">
@@ -169,7 +167,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                   size="icon"
                   className="h-8 w-8 shrink-0"
                   onClick={() => setIsSizeDialogOpen(true)}
-                  disabled={isReadOnly || item._isQuoting}
+                  disabled={effectiveReadOnly || item._isQuoting}
                 >
                   <Ruler className="h-4 w-4" />
                   <span className="sr-only">
@@ -183,7 +181,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           {/* Quantity and Price */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {isReadOnly ? (
+              {effectiveReadOnly ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
                     {t("quantity", { ns: "orders" })}:
@@ -258,7 +256,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                   onChange={(e) => onUpdateNotes(item.id, e.target.value)}
                   placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
                   className="h-16 resize-none text-xs"
-                  disabled={isReadOnly || item._isQuoting}
+                  disabled={effectiveReadOnly || item._isQuoting}
                 />
               </div>
             </div>
@@ -274,7 +272,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
         </div>
       </div>
 
-      {item.productType && isDimensionBased && !isReadOnly && (
+      {item.productType && isDimensionBased && !effectiveReadOnly && (
         <SelectSizeDialog
           isOpen={isSizeDialogOpen}
           onOpenChange={setIsSizeDialogOpen}

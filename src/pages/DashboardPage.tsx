@@ -7,12 +7,13 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  ComposedChart,
+  Area,
 } from "recharts";
 
 import {
@@ -27,16 +28,16 @@ import {
   DollarSign,
   Package,
   Hourglass,
-  CheckCircle,
+  XCircle,
   TrendingUp,
   BarChart3,
 } from "lucide-react";
 
 import {
   fetchDashboardSummary,
-  fetchOrdersTrend,
+  fetchOrderItemsTrend,
 } from "@/api/dashboardService";
-import type { DashboardSummary, OrderTrendItem } from "@/types";
+import type { DashboardSummary, OrderItemTrendItem } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
 
@@ -92,18 +93,18 @@ const DashboardPage: React.FC = () => {
   });
 
   const {
-    data: ordersTrend,
-    isLoading: isLoadingTrend,
-    refetch: refetchTrend,
-  } = useQuery<OrderTrendItem[], Error>({
-    queryKey: ["ordersTrend", 7],
-    queryFn: () => fetchOrdersTrend(7),
+    data: orderItemsTrend,
+    isLoading: isLoadingOrderItemsTrend,
+    refetch: refetchOrderItemsTrend,
+  } = useQuery<OrderItemTrendItem[], Error>({
+    queryKey: ["orderItemsTrend", 7],
+    queryFn: () => fetchOrderItemsTrend(7),
     staleTime: 5 * 60 * 1000,
   });
 
   const handleRefresh = () => {
     refetchSummary();
-    refetchTrend();
+    refetchOrderItemsTrend();
   };
 
   const orderStatusChartData = useMemo(() => {
@@ -120,9 +121,9 @@ const DashboardPage: React.FC = () => {
         fill: "hsl(var(--chart-2))",
       },
       {
-        name: t("status_ready_for_pickup", { ns: "orders" }),
-        count: summary.readyForPickupOrders || 0,
-        fill: "hsl(var(--chart-3))",
+        name: t("status_cancelled", { ns: "orders" }),
+        count: summary.cancelledOrders || 0,
+        fill: "hsl(var(--chart-4))",
       },
     ];
   }, [summary, t]);
@@ -134,7 +135,7 @@ const DashboardPage: React.FC = () => {
         description={t("dashboardWelcome", { ns: "dashboard" })}
         showRefreshButton
         onRefresh={handleRefresh}
-        isRefreshing={isLoadingSummary || isLoadingTrend}
+        isRefreshing={isLoadingSummary || isLoadingOrderItemsTrend}
       />
 
       {summaryError && (
@@ -165,17 +166,17 @@ const DashboardPage: React.FC = () => {
           isLoading={isLoadingSummary}
         />
         <StatCard
-          title={t("readyForPickup", { ns: "dashboard" })}
-          value={summary?.readyForPickupOrders}
+          title={t("processingOrders", { ns: "dashboard" })}
+          value={summary?.processingOrders}
           icon={Package}
-          description={t("ordersReadyForCustomer", { ns: "dashboard" })}
+          description={t("ordersInProcessing", { ns: "dashboard" })}
           isLoading={isLoadingSummary}
         />
         <StatCard
-          title={t("completedToday", { ns: "dashboard" })}
-          value={summary?.completedTodayOrders}
-          icon={CheckCircle}
-          description={t("ordersCompletedTodayDesc", { ns: "dashboard" })}
+          title={t("cancelledOrders", { ns: "dashboard" })}
+          value={summary?.cancelledOrders}
+          icon={XCircle}
+          description={t("ordersCancelled", { ns: "dashboard" })}
           isLoading={isLoadingSummary}
         />
       </div>
@@ -186,15 +187,15 @@ const DashboardPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-muted-foreground" />
-              {t("ordersLast7Days", { ns: "dashboard" })}
+              {t("orderItemsLast7Days", { ns: "dashboard" })}
             </CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            {isLoadingTrend ? (
+            {isLoadingOrderItemsTrend ? (
               <Skeleton className="w-full h-[300px]" />
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={ordersTrend}>
+                <ComposedChart data={orderItemsTrend}>
                   <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                   <XAxis
                     dataKey="date"
@@ -222,15 +223,24 @@ const DashboardPage: React.FC = () => {
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))" }}
                   />
+                  <Area
+                    type="monotone"
+                    dataKey="totalQuantity"
+                    name={t("totalQuantity", { ns: "dashboard" })}
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.1}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                  />
                   <Line
                     type="monotone"
                     dataKey="count"
-                    name={t("orders")}
-                    stroke="hsl(var(--primary))"
+                    name={t("orderItems")}
+                    stroke="hsl(var(--secondary))"
                     strokeWidth={2}
                     activeDot={{ r: 8 }}
                   />
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             )}
           </CardContent>

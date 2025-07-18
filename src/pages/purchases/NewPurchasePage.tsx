@@ -27,6 +27,7 @@ import { purchaseStatusOptions } from '@/types';
 import { createPurchase } from '@/api/purchaseService';
 import { getAllSuppliers } from '@/api/supplierService';
 import { formatCurrency } from '@/lib/formatters';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Zod schemas for validation
 const purchaseItemSchema = z.object({
@@ -58,6 +59,7 @@ const NewPurchasePage: React.FC = () => {
     const { t, i18n } = useTranslation(['common', 'purchases', 'validation']);
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { currencyCode } = useCurrency();
 
     const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery<Supplier[], Error>({
         queryKey: ['allSuppliers'],
@@ -203,7 +205,7 @@ const NewPurchasePage: React.FC = () => {
                         </CardContent>
                         <CardFooter className="flex justify-between items-center bg-muted/50 p-4 rounded-b-lg">
                             <div className="text-lg font-bold">
-                                {t('totalAmount', {ns:'purchases'})}: <span className="text-primary">{formatCurrency(totalAmount, 'USD', i18n.language)}</span>
+                                {t('totalAmount', {ns:'purchases'})}: <span className="text-primary">{formatCurrency(totalAmount, currencyCode, i18n.language)}</span>
                             </div>
                             <div className="flex gap-2">
                                 <Button type="button" variant="outline" onClick={() => navigate('/purchases')} disabled={mutation.isPending}>{t('cancel')}</Button>

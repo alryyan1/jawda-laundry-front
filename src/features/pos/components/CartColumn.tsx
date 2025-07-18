@@ -16,9 +16,9 @@ interface CartColumnProps {
   onUpdateNotes: (id: string, notes: string) => void;
   onCheckout: () => void;
   isProcessing: boolean;
-  onEditItem: (itemId: string) => void;
-  mode?: 'cart' | 'order_view';
+  mode?: 'cart' | 'order_view' | 'order_edit';
   orderNumber?: string;
+  isReadOnly?: boolean;
 }
 
 export const CartColumn: React.FC<CartColumnProps> = ({
@@ -29,9 +29,9 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onUpdateNotes,
   onCheckout,
   isProcessing,
-  onEditItem,
   mode = 'cart',
   orderNumber,
+  isReadOnly = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const { getSetting } = useSettings();
@@ -46,7 +46,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
       <header className="p-4 border-b shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">
-            {mode === 'order_view' 
+            {mode === 'order_view' || mode === 'order_edit'
               ? `${t("order", { ns: "orders" })} #${orderNumber}` 
               : t("cart", { ns: "orders" })
             }
@@ -72,8 +72,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                 onUpdateQuantity={onUpdateQuantity}
                 onUpdateDimensions={onUpdateDimensions}
                 onUpdateNotes={onUpdateNotes}
-                onEditItem={onEditItem}
-                isReadOnly={mode === 'order_view'}
+                isReadOnly={isReadOnly || mode === 'order_view'}
               />
             ))
           )}
@@ -99,6 +98,30 @@ export const CartColumn: React.FC<CartColumnProps> = ({
             >
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("completeOrder", { ns: "orders" })}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'order_edit' && (
+        <div className="p-4 border-t space-y-4">
+          <Separator />
+
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span>{t("total", { ns: "common" })}:</span>
+            <span className="text-primary">
+              {formatCurrency(total, currency, i18n.language)}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+             <Button
+              className="w-full h-12 text-base font-semibold"
+              onClick={onCheckout}
+              disabled={isProcessing}
+            >
+              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("addItemsToOrder", { ns: "orders", defaultValue: "Add Items to Order" })}
             </Button>
           </div>
         </div>

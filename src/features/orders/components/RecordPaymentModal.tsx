@@ -32,10 +32,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { Loader2, CalendarIcon, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
+import { useCurrency } from '@/hooks/useCurrency';
 
 
 import type { Order, Payment, RecordPaymentFormData, PaymentMethod } from '@/types';
 import { recordOrderPayment } from '@/api/paymentService';
+import { getOrderById } from '@/api/orderService';
 import type { AxiosError } from 'axios';
 import { PAYMENT_METHODS } from '@/lib/constants';
 import { PdfDialog } from './PdfDialog';
@@ -65,12 +67,14 @@ interface RecordPaymentModalProps {
     order: Order | null;
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    onOrderUpdate?: (updatedOrder: Order) => void;
 }
 
-export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, isOpen, onOpenChange }) => {
+export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, isOpen, onOpenChange, onOrderUpdate }) => {
     const { t, i18n } = useTranslation(['common', 'orders', 'validation']);
     const queryClient = useQueryClient();
     const [showPdfDialog, setShowPdfDialog] = React.useState(false);
+    const { currencyCode } = useCurrency();
 
     const {
         control,
@@ -114,10 +118,23 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
 
     const mutation = useMutation<Payment, Error, RecordPaymentFormData>({
         mutationFn: (data) => recordOrderPayment(order!.id, data),
-        onSuccess: () => {
+        onSuccess: async (paymentData) => {
             toast.success(t('paymentRecordedSuccess', {ns:'orders'}));
             queryClient.invalidateQueries({ queryKey: ['order', String(order!.id)] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
+            
+            // Fetch the updated order and call the callback
+            try {
+                const updatedOrder = await getOrderById(order!.id);
+                if (onOrderUpdate) {
+                    onOrderUpdate(updatedOrder);
+                }
+            } catch (error) {
+                console.error('Failed to fetch updated order:', error);
+            }
+            
+            // Close the payment modal after successful payment
             onOpenChange(false);
             // Show PDF dialog after successful payment
             setShowPdfDialog(true);
@@ -148,7 +165,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                         {t('recordPaymentForOrder', {ns:'orders', orderNumber: order.order_number})}
                     </DialogTitle>
                     <DialogDescription>
-                        {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, 'USD', i18n.language)}</span>
+                        {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, currencyCode, i18n.language)}</span>
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4 py-2">

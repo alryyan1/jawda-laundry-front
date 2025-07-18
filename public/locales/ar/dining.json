@@ -71,5 +71,8 @@
   "reservation_status_confirmed": "مؤكد",
   "reservation_status_seated": "جالس",
   "reservation_status_completed": "مكتمل",
-  "reservation_status_cancelled": "ملغي"
+  "reservation_status_cancelled": "ملغي",
+  "table": "الطاولة",
+  "noTable": "لا توجد طاولة",
+  "pleaseSelectTable": "يرجى اختيار طاولة للطلبات في المطعم"
 } 
