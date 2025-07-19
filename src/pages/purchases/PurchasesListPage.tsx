@@ -212,7 +212,7 @@ const PurchasesListPage: React.FC = () => {
   );
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
         title={t("title", { ns: "purchases" })}
         description={t("description", { ns: "purchases" })}
@@ -227,7 +227,7 @@ const PurchasesListPage: React.FC = () => {
         }
         showRefreshButton
         onRefresh={refetch}
-        isRefreshing={isFetching && isLoading}
+        isRefreshing={isFetching && !isLoading}
       />
 
       <Card className="mb-4">

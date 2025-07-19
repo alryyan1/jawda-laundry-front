@@ -216,7 +216,7 @@ const UsersListPage: React.FC = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
             <PageHeader
                 title={t('usersTitle')}
                 description={t('usersDescription')}

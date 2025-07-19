@@ -141,7 +141,7 @@ const ServiceActionsListPage: React.FC = () => {
   );
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
         title={t("serviceActionsTitle", { ns: "services" })}
         description={t("serviceActionsDescription", { ns: "services" })}

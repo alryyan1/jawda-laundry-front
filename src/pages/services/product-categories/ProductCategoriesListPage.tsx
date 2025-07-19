@@ -169,7 +169,7 @@ const ProductCategoriesListPage: React.FC = () => {
   ); // Dependencies for memoization
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
         title={t("productCategoriesTitle", { ns: "services" })}
         description={t("productCategoriesDescription", { ns: "services" })}

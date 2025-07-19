@@ -236,7 +236,7 @@ const ExpensesListPage: React.FC = () => {
   ));
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
         title={t("title", { ns: "expenses" })}
         description={t("description", { ns: "expenses" })}

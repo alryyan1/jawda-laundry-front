@@ -38,7 +38,7 @@ const MenuPage: React.FC = () => {
   }, [productTypes]);
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <h1 className="text-2xl font-bold mb-6">{t('menuPageTitle', { ns: 'services', defaultValue: 'Service Menu' })}</h1>
       {isLoadingTypes ? (
         <div className="flex justify-center items-center h-32 text-muted-foreground">

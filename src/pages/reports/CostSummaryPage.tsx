@@ -59,7 +59,7 @@ const CostSummaryPage: React.FC = () => {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560'];
 
     return (
-        <div>
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
             <PageHeader
                 title={t('costSummaryTitle')}
                 description={t('costSummaryDescription')}

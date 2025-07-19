@@ -129,7 +129,7 @@ const DashboardPage: React.FC = () => {
   }, [summary, t]);
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
         title={t("dashboard", { ns: "common" })}
         description={t("dashboardWelcome", { ns: "dashboard" })}
