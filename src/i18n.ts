@@ -11,14 +11,14 @@ i18n
     supportedLngs: ['en', 'ar'],
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
-    ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports'],
+    ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports','dining'],
     defaultNS: 'common',
     interpolation: {
       escapeValue: false, // React already safes from xss
     },
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json', // Path to translation files
-    },
+    }, 
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],

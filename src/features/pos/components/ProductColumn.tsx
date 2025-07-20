@@ -49,12 +49,14 @@ interface ProductColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
+  isIpadView?: boolean;
 }
 
 export const ProductColumn: React.FC<ProductColumnProps> = ({
   categoryId,
   onSelectProduct,
   activeProductId,
+  isIpadView = false,
 }) => {
   const { t } = useTranslation(["services", "common"]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,7 +83,8 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   return (
     <MuiThemeProvider theme={muiTheme}>
       <div className="flex flex-col h-full">
-        {/* Search Bar remains the same */}
+        {/* Search Bar - Hidden on iPad */}
+        {!isIpadView && (
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -94,6 +97,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
             />
           </div>
         </div>
+        )}
 
         <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
           <div className="p-4">

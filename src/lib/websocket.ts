@@ -5,40 +5,60 @@ import Pusher from 'pusher-js';
 declare global {
   interface Window {
     Pusher: typeof Pusher;
-    Echo: Echo;
+    Echo: Echo | any;
   }
 }
 
 // Initialize Pusher
 window.Pusher = Pusher;
 
-// Check if Pusher is configured
-const isPusherConfigured = import.meta.env.VITE_PUSHER_APP_KEY && 
-                          import.meta.env.VITE_PUSHER_APP_KEY !== 'your-pusher-key';
+// DISABLED: Real-time updates are disabled for production
+// Set this to false to completely disable Pusher
+const ENABLE_REALTIME = false;
 
-// Initialize Laravel Echo with fallback
-if (isPusherConfigured) {
-  window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
-    wsHost: import.meta.env.VITE_PUSHER_HOST || `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1'}.pusher.com`,
-    wsPort: import.meta.env.VITE_PUSHER_PORT || 80,
-    wssPort: import.meta.env.VITE_PUSHER_PORT || 443,
-    forceTLS: (import.meta.env.VITE_PUSHER_SCHEME || 'https') === 'https',
-    enabledTransports: ['ws', 'wss'],
-    disableStats: true,
-  });
-} else {
-  // Fallback for development without Pusher
-  console.warn('Pusher not configured. Real-time updates will be disabled.');
-  window.Echo = {
+// Check if Pusher is configured and enabled
+const isPusherConfigured = ENABLE_REALTIME && 
+                          import.meta.env.VITE_PUSHER_APP_KEY && 
+                          import.meta.env.VITE_PUSHER_APP_KEY !== 'your-pusher-key' &&
+                          import.meta.env.VITE_PUSHER_APP_KEY !== '';
+
+// Create a dummy Echo object for when Pusher is not available
+function createDummyEcho(): any {
+  return {
     channel: () => ({
       listen: () => {},
       stopListening: () => {},
     }),
     leaveChannel: () => {},
-  } as any;
+  };
+}
+
+// Initialize Laravel Echo with fallback
+if (isPusherConfigured) {
+  try {
+    window.Echo = new Echo({
+      broadcaster: 'pusher',
+      key: import.meta.env.VITE_PUSHER_APP_KEY,
+      cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
+      wsHost: import.meta.env.VITE_PUSHER_HOST || `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1'}.pusher.com`,
+      wsPort: import.meta.env.VITE_PUSHER_PORT || 80,
+      wssPort: import.meta.env.VITE_PUSHER_PORT || 443,
+      forceTLS: (import.meta.env.VITE_PUSHER_SCHEME || 'https') === 'https',
+      enabledTransports: ['ws', 'wss'],
+      disableStats: true,
+      // Add timeout to prevent long loading times
+      timeout: 10000, // 10 seconds timeout
+    });
+    console.log('Pusher configured successfully');
+  } catch (error) {
+    console.error('Failed to initialize Pusher:', error);
+    // Fallback to dummy Echo
+    window.Echo = createDummyEcho();
+  }
+} else {
+  // Real-time updates are disabled
+  console.log('Real-time updates are disabled. Set ENABLE_REALTIME = true to enable.');
+  window.Echo = createDummyEcho();
 }
 
 export default window.Echo; 

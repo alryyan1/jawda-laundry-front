@@ -42,7 +42,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   return (
     <TooltipProvider>
       <ScrollArea className="h-[calc(100vh-13rem)]">
-        <div className="grid grid-cols-1 gap-2 p-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-1 gap-2 p-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <button

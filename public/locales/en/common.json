@@ -61,6 +61,7 @@
   "edit": "Edit",
   "delete": "Delete",
   "saving": "Saving...",
+  
   "deleting": "Deleting...",
   "saveChanges": "Save Changes",
   "error": "Error",
@@ -221,6 +222,15 @@
   "pickDateRange": "Pick a date range",
   "openMenu": "Open menu",
   "viewDetails": "View Details",
+  "paymentCalculator": "Payment Calculator",
+  "selectDateRange": "Select Date Range",
+  "dateRange": "Date Range",
+  "today": "Today",
+  "totalAmountPaid": "Total Amount Paid",
+  "paymentBreakdown": "Payment Breakdown",
+  "ordersSummary": "Orders Summary",
+  "totalOrders": "Total Orders",
+  "averagePerOrder": "Average Per Order",
   "address": "Address",
   "count": "Count",
   "productCategoryLC": "product category",
@@ -246,6 +256,7 @@
   "retry": "Retry",
   "notAvailable": "N/A",
   "notSet": "Not Set",
+  
   "item": "Item",
   "addItem": "Add Item",
   "removeItem": "Remove Item",
@@ -260,7 +271,6 @@
   "selectProductFirst": "Select a product first",
   "deleteConfirmationMessage": "This action cannot be undone. This will permanently delete \"{{itemName}}\".",
   "rowsPerPage": "Rows per page",
-  "openMenu": "Open menu",
   "add": "Add",
   "irreversibleAction": "This action is irreversible.",
   "allRightsReserved": "All rights reserved.",
@@ -292,6 +302,5 @@
   "menu": "Menu",
   "id": "ID",
   "image": "Image",
-  "allCategories": "All Categories",
-  "expandSidebar": "Expand sidebar"
+  "allCategories": "All Categories"
 }

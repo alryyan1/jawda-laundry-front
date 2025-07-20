@@ -1,0 +1,23 @@
+# Environment Variables Template for Disabled Real-time Updates
+# Copy this to .env file in your frontend root directory
+
+# API Configuration
+VITE_API_BASE_URL=https://shai-khadri.com/api
+
+# Real-time Updates - DISABLED
+# Leave these empty to disable real-time updates
+VITE_PUSHER_APP_KEY=
+VITE_PUSHER_APP_CLUSTER=
+VITE_PUSHER_HOST=
+VITE_PUSHER_PORT=
+VITE_PUSHER_SCHEME=
+
+# Other Configuration
+VITE_APP_NAME="Jawda Laundry"
+VITE_APP_VERSION=1.0.0
+
+# Instructions:
+# 1. Create a file named ".env" in your frontend root directory
+# 2. Copy the contents above into the .env file
+# 3. Upload both the .env file and the updated source files to Hostinger
+# 4. Your POS will load quickly without real-time updates 

@@ -44,7 +44,14 @@ import {
   Loader2,
   Printer,
   Calculator,
+  ArrowLeft,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 
 interface CartItem {
@@ -116,6 +123,10 @@ const POSPage: React.FC = () => {
   const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isServiceOfferingDialogOpen, setIsServiceOfferingDialogOpen] = useState(false);
+  const [selectedProductForDialog, setSelectedProductForDialog] = useState<ProductType | null>(null);
+  const [isIpadView, setIsIpadView] = useState(false);
+  const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
   console.log(selectedOrder,'selectedOrder')
   const debouncedCartItems = useDebounce(cartItems, 500);
 
@@ -337,6 +348,18 @@ const POSPage: React.FC = () => {
         _isQuoting: false,
       };
       setCartItems(prev => [...prev, newItem]);
+    } else if (productOfferings.length > 1 && hasCustomer) {
+      // For iPad view, show dialog for multiple service offerings
+      if (isIpadView) {
+        setSelectedProductForDialog(product);
+        setIsServiceOfferingDialogOpen(true);
+      } else {
+        // For desktop, just select the product and let user choose offering
+        setSelectedProductType(product);
+      }
+    } else if (isIpadView && hasCustomer) {
+      // For iPad view, switch to product view when category is selected
+      setShowCategoriesOnIpad(false);
     }
   };
 
@@ -475,6 +498,30 @@ const POSPage: React.FC = () => {
   const handleSendWhatsAppInvoice = () => {
     if (selectedOrder) {
       sendWhatsAppInvoiceMutation.mutate(selectedOrder.id);
+    }
+  };
+
+  const handleBackToCategories = () => {
+    setShowCategoriesOnIpad(true);
+    setSelectedProductType(null);
+    setSelectedOfferingId(null);
+  };
+
+  const handleServiceOfferingSelect = (offering: ServiceOffering) => {
+    if (selectedProductForDialog) {
+      const newItem: CartItem = {
+        id: uuidv4(),
+        productType: selectedProductForDialog,
+        serviceOffering: offering,
+        quantity: 1,
+        price: selectedProductForDialog.is_dimension_based 
+          ? offering.default_price_per_sq_meter || 0
+          : offering.default_price || 0,
+        _isQuoting: false,
+      };
+      setCartItems(prev => [...prev, newItem]);
+      setIsServiceOfferingDialogOpen(false);
+      setSelectedProductForDialog(null);
     }
   };
 
@@ -646,6 +693,20 @@ const POSPage: React.FC = () => {
       }
     });
   }, [debouncedCartItems, selectedCustomerId]);
+
+  // Effect to detect iPad screen size
+  useEffect(() => {
+    const checkIpadView = () => {
+      const width = window.innerWidth;
+      // iPad screens are typically 768px to 1024px wide
+      const isIpad = width >= 768 && width <= 1024;
+      setIsIpadView(isIpad);
+    };
+
+    checkIpadView();
+    window.addEventListener('resize', checkIpadView);
+    return () => window.removeEventListener('resize', checkIpadView);
+  }, []);
 
   return (
     <div style={{
@@ -858,8 +919,121 @@ const POSPage: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-4 overflow-hidden">
+      <main className="flex-1 container mx-auto  overflow-hidden">
         <div className="flex gap-4 h-full">
+          {/* iPad Layout */}
+          {isIpadView ? (
+            <>
+              {/* Categories View */}
+              {showCategoriesOnIpad && (
+                <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden">
+                 
+                  <div className="p-4">
+                    <CategoryColumn
+                      onSelectCategory={(categoryId) => {
+                        setSelectedCategoryId(categoryId);
+                        setShowCategoriesOnIpad(false);
+                      }}
+                      selectedCategoryId={selectedCategoryId}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Products and Cart View */}
+              {!showCategoriesOnIpad && (
+                <>
+                  {/* Back Button */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBackToCategories}
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
+                    </Button>
+                  </div>
+
+                  {/* Products */}
+                  <div className={`flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                
+                    <div className="flex-1 min-h-0">
+                      {settings?.pos_show_products_as_list ? (
+                        <ProductListColumn
+                          categoryId={selectedCategoryId}
+                          onSelectProduct={handleSelectProduct}
+                          activeProductId={selectedProductType?.id.toString()}
+                        />
+                      ) : (
+                        <ProductColumn
+                          categoryId={selectedCategoryId}
+                          onSelectProduct={handleSelectProduct}
+                          activeProductId={selectedProductType?.id.toString()}
+                          isIpadView={isIpadView}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cart */}
+                  <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
+                    <CartColumn
+                      items={selectedOrder ? [
+                        // Existing order items
+                        ...(selectedOrder.items?.map(item => ({
+                          id: item.id.toString(),
+                          productType: item.serviceOffering?.productType || {} as ProductType,
+                          serviceOffering: item.serviceOffering || {} as ServiceOffering,
+                          quantity: item.quantity,
+                          price: item.calculated_price_per_unit_item,
+                          notes: item.notes || undefined,
+                          length_meters: item.length_meters || undefined,
+                          width_meters: item.width_meters || undefined,
+                          _quotedSubTotal: item.sub_total,
+                          _isExistingOrderItem: true,
+                        })) || []),
+                        // New cart items being added
+                        ...cartItems
+                      ] : cartItems}
+                      onRemoveItem={selectedOrder ? (id: string) => {
+                        if (cartItems.find(item => item.id === id)) {
+                          handleRemoveItem(id);
+                        }
+                      } : handleRemoveItem}
+                      onUpdateQuantity={selectedOrder ? (id: string, quantity: number) => {
+                        if (cartItems.find(item => item.id === id)) {
+                          handleUpdateQuantity(id, quantity);
+                        }
+                      } : handleUpdateQuantity}
+                      onUpdateDimensions={selectedOrder ? (id: string, dimensions: { length?: number; width?: number }) => {
+                        if (cartItems.find(item => item.id === id)) {
+                          handleUpdateDimensions(id, dimensions);
+                        }
+                      } : handleUpdateDimensions}
+                      onUpdateNotes={selectedOrder ? (id: string, notes: string) => {
+                        if (cartItems.find(item => item.id === id)) {
+                          handleUpdateNotes(id, notes);
+                        }
+                      } : handleUpdateNotes}
+                      onCheckout={selectedOrder ? () => {
+                        if (cartItems.length > 0) {
+                          handleAddItemsToOrder();
+                        }
+                      } : handleCheckout}
+                      isProcessing={isProcessing}
+                      mode={selectedOrder ? 'order_edit' : 'cart'}
+                      orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                      isReadOnly={selectedOrder?.status === 'completed'}
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Desktop Layout */}
           {/* Left Section: Categories */}
           <div className="w-[170px] bg-background rounded-lg shadow-sm overflow-hidden">
             <CategoryColumn
@@ -887,6 +1061,7 @@ const POSPage: React.FC = () => {
                     categoryId={selectedCategoryId}
                     onSelectProduct={handleSelectProduct}
                     activeProductId={selectedProductType?.id.toString()}
+                        isIpadView={isIpadView}
                   />
                 )}
               </div>
@@ -908,8 +1083,6 @@ const POSPage: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Today's Orders Column */}
        
           {/* Right Section: Cart */}
           <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
@@ -926,25 +1099,20 @@ const POSPage: React.FC = () => {
                   length_meters: item.length_meters || undefined,
                   width_meters: item.width_meters || undefined,
                   _quotedSubTotal: item.sub_total,
-                  _isExistingOrderItem: true, // Flag to identify existing order items
+                      _isExistingOrderItem: true,
                 })) || []),
                 // New cart items being added
                 ...cartItems
               ] : cartItems}
               onRemoveItem={selectedOrder ? (id: string) => {
-                // If it's an existing order item, we can't remove it from the cart
-                // but we could potentially mark it for removal when updating the order
                 if (cartItems.find(item => item.id === id)) {
                   handleRemoveItem(id);
                 }
-                // For existing order items, we'll need to implement order item removal logic
               } : handleRemoveItem}
               onUpdateQuantity={selectedOrder ? (id: string, quantity: number) => {
-                // If it's a new cart item, update it normally
                 if (cartItems.find(item => item.id === id)) {
                   handleUpdateQuantity(id, quantity);
                 }
-                // For existing order items, we'll need to implement order item update logic
               } : handleUpdateQuantity}
               onUpdateDimensions={selectedOrder ? (id: string, dimensions: { length?: number; width?: number }) => {
                 if (cartItems.find(item => item.id === id)) {
@@ -957,7 +1125,6 @@ const POSPage: React.FC = () => {
                 }
               } : handleUpdateNotes}
               onCheckout={selectedOrder ? () => {
-                // If we have new items to add to the existing order
                 if (cartItems.length > 0) {
                   handleAddItemsToOrder();
                 }
@@ -968,6 +1135,10 @@ const POSPage: React.FC = () => {
               isReadOnly={selectedOrder?.status === 'completed'}
             />
           </div>
+            </>
+          )}
+
+          {/* Today's Orders Column - Always visible */}
           <TodayOrdersColumn
             onOrderSelect={handleOrderSelect}
             selectedOrderId={selectedOrder?.id.toString()}
@@ -981,10 +1152,11 @@ const POSPage: React.FC = () => {
               setSelectedOfferingId(null);
               setSelectedTableId(' ');
               setOrderType('in_house');
+              if (isIpadView) {
+                setShowCategoriesOnIpad(true);
+              }
             }}
           />
-
-
         </div>
       </main>
 
@@ -1030,6 +1202,42 @@ const POSPage: React.FC = () => {
         dateFrom={today}
         dateTo={today}
       />
+
+      {/* Service Offering Selection Dialog for iPad */}
+      <Dialog open={isServiceOfferingDialogOpen} onOpenChange={setIsServiceOfferingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedProductForDialog && t("selectServiceOffering", { 
+                ns: "common", 
+                defaultValue: "Select Service Offering" 
+              })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {selectedProductForDialog && allServiceOfferings
+              .filter(offering => offering.product_type_id === selectedProductForDialog.id)
+              .map((offering) => (
+                <Button
+                  key={offering.id}
+                  variant="outline"
+                  className="w-full justify-start text-left h-auto p-4"
+                  onClick={() => handleServiceOfferingSelect(offering)}
+                >
+                  <div className="flex flex-col items-start">
+                    <div className="font-medium">{offering.display_name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedProductForDialog.is_dimension_based 
+                        ? `${offering.default_price_per_sq_meter || 0} ${t("perSqMeter", { ns: "common", defaultValue: "per sq meter" })}`
+                        : `${offering.default_price || 0} ${t("perItem", { ns: "common", defaultValue: "per item" })}`
+                      }
+                    </div>
+                  </div>
+                </Button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -32,7 +32,6 @@
   "currentStatus": "Current Status",
   "changeStatus": "Change Status",
   "orderStatusUpdatedSuccess": "Order status updated to {{status}}.",
-  "orderStatusUpdateFailed": "Failed to update order status.",
   "updatingStatus": "Updating status...",
   "recordOrUpdatePayment": "Record/Update Payment",
   "orderedItems": "Ordered Items",
@@ -126,11 +125,9 @@
   "paymentHistory": "Payment History",
   "noPaymentsRecorded": "No payments recorded yet.",
   "recordPaymentForOrder": "Record Payment for Order",
-  "amountPaid": "Amount Paid",
   "paymentMethod": "Payment Method",
   "selectPaymentMethod": "Select Payment Method",
   "payment_method_credit": "Credit",
-  "payment_method_cash": "Cash",
   "filterByCustomer": "Filter by customer",
   "filterByProduct": "Filter by product",
   "viewPayments": "View Payments",
@@ -158,7 +155,6 @@
   "orderCreatedSuccessfully": "Order created successfully",
   "failedToCreateOrder": "Failed to create order",
   "completeOrder": "Complete Order",
-  "startNewOrder": "Start New Order",
   "cart": "Cart",
   "checkout": "Checkout",
   "printReceipt": "Print Receipt",
@@ -231,5 +227,9 @@
   "from": "From",
   "to": "To",
   "dateRange": "Date Range",
-  "orders": "Orders"
+  "orders": "Orders",
+    "cash": "Cash",
+  "visa": "Visa",
+  "bank_transfer": "Bank Transfer"
+  
 }

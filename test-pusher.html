@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pusher Connection Test - Production</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 5px; 
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            cursor: pointer; 
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover { background: #0056b3; }
+        #log { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            border: 1px solid #dee2e6;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-info { color: #17a2b8; }
+        .log-warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 Pusher Connection Test</h1>
+        <p>This page tests the Pusher connection for your production environment.</p>
+        
+        <div id="status" class="status info">Initializing test...</div>
+        
+        <div>
+            <button onclick="testConnection()">🔄 Test Connection</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+            <button onclick="testWithCredentials()">🔑 Test with Your Credentials</button>
+        </div>
+        
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            log.appendChild(logEntry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.innerHTML = '';
+        }
+        
+        function updateStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        // Test with hardcoded credentials (from your test file)
+        function testConnection() {
+            addLog('Starting Pusher connection test...', 'info');
+            
+            const pusherKey = '4f816a83aba4b562cd9e';
+            const pusherCluster = 'ap2';
+            
+            addLog(`Using key: ${pusherKey}, cluster: ${pusherCluster}`, 'info');
+            
+            // Enable pusher logging
+            Pusher.logToConsole = true;
+            
+            const pusher = new Pusher(pusherKey, {
+                cluster: pusherCluster,
+                timeout: 10000 // 10 second timeout
+            });
+            
+            const channel = pusher.subscribe('pos-updates');
+            
+            channel.bind('pusher:subscription_succeeded', function() {
+                addLog('✅ Successfully subscribed to pos-updates channel', 'success');
+                updateStatus('Connected to Pusher!', 'success');
+            });
+            
+            channel.bind('pusher:subscription_error', function(status) {
+                addLog(`❌ Subscription error: ${status}`, 'error');
+                updateStatus('Connection failed!', 'error');
+            });
+            
+            // Test connection state
+            pusher.connection.bind('connected', function() {
+                addLog('✅ Pusher connected successfully', 'success');
+            });
+            
+            pusher.connection.bind('error', function(err) {
+                addLog(`❌ Pusher connection error: ${err}`, 'error');
+            });
+            
+            pusher.connection.bind('disconnected', function() {
+                addLog('⚠️ Pusher disconnected', 'warning');
+            });
+            
+            // Test timeout
+            setTimeout(() => {
+                if (pusher.connection.state !== 'connected') {
+                    addLog('⏰ Connection timeout after 10 seconds', 'warning');
+                    updateStatus('Connection timeout!', 'warning');
+                }
+            }, 10000);
+        }
+        
+        // Test with user-provided credentials
+        function testWithCredentials() {
+            const key = prompt('Enter your Pusher App Key:');
+            const cluster = prompt('Enter your Pusher Cluster:');
+            
+            if (!key || !cluster) {
+                addLog('❌ No credentials provided', 'error');
+                return;
+            }
+            
+            addLog(`Testing with your credentials: ${key}, cluster: ${cluster}`, 'info');
+            
+            const pusher = new Pusher(key, {
+                cluster: cluster,
+                timeout: 10000
+            });
+            
+            const channel = pusher.subscribe('pos-updates');
+            
+            channel.bind('pusher:subscription_succeeded', function() {
+                addLog('✅ Successfully subscribed with your credentials!', 'success');
+                updateStatus('Connected with your credentials!', 'success');
+            });
+            
+            channel.bind('pusher:subscription_error', function(status) {
+                addLog(`❌ Subscription error with your credentials: ${status}`, 'error');
+                updateStatus('Connection failed with your credentials!', 'error');
+            });
+            
+            pusher.connection.bind('connected', function() {
+                addLog('✅ Pusher connected with your credentials', 'success');
+            });
+            
+            pusher.connection.bind('error', function(err) {
+                addLog(`❌ Pusher connection error: ${err}`, 'error');
+            });
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            addLog('Page loaded, ready to test Pusher connection', 'info');
+            updateStatus('Ready to test connection', 'info');
+        };
+    </script>
+</body>
+</html> 

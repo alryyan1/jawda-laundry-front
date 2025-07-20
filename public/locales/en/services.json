@@ -51,7 +51,6 @@
   "newServiceOfferingTitle": "Create New Service Offering",
   "newServiceOfferingDescription": "Define how this service is offered and priced.",
   "selectProductType": "Select Product Type",
-  "selectServiceAction": "Select Service Action",
   "selectPricingStrategy": "Select Pricing Strategy",
   "defaultPriceForItem": "Default Price (per item)",
   "nameOverrideOptional": "Name Override (optional)",
@@ -209,7 +208,7 @@
   "multipleOfferingsLegend": "Multiple service offerings (price editing disabled)",
   "addSize": "Add Size",
   "offeringsCount": "Offerings Count",
-  "searchingFor": "Searching for"
+  "searchingFor": "Searching for",
   "sizeAddedSuccess": "Size added successfully",
   "sizeDeletedSuccess": "Size deleted successfully",
   "sizeActionFailed": "Failed to perform size action"

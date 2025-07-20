@@ -22,6 +22,7 @@
   "order": "Order",
   "date": "Date",
   "contactPhone": "Contact Phone",
+  
   "notes": "Notes",
   "loading": "Loading...",
   "cancel": "Cancel",
