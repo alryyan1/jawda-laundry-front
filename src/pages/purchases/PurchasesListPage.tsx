@@ -167,7 +167,7 @@ const PurchasesListPage: React.FC = () => {
           <PurchaseStatusBadge status={purchase.status} />
         </TableCell>
         <TableCell className="text-center font-semibold">
-          {formatCurrency(purchase.total_amount, "USD", i18n.language)}
+          {formatCurrency(purchase.total_amount, "USD", i18n.language, 3)}
         </TableCell>
         <TableCell className="text-center">
           <DropdownMenu>

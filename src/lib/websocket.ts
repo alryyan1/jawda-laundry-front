@@ -4,8 +4,10 @@ import Pusher from 'pusher-js';
 // Declare Pusher on window object
 declare global {
   interface Window {
+    // @ts-expect-error: Pusher type is compatible for runtime assignment
     Pusher: typeof Pusher;
-    Echo: Echo | any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Echo: Echo<any> | any;
   }
 }
 
@@ -14,7 +16,7 @@ window.Pusher = Pusher;
 
 // DISABLED: Real-time updates are disabled for production
 // Set this to false to completely disable Pusher
-const ENABLE_REALTIME = false;
+const ENABLE_REALTIME = true;
 
 // Check if Pusher is configured and enabled
 const isPusherConfigured = ENABLE_REALTIME && 
@@ -22,7 +24,7 @@ const isPusherConfigured = ENABLE_REALTIME &&
                           import.meta.env.VITE_PUSHER_APP_KEY !== 'your-pusher-key' &&
                           import.meta.env.VITE_PUSHER_APP_KEY !== '';
 
-// Create a dummy Echo object for when Pusher is not available
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createDummyEcho(): any {
   return {
     channel: () => ({
@@ -32,6 +34,8 @@ function createDummyEcho(): any {
     leaveChannel: () => {},
   };
 }
+
+console.log(isPusherConfigured,'isPusherConfigured')
 
 // Initialize Laravel Echo with fallback
 if (isPusherConfigured) {

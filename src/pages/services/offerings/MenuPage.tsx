@@ -1,114 +1,80 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { Card } from '@/components/ui/card';
-import { Loader2, Coffee } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { getAllProductTypes } from '@/api/productTypeService';
-import { getServiceOfferings } from '@/api/serviceOfferingService';
-import type { ProductType, ServiceOffering } from '@/types';
+import type { ProductType } from '@/types';
 
 const MenuPage: React.FC = () => {
   const { t } = useTranslation(['common', 'services']);
-  const [offeringsMap, setOfferingsMap] = useState<Record<number, ServiceOffering[]>>({});
-  const [loadingOfferings, setLoadingOfferings] = useState<Record<number, boolean>>({});
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  // Fetch all product types (not paginated, for menu)
-  const { data: productTypes = [], isLoading: isLoadingTypes } = useQuery<ProductType[]>({
-    queryKey: ['allProductTypesForMenu'],
-    queryFn: () => getAllProductTypes(),
+  // Fetch product types for the selected category
+  const { data: productTypes = [], isLoading } = useQuery<ProductType[]>({
+    queryKey: ['menuProductTypes', selectedCategoryId],
+    queryFn: () => getAllProductTypes(selectedCategoryId || undefined),
   });
-
-  // Fetch offerings for each product type
-  useEffect(() => {
-    if (!productTypes.length) return;
-    productTypes.forEach((pt) => {
-      if (offeringsMap[pt.id] !== undefined) return; // Already fetched
-      setLoadingOfferings((prev) => ({ ...prev, [pt.id]: true }));
-      getServiceOfferings(1, 1000, { product_type_id: pt.id })
-        .then((res) => {
-          setOfferingsMap((prev) => ({ ...prev, [pt.id]: res.data }));
-        })
-        .finally(() => {
-          setLoadingOfferings((prev) => ({ ...prev, [pt.id]: false }));
-        });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productTypes]);
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <h1 className="text-2xl font-bold mb-6">{t('menuPageTitle', { ns: 'services', defaultValue: 'Service Menu' })}</h1>
-      {isLoadingTypes ? (
-        <div className="flex justify-center items-center h-32 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          {t('loadingProductTypes', { ns: 'services' })}
+      <div className="flex gap-6 min-h-[60vh]">
+        {/* Left: CategoryColumn */}
+        <div className="w-64 shrink-0">
+          <CategoryColumn
+            onSelectCategory={setSelectedCategoryId}
+            selectedCategoryId={selectedCategoryId}
+          />
         </div>
-      ) : (
-        <div className="space-y-8">
-          {productTypes.map((pt) => (
-            <Card key={pt.id} className="p-4">
-              <div className="flex items-center gap-4 mb-2">
-                <Avatar className="h-12 w-12 rounded-md">
-                  <AvatarImage src={pt.image_url || undefined} alt={pt.name} />
-                  <AvatarFallback className="rounded-md bg-muted">
-                    <Coffee className="h-6 w-6 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-semibold text-lg">{pt.name}</div>
-                  <div className="text-sm text-muted-foreground">{pt.category?.name}</div>
-                  {pt.description && <div className="text-xs text-muted-foreground mt-1">{pt.description}</div>}
+        {/* Right: ProductType Grid */}
+        <div className="flex-1">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              {t('loadingProductTypes', { ns: 'services' })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {productTypes.length === 0 ? (
+                <div className="col-span-full text-center text-muted-foreground text-lg py-12">
+                  {t('noProductTypesFound', { ns: 'services', defaultValue: 'No products found for this category.' })}
                 </div>
-              </div>
-              <div className="mt-2">
-                {loadingOfferings[pt.id] ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    {t('loadingServiceOfferings', { ns: 'services', defaultValue: 'Loading service offerings...' })}
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('serviceAction', { ns: 'services', defaultValue: 'Service Action' })}</TableHead>
-                        <TableHead>{t('price', { ns: 'services', defaultValue: 'Price' })}</TableHead>
-                        <TableHead>{t('unit', { ns: 'services', defaultValue: 'Unit' })}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(offeringsMap[pt.id]?.length ?? 0) > 0 ? (
-                        offeringsMap[pt.id].map((off) => (
-                          <TableRow key={off.id}>
-                            <TableCell>{off.serviceAction?.name || '-'}</TableCell>
-                            <TableCell>
-                              {pt.is_dimension_based
-                                ? off.default_price_per_sq_meter != null
-                                  ? `${off.default_price_per_sq_meter} /m²`
-                                  : '-'
-                                : off.default_price != null
-                                ? off.default_price
-                                : '-'}
-                            </TableCell>
-                            <TableCell>{off.applicable_unit || (pt.is_dimension_based ? t('squareMeter', { ns: 'services', defaultValue: 'm²' }) : t('piece', { ns: 'services', defaultValue: 'piece' }))}</TableCell>
-                          </TableRow>
-                        ))
+              ) : (
+                productTypes.map((pt) => (
+                  <Card key={pt.id} className="group p-0 overflow-hidden shadow-md hover:shadow-xl transition-shadow border border-gray-200 hover:border-primary relative flex flex-col">
+                    <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+                      {pt.image_url ? (
+                        <img
+                          src={pt.image_url}
+                          alt={pt.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            {t('noServiceOfferings', { ns: 'services', defaultValue: 'No service offerings found.' })}
-                          </TableCell>
-                        </TableRow>
+                        <span className="text-4xl text-gray-300">🧺</span>
                       )}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            </Card>
-          ))}
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between p-4">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1 truncate" title={pt.name}>{pt.name}</h3>
+                        {pt.description && <div className="text-xs text-muted-foreground mb-2 line-clamp-2">{pt.description}</div>}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-primary font-bold text-xl">
+                          {pt.first_service_offering && pt.first_service_offering.default_price != null
+                            ? `${pt.first_service_offering.default_price} ${pt.first_service_offering.applicable_unit || t('piece', { ns: 'services', defaultValue: 'piece' })}`
+                            : t('noPrice', { ns: 'services', defaultValue: 'No price' })}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

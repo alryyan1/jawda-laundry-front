@@ -10,6 +10,7 @@
   "searchByName": "البحث باسم الخدمة...",
   "serviceCreatedSuccess": "تم إنشاء الخدمة بنجاح.",
   "serviceCreatedError": "فشل إنشاء الخدمة.",
+  "ready_for_pickup": "جاهز للاستلام",
   "serviceUpdatedSuccess": "تم تحديث الخدمة بنجاح.",
   "serviceUpdatedError": "فشل تحديث الخدمة.",
   "serviceDeletedSuccess": "تم حذف الخدمة بنجاح.",
@@ -21,6 +22,15 @@
   "deleteServiceConfirmTitle": "هل أنت متأكد؟",
   "deleteServiceConfirmDescription": "لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف الخدمة '{{serviceName}}' بشكل دائم.",
   "itemCount": "العناصر",
+  
+  "status": {
+    "pending": "قيد الإنتظار",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "failed": "فشل",
+    "processing": "قيد المعالجة",
+    "ready_for_pickup": "جاهز للاستلام"
+  },
   "manageOfferingsFor": "إدارة العروض لـ {{name}}",
   "serviceItemsTitle": "بنود الخدمة",
   "expenseCategories": "فئات المصروفات",

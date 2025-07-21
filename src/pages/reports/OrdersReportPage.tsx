@@ -272,7 +272,7 @@ const OrdersReportPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalAmount, currencyCode, i18n.language)}
+              {formatCurrency(totalAmount, currencyCode, i18n.language, 3)}
             </div>
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ const OrdersReportPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(averageOrderValue, currencyCode, i18n.language)}
+              {formatCurrency(averageOrderValue, currencyCode, i18n.language, 3)}
             </div>
           </CardContent>
         </Card>
@@ -335,7 +335,7 @@ const OrdersReportPage: React.FC = () => {
                           {order.order_date ? format(new Date(order.order_date), 'MMM dd, yyyy HH:mm') : '-'}
                         </TableCell>
                         <TableCell>
-                          {formatCurrency(order.paid_amount || 0, currencyCode, i18n.language)}
+                          {formatCurrency(order.paid_amount || 0, currencyCode, i18n.language, 3)}
                         </TableCell>
                         <TableCell>
                           {order.user?.name || '-'}

@@ -94,7 +94,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
   };
 
   const getStatusText = (status: string) => {
-    return t(`status.${status}`, { ns: "orders", defaultValue: status });
+    return t(`status.${status}`, { ns: "services", defaultValue: status });
   };
 
   return (

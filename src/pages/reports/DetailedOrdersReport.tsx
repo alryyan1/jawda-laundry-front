@@ -156,9 +156,9 @@ const DetailedOrdersReport: React.FC = () => {
                                 <TableCell className="font-medium">{order.customer?.name}</TableCell>
                                 <TableCell>{formatDate(order.order_date, 'PP', i18n.language)}</TableCell>
                                 <TableCell><OrderStatusBadge status={order.status} /></TableCell>
-                                <TableCell className="text-right font-mono">{formatCurrency(order.total_amount, 'USD', i18n.language)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-600">{formatCurrency(order.paid_amount, 'USD', i18n.language)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive">{formatCurrency(order.amount_due || 0, 'USD', i18n.language)}</TableCell>
+                                <TableCell className="text-right font-mono">{formatCurrency(order.total_amount, 'USD', i18n.language, 3)}</TableCell>
+                                <TableCell className="text-right font-mono text-green-600">{formatCurrency(order.paid_amount, 'USD', i18n.language, 3)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive">{formatCurrency(order.amount_due || 0, 'USD', i18n.language, 3)}</TableCell>
                             </TableRow>
                         )))
                         : ( <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground">{t('noResults')}</TableCell></TableRow> )}
@@ -167,9 +167,9 @@ const DetailedOrdersReport: React.FC = () => {
                         <TableFooter>
                             <TableRow className="font-bold bg-muted/50">
                                 <TableCell colSpan={4}>{t('pageTotal')}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(pageTotals.total_amount, 'USD', i18n.language)}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(pageTotals.paid_amount, 'USD', i18n.language)}</TableCell>
-                                <TableCell className="text-right text-destructive">{formatCurrency(pageTotals.due_amount, 'USD', i18n.language)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(pageTotals.total_amount, 'USD', i18n.language, 3)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(pageTotals.paid_amount, 'USD', i18n.language, 3)}</TableCell>
+                                <TableCell className="text-right text-destructive">{formatCurrency(pageTotals.due_amount, 'USD', i18n.language, 3)}</TableCell>
                             </TableRow>
                         </TableFooter>
                     )}

@@ -181,7 +181,8 @@ const SalesSummaryPage: React.FC = () => {
               ? formatCurrency(
                   report.summary?.total_revenue,
                   currencyCode,
-                  i18n.language
+                  i18n.language,
+                  3
                 )
               : undefined
           }
@@ -204,7 +205,8 @@ const SalesSummaryPage: React.FC = () => {
               ? formatCurrency(
                   report.summary?.average_order_value,
                   currencyCode,
-                  i18n.language
+                  i18n.language,
+                  3
                 )
               : undefined
           }
@@ -241,7 +243,7 @@ const SalesSummaryPage: React.FC = () => {
                         {day.total_orders}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {formatCurrency(day.total_revenue, currencyCode, i18n.language)}
+                        {formatCurrency(day.total_revenue, currencyCode, i18n.language, 3)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -308,7 +310,8 @@ const SalesSummaryPage: React.FC = () => {
                         {formatCurrency(
                           service.total_revenue,
                           currencyCode,
-                          i18n.language
+                          i18n.language,
+                          3
                         )}
                       </TableCell>
                     </TableRow>
@@ -340,7 +343,7 @@ const SalesSummaryPage: React.FC = () => {
                   <Tooltip
                     cursor={{ fill: "hsl(var(--muted))" }}
                     formatter={(value: number) =>
-                      formatCurrency(value, currencyCode, i18n.language)
+                      formatCurrency(value, currencyCode, i18n.language, 3)
                     }
                     labelStyle={{
                       color: "hsl(var(--foreground))",

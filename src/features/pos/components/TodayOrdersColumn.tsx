@@ -77,7 +77,6 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   const { data: orders = [], isLoading } = useQuery<Order[], Error>({
     queryKey: ["todayOrders"],
     queryFn: getTodayOrders,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   if (isLoading) {

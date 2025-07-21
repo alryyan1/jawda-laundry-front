@@ -127,7 +127,6 @@ const POSPage: React.FC = () => {
   const [selectedProductForDialog, setSelectedProductForDialog] = useState<ProductType | null>(null);
   const [isIpadView, setIsIpadView] = useState(false);
   const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
-  console.log(selectedOrder,'selectedOrder')
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Get today's date for statistics (using local timezone)
@@ -799,7 +798,7 @@ const POSPage: React.FC = () => {
               onClick={() => setIsCalculatorOpen(true)}
             >
               <Calculator className="h-4 w-4 mr-1" />
-              {t("calculator", { defaultValue: "Calculator" })}
+              {t("calculator", { ns: "common", defaultValue: "Calculator" })}
             </Button>
           </div>
 
@@ -849,7 +848,7 @@ const POSPage: React.FC = () => {
                     <SelectContent>
                       {ORDER_STATUSES.map((status) => (
                         <SelectItem key={status} value={status}>
-                          {t(`status_${status}`, { ns: "orders" })}
+                          {t(`status.${status}`, { ns: "services" })}
                         </SelectItem>
                       ))}
                     </SelectContent>

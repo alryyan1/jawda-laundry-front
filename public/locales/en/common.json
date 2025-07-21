@@ -58,6 +58,8 @@
   "tableHeaders.totalOrders": "Total Orders",
   "tableHeaders.permissions": "Permissions", 
   "tableHeaders.created_at": "Created At",
+  "calculator": "Calculator",
+
   "edit": "Edit",
   "delete": "Delete",
   "saving": "Saving...",

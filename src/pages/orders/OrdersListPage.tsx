@@ -419,7 +419,7 @@ const OrdersListPage: React.FC = () => {
                 {t("totalAmount", { ns: "orders" })}
               </div>
               <div className="font-semibold text-sm sm:text-base truncate">
-                {formatCurrency(order.total_amount, currencySymbol, i18n.language)}
+                {formatCurrency(order.total_amount, currencySymbol, i18n.language, 3)}
               </div>
             </div>
           </div>
@@ -430,7 +430,7 @@ const OrdersListPage: React.FC = () => {
             </span>
             <div className="flex items-center gap-1">
               <span className="font-semibold text-sm sm:text-base text-green-600 dark:text-green-400">
-                {formatCurrency(order.paid_amount, currencySymbol, i18n.language)}
+                {formatCurrency(order.paid_amount, currencySymbol, i18n.language, 3)}
               </span>
               {isFullyPaid && (
                 <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-500" />
@@ -475,11 +475,11 @@ const OrdersListPage: React.FC = () => {
         {calculateTotalQuantities(order)} / {calculateTotalPickedUpQuantities(order)}
       </TableCell>
       <TableCell className="text-center font-semibold">
-        {formatCurrency(order.total_amount, currencySymbol, i18n.language)}
+        {formatCurrency(order.total_amount, currencySymbol, i18n.language, 3)}
       </TableCell>
       <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
         <div className="flex items-center justify-center gap-1">
-          {formatCurrency(order.paid_amount, currencySymbol, i18n.language)}
+          {formatCurrency(order.paid_amount, currencySymbol, i18n.language, 3)}
           {isFullyPaid && (
             <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
           )}
@@ -954,7 +954,7 @@ const OrdersListPage: React.FC = () => {
                       {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
                     </p>
                     <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                      {formatCurrency(calculatePaymentBreakdown().totalPaid, currencySymbol, i18n.language)}
+                      {formatCurrency(calculatePaymentBreakdown().totalPaid, currencySymbol, i18n.language, 3)}
                     </p>
                   </div>
                   <div className="h-12 w-12 bg-green-500/10 rounded-lg flex items-center justify-center">
@@ -981,7 +981,7 @@ const OrdersListPage: React.FC = () => {
                         {t(`paymentMethod_${item.method}`, { defaultValue: item.method })}
                       </span>
                       <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(item.amount, currencySymbol, i18n.language)}
+                        {formatCurrency(item.amount, currencySymbol, i18n.language, 3)}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

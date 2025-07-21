@@ -44,36 +44,34 @@ export const formatDateTime = (
  */
 export const formatCurrency = (
     amount: number | null | undefined,
-    currency: string = 'USD', // Make this configurable from app settings later
-    lang: string = 'en'
+    currency: string = 'USD',
+    lang: string = 'en',
+    fractionDigits: number = 2
 ): string => {
     if (amount === null || amount === undefined || isNaN(amount)) {
-        // Return a default like $0.00 or an empty string/dash
-        // For consistency, let's format 0 if input is problematic
         return new Intl.NumberFormat(lang.startsWith('ar') ? 'ar-SA' : 'en-US', {
             style: 'currency',
             currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
         }).format(0);
     }
 
-    const locale = lang.startsWith('ar') ? 'ar-SA' : 'en-US'; // Adjust for other Arabic locales if needed
+    const locale = lang.startsWith('ar') ? 'ar-SA' : 'en-US';
 
-    // If currency is a symbol (not a 3-letter code), use custom formatting
     if (currency.length <= 3 && !/^[A-Z]{3}$/.test(currency)) {
         return new Intl.NumberFormat(locale, {
             style: 'decimal',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits,
         }).format(amount) + ' ' + currency;
     }
 
     return new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
     }).format(amount);
 };
 

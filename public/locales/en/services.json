@@ -8,6 +8,15 @@
   "errorLoadingServices": "Error loading services:",
   "searchByName": "Search by service name...",
   "serviceCreatedSuccess": "Service created successfully.",
+  "status": {
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "processing": "Processing",
+    "ready_for_pickup": "Ready for Pickup"
+  },
+  "ready_for_pickup": "Ready for Pickup",
   "serviceCreatedError": "Failed to create service.",
   "serviceUpdatedSuccess": "Service updated successfully.",
   "serviceUpdatedError": "Failed to update service.",

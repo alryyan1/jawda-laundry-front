@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import Echo from '@/lib/websocket';
 import { useTranslation } from 'react-i18next';
 
 interface OrderEvent {
@@ -28,10 +29,6 @@ interface OrderEvent {
 export const useRealtimeUpdates = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation(['orders']);
-
-  // DISABLED: Real-time updates are disabled for production
-  // Set this to true to enable real-time updates
-  const ENABLE_REALTIME = false;
 
   const handleOrderCreated = useCallback((event: OrderEvent) => {
     console.log('Order created event received:', event);
@@ -80,14 +77,27 @@ export const useRealtimeUpdates = () => {
   }, [queryClient, t]);
 
   useEffect(() => {
-    // Real-time updates are disabled
-    if (!ENABLE_REALTIME) {
-      console.log('Real-time updates are disabled. Set ENABLE_REALTIME = true to enable.');
+    // Check if Echo is properly configured
+    if (!Echo || typeof Echo.channel !== 'function') {
+      console.warn('Echo not properly configured. Real-time updates disabled.');
       return;
     }
 
-    // The rest of the real-time setup code is disabled
-    console.log('Real-time updates would be enabled here if ENABLE_REALTIME = true');
+    // Subscribe to POS updates channel
+    const channel = Echo.channel('pos-updates');
+
+    // Listen for order created events
+    channel.listen('.order.created', handleOrderCreated);
+
+    // Listen for order updated events
+    channel.listen('.order.updated', handleOrderUpdated);
+
+    // Cleanup function
+    return () => {
+      channel.stopListening('.order.created');
+      channel.stopListening('.order.updated');
+      Echo.leaveChannel('pos-updates');
+    };
   }, [handleOrderCreated, handleOrderUpdated]);
 
   return {

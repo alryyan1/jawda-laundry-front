@@ -182,10 +182,10 @@ const PurchaseDetailsPage: React.FC = () => {
                         {item.quantity} {item.unit || ""}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatCurrency(item.unit_price, "USD", i18n.language)}
+                        {formatCurrency(item.unit_price, "USD", i18n.language, 3)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(item.sub_total, "USD", i18n.language)}
+                        {formatCurrency(item.sub_total, "USD", i18n.language, 3)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -252,7 +252,7 @@ const PurchaseDetailsPage: React.FC = () => {
               <div className="flex justify-between font-semibold text-base">
                 <span>{t("totalAmount", { ns: "purchases" })}:</span>
                 <span className="text-primary">
-                  {formatCurrency(purchase.total_amount, "USD", i18n.language)}
+                  {formatCurrency(purchase.total_amount, "USD", i18n.language, 3)}
                 </span>
               </div>
             </CardContent>

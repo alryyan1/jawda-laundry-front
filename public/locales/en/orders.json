@@ -170,6 +170,7 @@
   "todayOrders": "Today Orders",
   "backToCart": "Back to Cart",
   "order": "Order",
+  "addItemsToOrder": "Add Items to Order",
   "viewTodayOrders": "View Today's Orders",
   "selectOrderToView": "Select an order to view its details",
   "orderStatusUpdateFailed": "Failed to update order status.",

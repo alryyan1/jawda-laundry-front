@@ -7,6 +7,7 @@ import { ThemeProvider } from './components/theme-provider'; //  Adjust path if 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { SettingsProvider } from './context/SettingsContext.tsx';
+import './lib/websocket';
 
 const queryClient = new QueryClient();
 

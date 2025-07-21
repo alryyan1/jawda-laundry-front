@@ -86,7 +86,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           <div className="flex justify-between items-center text-lg font-bold">
             <span>{t("total", { ns: "common" })}:</span>
             <span className="text-primary">
-              {formatCurrency(total, currency, i18n.language)}
+              {formatCurrency(total, currency, i18n.language, 3)}
             </span>
           </div>
 
@@ -110,7 +110,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           <div className="flex justify-between items-center text-lg font-bold">
             <span>{t("total", { ns: "common" })}:</span>
             <span className="text-primary">
-              {formatCurrency(total, currency, i18n.language)}
+              {formatCurrency(total, currency, i18n.language, 3)}
             </span>
           </div>
 
@@ -132,7 +132,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           <div className="flex justify-between items-center text-lg font-bold">
             <span>{t("total", { ns: "common" })}:</span>
             <span className="text-primary">
-              {formatCurrency(total, currency, i18n.language)}
+              {formatCurrency(total, currency, i18n.language, 3)}
             </span>
           </div>
         </div>

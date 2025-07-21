@@ -228,14 +228,15 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    {formatCurrency(item.price, currency, i18n.language)} ×{" "}
+                    {formatCurrency(item.price, currency, i18n.language, 3)} ×{" "}
                     {item.quantity}
                   </p>
                   <p className="font-medium">
                     {formatCurrency(
                       item._quotedSubTotal || item.price * item.quantity,
                       currency,
-                      i18n.language
+                      i18n.language,
+                      3
                     )}
                   </p>
                 </>
