@@ -220,7 +220,8 @@
   "searchingFor": "Searching for",
   "sizeAddedSuccess": "Size added successfully",
   "sizeDeletedSuccess": "Size deleted successfully",
-  "sizeActionFailed": "Failed to perform size action"
+  "sizeActionFailed": "Failed to perform size action",
+  "inventoryItemHint": "Link this product type to an inventory item to automatically deduct stock when orders are completed."
 }
 
 

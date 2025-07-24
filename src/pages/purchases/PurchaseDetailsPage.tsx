@@ -9,6 +9,8 @@ import type { Purchase, PurchaseStatus, PurchaseItem } from "@/types";
 import { getPurchaseById } from "@/api/purchaseService";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { formatCurrency } from "@/lib/formatters";
+import { getProductTypes } from '@/services/productTypeService';
+import type { ProductType } from '@/types/service.types';
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -83,6 +85,11 @@ const PurchaseDetailsPage: React.FC = () => {
     queryKey: ["purchase", id],
     queryFn: () => getPurchaseById(Number(id!)),
     enabled: !!id,
+  });
+
+  const { data: productTypes = [] } = useQuery<ProductType[], Error>({
+    queryKey: ['allProductTypesForSelect'],
+    queryFn: () => getProductTypes(),
   });
 
   if (isLoading) {
@@ -168,27 +175,30 @@ const PurchaseDetailsPage: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {purchase.items.map((item: PurchaseItem) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div className="font-medium">{item.item_name}</div>
-                        {item.description && (
-                          <div className="text-xs text-muted-foreground">
-                            {item.description}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.quantity} {item.unit || ""}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.unit_price, "USD", i18n.language, 3)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(item.sub_total, "USD", i18n.language, 3)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {purchase.items.map((item: PurchaseItem) => {
+                    const productType = productTypes.find(pt => pt.id === item.product_type_id);
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="font-medium">{productType ? productType.name : item.product_type_id}</div>
+                          {item.description && (
+                            <div className="text-xs text-muted-foreground">
+                              {item.description}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {item.quantity} {item.unit || ""}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.unit_price, "USD", i18n.language, 3)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(item.sub_total, "USD", i18n.language, 3)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

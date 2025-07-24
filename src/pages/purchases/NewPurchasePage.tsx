@@ -22,27 +22,25 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, ArrowLeft, PlusCircle, Trash2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-import type { PurchaseFormData, Supplier } from '@/types';
+import type { PurchaseFormData, Supplier, PurchaseStatus } from '@/types';
 import { purchaseStatusOptions } from '@/types';
 import { createPurchase } from '@/api/purchaseService';
 import { getAllSuppliers } from '@/api/supplierService';
 import { formatCurrency } from '@/lib/formatters';
 import { useCurrency } from '@/hooks/useCurrency';
+import { DarkThemeAutocomplete } from '@/components/ui/mui-autocomplete';
+import { DarkThemeTextField } from '@/components/ui/mui-input';
+import { getProductTypes } from '@/services/productTypeService';
+import type { ProductType } from '@/types/service.types';
 
 // Zod schemas for validation
 const purchaseItemSchema = z.object({
     id: z.string(),
-    item_name: z.string().nonempty({ message: "validation.itemNameRequired" }),
+    product_type_id: z.string().min(1, { message: "validation.productTypeRequired" }),
     description: z.string().optional().or(z.literal('')),
-    quantity: z.preprocess(
-        val => parseInt(String(val), 10) || 1,
-        z.number({ invalid_type_error: "validation.quantityMustBeNumber" }).min(1, { message: "validation.quantityMin" })
-    ),
+    quantity: z.union([z.string(), z.number()]),
     unit: z.string().optional().or(z.literal('')),
-    unit_price: z.preprocess(
-        val => parseFloat(String(val).replace(/,/g, '')) || 0,
-        z.number({ invalid_type_error: "validation.priceMustBeNumber" }).min(0, { message: "validation.priceNonNegative" })
-    ),
+    unit_price: z.union([z.string(), z.number()]),
 });
 
 const purchaseFormSchema = z.object({
@@ -53,6 +51,8 @@ const purchaseFormSchema = z.object({
     notes: z.string().optional().or(z.literal('')),
     items: z.array(purchaseItemSchema).min(1, { message: "validation.atLeastOneItem" }),
 });
+
+type PurchaseFormSchemaType = z.infer<typeof purchaseFormSchema>;
 
 
 const NewPurchasePage: React.FC = () => {
@@ -66,7 +66,12 @@ const NewPurchasePage: React.FC = () => {
         queryFn: getAllSuppliers,
     });
 
-    const methods = useForm<PurchaseFormData>({
+    const { data: productTypes = [], isLoading: isLoadingProductTypes } = useQuery<ProductType[], Error>({
+        queryKey: ['allProductTypesForSelect'],
+        queryFn: () => getProductTypes(),
+    });
+
+    const methods = useForm({
         resolver: zodResolver(purchaseFormSchema),
         defaultValues: {
             purchase_date: format(new Date(), 'yyyy-MM-dd'),
@@ -90,20 +95,36 @@ const NewPurchasePage: React.FC = () => {
         }, 0);
     }, [watchedItems]);
 
-    const mutation = useMutation<any, Error, PurchaseFormData>({
+    const mutation = useMutation<unknown, Error, PurchaseFormData>({
         mutationFn: createPurchase,
-        onSuccess: (data) => {
+        onSuccess: () => {
             toast.success(t('purchaseCreatedSuccess', {ns: 'purchases'}));
             queryClient.invalidateQueries({ queryKey: ['purchases'] });
-            navigate('/purchases'); // Or to the new purchase's detail page: `/purchases/${data.id}`
+            navigate('/purchases');
         },
         onError: (error) => {
             toast.error(error.message || t('purchaseActionFailed', {ns: 'purchases'}));
         }
     });
 
-    const onSubmit = (data: PurchaseFormData) => {
-        mutation.mutate(data);
+    const onSubmit = (data: PurchaseFormSchemaType) => {
+        // Transform the form data to match PurchaseFormData type
+        const purchaseData: PurchaseFormData = {
+            supplier_id: data.supplier_id,
+            reference_number: data.reference_number || '',
+            purchase_date: data.purchase_date,
+            status: data.status as PurchaseStatus,
+            notes: data.notes || '',
+            items: data.items.map((item) => ({
+                id: item.id,
+                product_type_id: item.product_type_id,
+                description: item.description || '',
+                quantity: item.quantity,
+                unit: item.unit || '',
+                unit_price: item.unit_price
+            }))
+        };
+        mutation.mutate(purchaseData);
     };
 
     return (
@@ -161,7 +182,7 @@ const NewPurchasePage: React.FC = () => {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
                                     <h3 className="text-lg font-medium">{t('items', {ns:'common'})}</h3>
-                                    <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), item_name: '', quantity: 1, unit: '', unit_price: '' })}>
+                                    <Button type="button" size="sm" variant="outline" onClick={() => append({ id: uuidv4(), product_type_id: '', quantity: 1, unit: '', unit_price: '' })}>
                                         <PlusCircle className="mr-2 h-4 w-4" />{t('addItem', {ns:'orders'})}
                                     </Button>
                                 </div>
@@ -169,9 +190,31 @@ const NewPurchasePage: React.FC = () => {
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="grid grid-cols-12 gap-x-3 gap-y-2 items-start p-3 border rounded-md bg-muted/30">
                                         <div className="col-span-12 sm:col-span-4 grid gap-1.5">
-                                            <Label htmlFor={`items.${index}.item_name`} className="text-xs">{t('itemName', {ns:'purchases'})}</Label>
-                                            <Input {...register(`items.${index}.item_name`)} placeholder={t('itemNamePlaceholder', {ns:'purchases'})} />
-                                            {errors.items?.[index]?.item_name && <p className="text-xs text-destructive">{t(errors.items[index]?.item_name?.message as string)}</p>}
+                                            <Label htmlFor={`items.${index}.product_type_id`} className="text-xs">{t('productType', {ns:'services'})}</Label>
+                                            <Controller
+                                                name={`items.${index}.product_type_id`}
+                                                control={control}
+                                                render={({ field: ctrlField }) => (
+                                                    <DarkThemeAutocomplete
+                                                        options={productTypes}
+                                                        getOptionLabel={(option) => option.name}
+                                                        value={productTypes.find(pt => pt.id.toString() === ctrlField.value) || null}
+                                                        onChange={(_, newValue) => ctrlField.onChange(newValue ? newValue.id.toString() : '')}
+                                                        renderInput={(params) => (
+                                                            <DarkThemeTextField
+                                                                {...params}
+                                                                placeholder={t('selectProductType', {ns:'services'})}
+                                                                variant="outlined"
+                                                                size="small"
+                                                                error={!!errors.items?.[index]?.product_type_id}
+                                                                helperText={errors.items?.[index]?.product_type_id ? t(errors.items[index]?.product_type_id?.message as string) : ''}
+                                                            />
+                                                        )}
+                                                        disabled={isLoadingProductTypes}
+                                                        autoHighlight
+                                                    />
+                                                )}
+                                            />
                                         </div>
                                         <div className="col-span-4 sm:col-span-2 grid gap-1.5">
                                             <Label htmlFor={`items.${index}.quantity`} className="text-xs">{t('quantity', {ns:'services'})}</Label>

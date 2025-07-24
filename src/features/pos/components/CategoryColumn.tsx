@@ -106,7 +106,11 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                       </span>
                     </>
                   ) : (
-                    <span className="text-2xl">{category.name[0].toUpperCase()}</span>
+                    <div className="w-full h-full flex items-center justify-center p-2">
+                      <span className="text-sm font-medium text-gray-800 text-center line-clamp-2 overflow-hidden">
+                        {category.name}
+                      </span>
+                    </div>
                   )}
                 </div>
                 {/* <span className="text-sm font-medium line-clamp-1 p-1">

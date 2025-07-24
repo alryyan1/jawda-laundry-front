@@ -17,7 +17,8 @@ import { format } from 'date-fns';
 
 import { KanbanColumn } from '@/features/orders/components/kanban/KanbanColumn';
 import { OrderCard } from '@/features/orders/components/kanban/OrderCard';
-import { getOrders, updateOrderStatus } from '@/api/orderService';
+import { getOrders, updateOrderStatus, OrderResponseWithWarnings } from '@/api/orderService';
+import { handleOrderResponse } from '@/utils/warningHandler';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -66,10 +67,10 @@ const KanbanPage: React.FC = () => {
         }
     }, [results.map(r => r.data).join(',')]); // A simple dependency array trigger
 
-    const updateStatusMutation = useMutation<Order, Error, { orderId: number; status: OrderStatus; oldStatus: OrderStatus }>({
+    const updateStatusMutation = useMutation<OrderResponseWithWarnings, Error, { orderId: number; status: OrderStatus; oldStatus: OrderStatus }>({
         mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
-        onSuccess: (updatedOrder, { oldStatus, status }) => {
-            toast.success(t('orderStatusUpdatedSuccess', {status: t(`status_${status}`)}));
+        onSuccess: (response, { oldStatus, status }) => {
+            const updatedOrder = handleOrderResponse(response, t('orderStatusUpdatedSuccess', {status: t(`status_${status}`)}));
             // Invalidate both the old and new column queries to ensure data consistency
             queryClient.invalidateQueries({ queryKey: ['kanbanOrders', oldStatus, formattedDate] });
             queryClient.invalidateQueries({ queryKey: ['kanbanOrders', status, formattedDate] });

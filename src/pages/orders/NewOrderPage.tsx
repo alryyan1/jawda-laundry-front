@@ -29,8 +29,9 @@ import type {
   QuoteItemResponse,
 } from "@/types";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
-import { createOrder, getOrderItemQuote } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, OrderResponseWithWarnings } from "@/api/orderService";
 import { useDebounce } from "@/hooks/useDebounce";
+import { handleOrderResponse } from "@/utils/warningHandler";
 
 export type WizardStep =
   | "CUSTOMER"
@@ -88,12 +89,12 @@ const NewOrderPage: React.FC = () => {
   });
 
   // --- Mutations ---
-  const createOrderMutation = useMutation<Order, Error, NewOrderFormData>({
+  const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
     mutationFn: (formData) => createOrder(formData, allServiceOfferings),
-    onSuccess: (data) => {
-      toast.success(t('orderCreatedSuccess', { ns: 'orders', orderNumber: data.order_number }));
+    onSuccess: (response) => {
+      const order = handleOrderResponse(response, t('orderCreatedSuccess', { ns: 'orders', orderNumber: response.order.order_number }));
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      navigate(`/orders/${data.id}`);
+      navigate(`/orders/${order.id}`);
     },
     onError: (error) => { toast.error(error.message || t('orderCreationFailed', { ns: 'orders' })); }
   });

@@ -60,6 +60,24 @@ import { useEffect, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 
+// Type declaration for Echo
+declare global {
+  interface Window {
+    Echo: {
+      connector: {
+        pusher: {
+          connection: {
+            state: string;
+            bind: (event: string, callback: (...args: unknown[]) => void) => void;
+            unbind: (event: string, callback: (...args: unknown[]) => void) => void;
+          };
+          connect: () => void;
+        };
+      };
+    };
+  }
+}
+
 // Icon mapping for navigation items
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Home,
@@ -135,7 +153,7 @@ const MainLayout: React.FC = () => {
   const toggleCollapsible = (itemId: number) => {
     setCollapsedStates(prev => ({
       ...prev,
-      [itemId]: !prev[itemId]
+      [itemId]: !(prev[itemId] !== undefined ? prev[itemId] : true) // Default to true (collapsed)
     }));
   };
 
@@ -271,7 +289,7 @@ const MainLayout: React.FC = () => {
       const isSubItemActive = hasChildren && item.children?.some(child => 
         location.pathname === child.route
       );
-      const isCollapsed = collapsedStates[item.id] || false;
+      const isCollapsed = collapsedStates[item.id] !== undefined ? collapsedStates[item.id] : true; // Default to true (collapsed)
 
       if (hasChildren) {
         return collapsed ? (
@@ -461,7 +479,7 @@ const RealtimeLamp: React.FC = () => {
   const [reconnectStatus, setReconnectStatus] = useState<'idle'|'reconnecting'|'success'|'failed'>('idle');
 
   useEffect(() => {
-    let echo = (window as any).Echo;
+    const echo = window.Echo;
     if (!echo || !echo.connector) return;
     const pusher = echo.connector.pusher;
     if (!pusher) return;
@@ -478,8 +496,12 @@ const RealtimeLamp: React.FC = () => {
         }
       }
     };
-    const handleEvent = (event: any) => {
-      setLastEvent(event.type || String(event));
+    const handleEvent = (...args: unknown[]) => {
+      const event = args[0];
+      const eventString = typeof event === 'object' && event && 'type' in event && typeof event.type === 'string' 
+        ? event.type 
+        : String(event);
+      setLastEvent(eventString);
     };
     updateStatus();
     pusher.connection.bind('state_change', updateStatus);
@@ -491,7 +513,7 @@ const RealtimeLamp: React.FC = () => {
   }, [showReconnectDialog, reconnectStatus]);
 
   const handleReconnect = () => {
-    let echo = (window as any).Echo;
+    const echo = window.Echo;
     console.log(echo,'echo');
     if (echo && echo.connector && echo.connector.pusher) {
       setShowReconnectDialog(true);

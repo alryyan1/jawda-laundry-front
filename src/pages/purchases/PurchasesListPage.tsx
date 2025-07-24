@@ -8,7 +8,7 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -41,6 +41,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -108,7 +111,12 @@ const PurchasesListPage: React.FC = () => {
   const [filters, setFilters] = useState<{
     status?: string;
     supplier_id?: string;
-  }>({});
+    date_from?: string;
+    date_to?: string;
+  }>({
+    date_from: format(subDays(new Date(), 7), "yyyy-MM-dd"),
+    date_to: format(new Date(), "yyyy-MM-dd"),
+  });
   const [itemToDelete, setItemToDelete] = useState<Purchase | null>(null);
   const itemsPerPage = 15;
 
@@ -285,9 +293,124 @@ const PurchasesListPage: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          {/* TODO: Add Date Range Picker here for purchase_date */}
+          {/* Date Range Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">
+                {t("dateFrom", { ns: "common" })}
+              </Label>
+              <Input
+                type="date"
+                value={filters.date_from || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    date_from: e.target.value || undefined,
+                  }))
+                }
+                className="w-full sm:w-[180px]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs text-muted-foreground">
+                {t("dateTo", { ns: "common" })}
+              </Label>
+              <Input
+                type="date"
+                value={filters.date_to || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    date_to: e.target.value || undefined,
+                  }))
+                }
+                className="w-full sm:w-[180px]"
+              />
+            </div>
+          </div>
+
+          {/* Quick Date Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  date_from: format(subDays(new Date(), 7), "yyyy-MM-dd"),
+                  date_to: format(new Date(), "yyyy-MM-dd"),
+                }))
+              }
+            >
+              {t("last7Days", { ns: "common" })}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  date_from: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+                  date_to: format(new Date(), "yyyy-MM-dd"),
+                }))
+              }
+            >
+              {t("last30Days", { ns: "common" })}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setFilters((prev) => ({
+                  ...prev,
+                  date_from: undefined,
+                  date_to: undefined,
+                }))
+              }
+            >
+              {t("clearDates", { ns: "common" })}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({})}
+              className="ml-auto"
+            >
+              {t("clearAllFilters", { ns: "common" })}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Filter Summary */}
+      {(filters.status || filters.supplier_id || filters.date_from || filters.date_to) && (
+        <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">{t("activeFilters", { ns: "common" })}:</span>
+            {filters.status && (
+              <Badge variant="secondary" className="text-xs">
+                {t("status")}: {t(`status_${filters.status}`, { ns: "purchases" })}
+              </Badge>
+            )}
+            {filters.supplier_id && (
+              <Badge variant="secondary" className="text-xs">
+                {t("supplier", { ns: "purchases" })}: {suppliers.find(s => s.id.toString() === filters.supplier_id)?.name}
+              </Badge>
+            )}
+            {filters.date_from && (
+              <Badge variant="secondary" className="text-xs">
+                {t("dateFrom", { ns: "common" })}: {format(new Date(filters.date_from), "PPP")}
+              </Badge>
+            )}
+            {filters.date_to && (
+              <Badge variant="secondary" className="text-xs">
+                {t("dateTo", { ns: "common" })}: {format(new Date(filters.date_to), "PPP")}
+              </Badge>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-md border">
         <Table>

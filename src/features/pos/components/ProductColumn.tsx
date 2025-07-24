@@ -5,12 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
+import { getProductTypeInventory } from "@/api/inventoryService";
 import { useDebounce } from "@/hooks/useDebounce";
 
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search } from "lucide-react";
+import { Search, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- MUI Import ---
@@ -66,6 +67,11 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: inventoryData = {} } = useQuery({
+    queryKey: ["productTypeInventory"],
+    queryFn: getProductTypeInventory,
   });
 
   const filteredProducts = useMemo(() => {
@@ -153,6 +159,27 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                             <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
                               {product.name}
                             </span>
+                            {/* Inventory Quantity Display */}
+                            {inventoryData[product.id] && (
+                              <div className="mt-1 text-xs flex items-center justify-center gap-1">
+                                <Package className="h-3 w-3 text-muted-foreground" />
+                                <span className={`font-medium ${
+                                  inventoryData[product.id].current_stock <= 0 
+                                    ? 'text-red-500' 
+                                    : inventoryData[product.id].current_stock <= 5 
+                                    ? 'text-orange-500' 
+                                    : 'text-green-600'
+                                }`}>
+                                  {inventoryData[product.id].current_stock} {inventoryData[product.id].unit}
+                                </span>
+                                {inventoryData[product.id].current_stock <= 0 && (
+                                  <span className="ml-1 text-red-500 font-semibold">(Out of Stock)</span>
+                                )}
+                                {inventoryData[product.id].current_stock > 0 && inventoryData[product.id].current_stock <= 5 && (
+                                  <span className="ml-1 text-orange-500 font-semibold">(Low Stock)</span>
+                                )}
+                              </div>
+                            )}
                           </button>
                         </Badge>
                       </TooltipTrigger>

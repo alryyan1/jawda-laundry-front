@@ -23,7 +23,8 @@ import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice, getTodayOrders, updateOrder } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice, getTodayOrders, updateOrder, OrderResponseWithWarnings } from "@/api/orderService";
+import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -161,10 +162,10 @@ const POSPage: React.FC = () => {
 
 
 
-  const createOrderMutation = useMutation({
+  const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
     mutationFn: (orderData: NewOrderFormData) => createOrder(orderData, allServiceOfferings),
-    onSuccess: async (createdOrder) => {
-      toast.success(t("orderCreatedSuccessfully", { ns: "orders" }));
+    onSuccess: async (response) => {
+      const createdOrder = handleOrderResponse(response, t("orderCreatedSuccessfully", { ns: "orders" }));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
@@ -207,18 +208,16 @@ const POSPage: React.FC = () => {
 
   // Mutation for updating order status
   const updateStatusMutation = useMutation<
-    Order,
+    OrderResponseWithWarnings,
     Error,
     { orderId: string | number; status: OrderStatus }
   >({
     mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
-    onSuccess: async (updatedOrder) => {
-      toast.success(
-        t("orderStatusUpdatedSuccess", {
-          ns: "orders",
-          status: t(`status_${updatedOrder.status}`, { ns: "orders" }),
-        })
-      );
+    onSuccess: async (response) => {
+      const updatedOrder = handleOrderResponse(response, t("orderStatusUpdatedSuccess", {
+        ns: "orders",
+        status: t(`status_${response.order.status}`, { ns: "orders" }),
+      }));
       queryClient.setQueryData(["order", updatedOrder.id], updatedOrder);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
@@ -1140,7 +1139,7 @@ const POSPage: React.FC = () => {
           {/* Today's Orders Column - Always visible */}
           <TodayOrdersColumn
             onOrderSelect={handleOrderSelect}
-            selectedOrderId={selectedOrder?.id.toString()}
+            selectedOrderId={selectedOrder?.id?.toString() || undefined}
             isOrderViewMode={!!selectedOrder}
             onNewOrder={() => {
               setSelectedOrder(null);
@@ -1172,7 +1171,7 @@ const POSPage: React.FC = () => {
         isOpen={isTodayOrdersOpen}
         onOpenChange={setIsTodayOrdersOpen}
         onOrderSelect={handleOrderSelect}
-        selectedOrderId={selectedOrder?.id.toString()}
+        selectedOrderId={selectedOrder?.id?.toString() || undefined}
       />
 
       <PdfPreviewDialog

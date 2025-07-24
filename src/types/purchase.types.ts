@@ -4,7 +4,7 @@ import type { User, Supplier } from '@/types';
 export interface PurchaseItem {
     id: number;
     purchase_id: number;
-    item_name: string;
+    product_type_id: number;
     description?: string | null;
     quantity: number;
     unit?: string | null;
@@ -34,7 +34,7 @@ export interface Purchase {
 // For the New/Edit Purchase Form
 export interface PurchaseItemFormData {
     id: string; // Client-side UUID
-    item_name: string;
+    product_type_id: string;
     description?: string;
     quantity: number | string;
     unit?: string;

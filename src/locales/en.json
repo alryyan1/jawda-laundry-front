@@ -65,6 +65,14 @@
     "pagination": {
       "showingItems": "Showing {{first}} to {{last}} of {{total}} results"
     },
+    "dateFrom": "From Date",
+    "dateTo": "To Date",
+    "pickADate": "Pick a date",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "clearDates": "Clear Dates",
+    "clearAllFilters": "Clear All Filters",
+    "activeFilters": "Active Filters",
     "tableHeaders": {
       "display_name": "Display Name",
       "productCategory": "Product Category",

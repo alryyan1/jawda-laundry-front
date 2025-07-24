@@ -24,6 +24,9 @@ import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPag
 import KanbanPage from "@/pages/orders/KanbanPage";
 import POSPage from '@/pages/pos/POSPage';
 import DiningManagementPage from '@/pages/dining/DiningManagementPage';
+import NewInventoryItemPage from '@/pages/inventory/NewInventoryItemPage';
+import ViewInventoryItemPage from '@/pages/inventory/ViewInventoryItemPage';
+import EditInventoryItemPage from '@/pages/inventory/EditInventoryItemPage';
 
 // Test Error Page for demonstrating ErrorBoundary
 const TestErrorPage = React.lazy(() => import("@/pages/TestErrorPage"));
@@ -36,6 +39,12 @@ const SuppliersListPage = React.lazy(() => import('@/pages/suppliers/SuppliersLi
 const SettingsPage = React.lazy(() => import("@/pages/admin/SettingsPage"));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage"));
 const ExpensesListPage = React.lazy(() => import('@/pages/expenses/ExpensesListPage'));
+
+// Inventory Pages
+const InventoryDashboard = React.lazy(() => import('@/pages/inventory/InventoryDashboard'));
+const InventoryManagement = React.lazy(() => import('@/pages/inventory/InventoryManagement'));
+const InventoryTransactions = React.lazy(() => import('@/pages/inventory/InventoryTransactions'));
+const InventoryCategories = React.lazy(() => import('@/pages/inventory/InventoryCategories'));
 
 // Purchase Pages
 const PurchasesListPage = React.lazy(() => import('@/pages/purchases/PurchasesListPage'));
@@ -489,6 +498,73 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <EditOrderPage />
+              </React.Suspense>
+            ),
+          },
+          // Inventory Routes
+          {
+            path: "inventory",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <InventoryDashboard />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/items",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <InventoryManagement />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/items/new",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ErrorBoundary componentName="NewInventoryItemPage">
+                  <NewInventoryItemPage />
+                </ErrorBoundary>
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/items/:id",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ViewInventoryItemPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/items/:id/view",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ViewInventoryItemPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/items/:id/edit",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <EditInventoryItemPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/transactions",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <InventoryTransactions />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "inventory/categories",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <InventoryCategories />
               </React.Suspense>
             ),
           },

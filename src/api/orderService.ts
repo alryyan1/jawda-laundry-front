@@ -91,11 +91,20 @@ export const getOrderById = async (id: string | number): Promise<Order> => {
 };
 
 /**
+ * Response type for order creation with warnings
+ */
+export interface OrderResponseWithWarnings {
+    order: Order;
+    warnings?: string[];
+    message?: string;
+}
+
+/**
  * Creates a new order.
  * @param orderData Data from the frontend form.
  * @param serviceOfferingsList Full list of available service offerings (used to find offering ID).
  */
-export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOfferingsList: ServiceOffering[]): Promise<Order> => {
+export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOfferingsList: ServiceOffering[]): Promise<OrderResponseWithWarnings> => {
     console.log('Creating order with data:', orderData);
     console.log('Available service offerings:', serviceOfferingsList);
 
@@ -134,8 +143,14 @@ export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOf
 
     console.log('Final payload:', payload);
 
-    const { data } = await apiClient.post<{ data: Order }>('/orders', payload);
-    return data.data;
+    const { data } = await apiClient.post<OrderResponseWithWarnings | { data: Order }>('/orders', payload);
+    
+    // Handle both response formats (with warnings or without)
+    if ('warnings' in data) {
+        return data as OrderResponseWithWarnings;
+    } else {
+        return { order: data.data };
+    }
 };
 
 
@@ -145,9 +160,15 @@ export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOf
 /**
  * Updates the status of a specific order.
  */
-export const updateOrderStatus = async (orderId: string | number, status: OrderStatus): Promise<Order> => {
-    const { data } = await apiClient.patch<{ data: Order }>(`/orders/${orderId}/status`, { status });
-    return data.data;
+export const updateOrderStatus = async (orderId: string | number, status: OrderStatus): Promise<OrderResponseWithWarnings> => {
+    const { data } = await apiClient.patch<OrderResponseWithWarnings | { data: Order }>(`/orders/${orderId}/status`, { status });
+    
+    // Handle both response formats (with warnings or without)
+    if ('warnings' in data) {
+        return data as OrderResponseWithWarnings;
+    } else {
+        return { order: data.data };
+    }
 };
 
 /**
@@ -252,7 +273,7 @@ export const updateOrder = async (
     orderId: string | number,
     orderData: FrontendNewOrderFormData, // Same structure as NewOrderFormData
     allServiceOfferings: ServiceOffering[]
-): Promise<Order> => {
+): Promise<OrderResponseWithWarnings> => {
     const itemsPayload = prepareOrderItemsPayload(orderData.items, allServiceOfferings);
 
     const payload: BackendOrderPayload = { // BackendOrderPayload should allow optional fields for update
@@ -264,8 +285,14 @@ export const updateOrder = async (
         // status: orderData.status, // If status is edited on this page
     };
 
-    const { data } = await apiClient.put<{ data: Order }>(`/orders/${orderId}`, payload);
-    return data.data;
+    const { data } = await apiClient.put<OrderResponseWithWarnings | { data: Order }>(`/orders/${orderId}`, payload);
+    
+    // Handle both response formats (with warnings or without)
+    if ('warnings' in data) {
+        return data as OrderResponseWithWarnings;
+    } else {
+        return { order: data.data };
+    }
 };
 
 

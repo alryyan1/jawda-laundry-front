@@ -9,6 +9,7 @@ const preparePayload = (formData: Partial<PurchaseFormData>) => {
     if (payload.items) {
         payload.items = payload.items.map(item => ({
             ...item,
+            product_type_id: Number(item.product_type_id) || 0,
             quantity: Number(item.quantity) || 0,
             unit_price: Number(item.unit_price) || 0,
         }));

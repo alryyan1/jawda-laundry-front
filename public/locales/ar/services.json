@@ -236,5 +236,6 @@
   "multipleOfferings": "عروض خدمة متعددة",
   "multipleOfferingsLegend": "عروض خدمة متعددة (تعديل السعر معطل)",
   "offeringsCount": "عدد العروض",
-  "searchingFor": "البحث عن"
+  "searchingFor": "البحث عن",
+  "inventoryItemHint": "ربط نوع المنتج هذا بعنصر مخزون لخصم المخزون تلقائياً عند إكمال الطلبات."
 }
