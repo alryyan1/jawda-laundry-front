@@ -1,6 +1,6 @@
 {
-  "diningManagement": "Dining Management",
-  "diningManagementDescription": "Manage dining tables, reservations, and orders",
+  "diningManagement": "Store Management",
+  "diningManagementDescription": "Manage store tables, reservations, and orders",
   "tables": "Tables",
   "reservations": "Reservations",
   "addTable": "Add Table",

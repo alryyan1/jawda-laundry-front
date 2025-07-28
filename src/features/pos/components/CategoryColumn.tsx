@@ -41,14 +41,14 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
 
   return (
     <TooltipProvider>
-      <ScrollArea className="h-[calc(100vh-13rem)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-1 gap-2 p-2">
+      <ScrollArea className="h-[calc(100vh-100px)]">
+        <div className="grid grid-cols-1 gap-2 p-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => onSelectCategory("")}
                 className={cn(
-                  "flex flex-col items-center justify-center h-[95px] rounded-lg transition-all cursor-pointer",
+                  "flex flex-col items-center justify-center rounded-lg transition-all cursor-pointer",
                   "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5",
                   selectedCategoryId === "" || !selectedCategoryId
                     ? "from-sky-400 to-sky-600 text-white border-2 border-sky-500 ring-2 ring-sky-400/30"
@@ -62,7 +62,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 <div className="w-20 h-20 mb-2 rounded-lg bg-white/90 flex items-center justify-center">
                   <span className="text-2xl">🏷️</span>
                 </div>
-                <span className="text-sm font-medium line-clamp-1 px-3">
+                <span className="text-sm font-medium line-clamp-1 px-2">
                   {t("allCategories", { ns: "common" })}
                 </span>
               </button>
@@ -78,7 +78,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
               <button
                 onClick={() => onSelectCategory(category.id.toString())}
                 className={cn(
-                  "flex flex-col   rounded-lg transition-all cursor-pointer",
+                  "flex flex-col h-[100px]    rounded-lg transition-all cursor-pointer",
                   "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5",
                   selectedCategoryId === category.id.toString()
                     ? "from-sky-400 to-sky-600 text-white  ring-sky-400/30"
@@ -95,11 +95,11 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                       <img 
                         src={category.image_url} 
                         alt={category.name}
-                        className="w-full h-full object-cover scale-150"
+                        className="w-full h-full object-contain "
                         style={{ objectPosition: 'center' }}
                       />
                       <span
-                        className="absolute left-1/2 bottom-2 whitespace-nowrap text-ellipsis overflow-hidden  -translate-x-1/2 px-2 py-1 bg-white/80 border border-gray-300 rounded text-xs font-semibold text-gray-800 shadow"
+                        className="absolute left-1/2 bottom-2 whitespace-nowrap overflow-visible -translate-x-1/2 px-4 py-1 bg-white/80 border border-gray-300 rounded text-xs font-semibold text-gray-800 shadow"
                         style={{ pointerEvents: 'none' }}
                       >
                         {category.name}

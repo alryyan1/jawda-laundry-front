@@ -146,6 +146,8 @@ export const router = createHashRouter([
       </ErrorBoundary>
     ), // MainLayout itself is not protected here, but its Outlet will be.
     children: [
+      // --- PUBLIC ROUTE: MenuPage ---
+    
       {
         element: (
           <ErrorBoundary componentName="ProtectedRoute">
@@ -443,14 +445,6 @@ export const router = createHashRouter([
             ),
           },
           {
-            path: "menu",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <MenuPage />
-              </React.Suspense>
-            ),
-          },
-          {
             path: "service-offerings/new",
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
@@ -582,6 +576,14 @@ export const router = createHashRouter([
     ],
   },
   {
+    path: "menu",
+    element: (
+      <React.Suspense fallback={<RouteSuspenseFallback />}>
+        <MenuPage />
+      </React.Suspense>
+    ),
+  },
+  {
     // Authentication routes (use AuthLayout, typically not protected by ProtectedRoute)
     path: "/auth",
     element: (
@@ -600,6 +602,7 @@ export const router = createHashRouter([
           </React.Suspense>
         ),
       },
+      
       {
         path: "register",
         element: (

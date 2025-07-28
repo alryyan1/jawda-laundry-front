@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, SlidersHorizontal, Coffee, Tag, Search, X } from 'lucide-react';
+import { Loader2, SlidersHorizontal, Shirt, Tag, Search, X } from 'lucide-react';
 
 const ServiceOfferingsListPage: React.FC = () => {
     const { t } = useTranslation(['common', 'services']);
@@ -46,7 +46,7 @@ const ServiceOfferingsListPage: React.FC = () => {
                 <div className="flex items-center justify-center gap-3">
                     <Avatar className="h-10 w-10 rounded-md">
                         <AvatarImage src={productType.image_url || undefined} alt={productType.name} />
-                        <AvatarFallback className="rounded-md bg-muted"><Coffee className="h-5 w-5 text-muted-foreground" /></AvatarFallback>
+                        <AvatarFallback className="rounded-md bg-muted"><Shirt className="h-5 w-5 text-muted-foreground" /></AvatarFallback>
                     </Avatar>
                     <div>
                         <div className="font-medium">{productType.name}</div>

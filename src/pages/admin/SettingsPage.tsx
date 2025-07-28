@@ -5,7 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "@/context/SettingsContext";
+import { useTheme } from "@/context/ThemeContext";
 import type { AppSettings } from "@/services/settingService";
+import { getThemeColor } from "@/lib/colors";
 
 // shadcn/ui & Lucide Icons
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Import WhatsApp Settings Component
 import WhatsAppSettings from "./components/WhatsAppSettings";
 import { LogoUpload } from "@/components/ui/logo-upload";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 // --- Zod Schema for Settings Form (Matches AppSettings keys) ---
 // Make all fields optional for partial updates, but RHF will use defaultValues
@@ -74,6 +77,12 @@ const settingsFormSchema = z.object({
   // POS settings
   pos_auto_show_pdf: z.boolean().optional(),
   pos_show_products_as_list: z.boolean().optional(),
+  // App branding settings
+  app_name: z.string().optional(),
+  app_description: z.string().optional(),
+  // Theme settings
+  theme_primary_color: z.string().optional(),
+  theme_secondary_color: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -83,6 +92,7 @@ const SettingsPage: React.FC = () => {
   const { t } = useTranslation(["settings", "common", "validation"]);
   const { settings, isLoadingSettings, updateSettings, updateLogoUrl } =
     useSettings(); // Get from context
+  const { setPrimaryColor, setSecondaryColor, primaryColor, secondaryColor } = useTheme(); // Get theme context
 
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -108,6 +118,12 @@ const SettingsPage: React.FC = () => {
       // POS settings
       pos_auto_show_pdf: false,
       pos_show_products_as_list: false,
+      // App branding settings
+      app_name: "Jawda Laundry",
+      app_description: "LAUNDRY MANAGEMENT SYSTEM",
+      // Theme settings
+      theme_primary_color: "sky",
+      theme_secondary_color: "blue",
     },
   });
   const {
@@ -139,9 +155,23 @@ const SettingsPage: React.FC = () => {
         // POS settings
         pos_auto_show_pdf: settings.pos_auto_show_pdf || false,
         pos_show_products_as_list: settings.pos_show_products_as_list || false,
+        // App branding settings
+        app_name: settings.app_name || "Jawda Laundry",
+        app_description: settings.app_description || "LAUNDRY MANAGEMENT SYSTEM",
+        // Theme settings - use theme context values if available, otherwise fall back to settings
+        theme_primary_color: settings.theme_primary_color || "sky",
+        theme_secondary_color: settings.theme_secondary_color || "blue",
       });
     }
   }, [settings, reset]); // Depend on settings
+
+  // Sync form values with theme context when theme colors change
+  useEffect(() => {
+    if (primaryColor && secondaryColor) {
+      form.setValue("theme_primary_color", primaryColor);
+      form.setValue("theme_secondary_color", secondaryColor);
+    }
+  }, [primaryColor, secondaryColor, form]);
 
   // --- Form Submission ---
   const onSubmit: SubmitHandler<SettingsFormValues> = async (data) => {
@@ -222,7 +252,7 @@ const SettingsPage: React.FC = () => {
           )}
 
           <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 {t("settings:generalSettings")}
@@ -235,6 +265,10 @@ const SettingsPage: React.FC = () => {
                 <ShoppingCart className="h-4 w-4" />
                 {t("settings:posSettings")}
               </TabsTrigger>
+              <TabsTrigger value="theme" className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
+                {t("settings:themeSettings", { defaultValue: "Theme" })}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
@@ -245,6 +279,47 @@ const SettingsPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* App Branding Section */}
+                    <FormField
+                      control={form.control}
+                      name="app_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings:appName", { defaultValue: "App Name" })}</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            {t("settings:appNameDesc", { defaultValue: "The name displayed in the app bar and login page" })}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="app_description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings:appDescription", { defaultValue: "App Description" })}</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            {t("settings:appDescriptionDesc", { defaultValue: "The description displayed on the login page" })}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="md:col-span-2">
+                      <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                        <strong>Note:</strong> The app icon in the navigation bar and login page uses the Company Logo above. 
+                        Upload or update your company logo to change the app icon.
+                      </div>
+                    </div>
+                    
+                    {/* Company Information Section */}
                     <FormField
                       control={form.control}
                       name="company_name"
@@ -448,6 +523,105 @@ const SettingsPage: React.FC = () => {
                         </FormItem>
                       )}
                     />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="theme">
+              <Card className="dark:bg-gray-900">
+                <CardHeader>
+                  <CardTitle>{t("settings:themeSettingsTitle", { defaultValue: "Theme Settings" })}</CardTitle>
+                  <CardDescription>{t("settings:themeSettingsDesc", { defaultValue: "Customize the appearance of your application with different color themes" })}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="theme_primary_color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <ColorPicker
+                            value={field.value || primaryColor || "sky"}
+                            onValueChange={(color) => {
+                              field.onChange(color);
+                              // Update theme immediately for preview
+                              setPrimaryColor(color);
+                            }}
+                            label={t("settings:primaryColor", { defaultValue: "Primary Color" })}
+                            description={t("settings:primaryColorDesc", { defaultValue: "Main color used throughout the application" })}
+                            disabled={isSubmitting}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="theme_secondary_color"
+                      render={({ field }) => (
+                        <FormItem>
+                          <ColorPicker
+                            value={field.value || secondaryColor || "blue"}
+                            onValueChange={(color) => {
+                              field.onChange(color);
+                              // Update theme immediately for preview
+                              setSecondaryColor(color);
+                            }}
+                            label={t("settings:secondaryColor", { defaultValue: "Secondary Color" })}
+                            description={t("settings:secondaryColorDesc", { defaultValue: "Accent color used for highlights and secondary elements" })}
+                            disabled={isSubmitting}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="mt-6 p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium">{t("settings:themePreview", { defaultValue: "Theme Preview" })}</h4>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Reset to default colors
+                          const defaultPrimary = "sky";
+                          const defaultSecondary = "blue";
+                          
+                          form.setValue("theme_primary_color", defaultPrimary);
+                          form.setValue("theme_secondary_color", defaultSecondary);
+                          
+                          // Update theme context immediately
+                          setPrimaryColor(defaultPrimary);
+                          setSecondaryColor(defaultSecondary);
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        {t("settings:resetToDefaults", { defaultValue: "Reset to Defaults" })}
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: form.watch("theme_primary_color") ? getThemeColor(form.watch("theme_primary_color")) : getThemeColor("sky") }}
+                          />
+                          <span className="text-sm">{t("settings:primaryColor", { defaultValue: "Primary Color" })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: form.watch("theme_secondary_color") ? getThemeColor(form.watch("theme_secondary_color")) : getThemeColor("blue") }}
+                          />
+                          <span className="text-sm">{t("settings:secondaryColor", { defaultValue: "Secondary Color" })}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {t("settings:themeNote", { defaultValue: "Changes will be applied immediately after saving. The theme affects buttons, headers, and other UI elements throughout the application." })}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

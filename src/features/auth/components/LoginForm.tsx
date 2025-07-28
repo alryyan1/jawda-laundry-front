@@ -13,28 +13,34 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { loginUser, LoginCredentials, AuthResponse } from "@/api/authService";
+import { loginUser } from "@/api/authService";
+import type { AuthResponse } from "@/api/authService";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
-// Zod schema updated for username login
-const loginSchema = z.object({
-  username: z.string().nonempty({ message: "validation.usernameRequired" }),
-  password: z.string().nonempty({ message: "validation.passwordRequired" }),
+// Create a function to get translated schema
+const createLoginSchema = (t: (key: string) => string) => z.object({
+  username: z.string().nonempty({ message: t("validation.usernameRequired") }),
+  password: z.string().nonempty({ message: t("validation.passwordRequired") }),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginFormValues = {
+  username: string;
+  password: string;
+};
 
 interface LoginFormProps {
   onLoginSuccess?: (data: AuthResponse) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
+export const LoginForm: React.FC<LoginFormProps> = () => {
   const { t } = useTranslation(["auth", "common", "validation"]);
   const navigate = useNavigate();
   const location = useLocation();
   const { login: storeLogin } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
+  const loginSchema = createLoginSchema(t);
+  
   const {
     register,
     handleSubmit,
@@ -56,11 +62,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       } else {
         throw new Error(t("error.tokenOrUserMissing", { ns: "common" }));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // The backend now returns the error on the 'username' key for invalid credentials
+      const axiosError = error as { response?: { data?: { errors?: { username?: string[] }, message?: string } } };
       const backendError =
-        error.response?.data?.errors?.username?.[0] ||
-        error.response?.data?.message;
+        axiosError.response?.data?.errors?.username?.[0] ||
+        axiosError.response?.data?.message;
       toast.error(backendError || t("loginFailed", { ns: "auth" }));
       console.error("Login failed:", error);
     }
@@ -73,7 +80,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           {t("username", { ns: "common" })}
         </Label>
         <div className="relative">
-          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 " />
           <Input
             id="login-username"
             type="text"

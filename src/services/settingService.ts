@@ -23,6 +23,12 @@ export interface AppSettings {
     // POS settings
     pos_auto_show_pdf: boolean;
     pos_show_products_as_list: boolean;
+    // App branding settings
+    app_name: string;
+    app_description: string;
+    // Theme settings
+    theme_primary_color: string;
+    theme_secondary_color: string;
     // Add other settings as defined in your config
 }
 

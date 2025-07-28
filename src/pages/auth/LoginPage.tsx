@@ -11,9 +11,7 @@ const LoginPage: React.FC = () => {
       <div className="grid gap-2 text-center">
         {/* Branding is now primarily in AuthLayout */}
         <h1 className="text-3xl font-bold">{t('loginTitle', { ns: 'auth' })}</h1>
-        <p className="text-balance text-muted-foreground">
-          {t('loginDescription', { ns: 'auth' })}
-        </p>
+       
       </div>
 
       <LoginForm /> {/* Use the extracted form component */}

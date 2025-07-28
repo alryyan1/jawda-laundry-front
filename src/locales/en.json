@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "COFFEE SHOP PRO",
+    "appName": "LAUNDRY MANAGEMENT PRO",
     "dashboard": "Dashboard",
     "orders": "Orders",
     "customers": "Customers",
@@ -353,7 +353,7 @@
     "loadingProductTypes": "Loading product types...",
     "pricePerSqMeter": "Price per sq meter",
     "loadingServiceActions": "Loading service actions...",
-    "egServiceActionName": "e.g., Brew Coffee, Steam Milk",
+    "egServiceActionName": "e.g., Wash Clothes, Iron Garments",
     "quoteFailedForItem": "Failed to generate quote for this item.",
     "itemQuote": "Item Quote",
     "enterDetailsForQuote": "Please enter the necessary details to get a quote.",
@@ -397,7 +397,7 @@
     "haveAccount": "Already have an account?",
     "forgotPasswordQuestion": "Forgot your password?",
     "backToLogin": "Back to Login",
-    "appSubtitle": "COFFEE SHOP MANAGER",
+    "appSubtitle": "LAUNDRY MANAGEMENT SYSTEM",
     "emailPlaceholder": "name@example.com",
     "passwordPlaceholder": "Enter your password",
     "namePlaceholder": "e.g., John Doe",

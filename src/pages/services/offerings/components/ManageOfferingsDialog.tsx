@@ -4,14 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input'; // For inline editing
 import { Switch } from '@/components/ui/switch'; // For inline editing
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 
-// MUI Autocomplete imports
+// MUI imports
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -41,6 +43,15 @@ const muiTheme = createTheme({
     },
   },
   components: {
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: '0.5rem',
+          maxWidth: '90vw',
+          width: '1200px',
+        },
+      },
+    },
     MuiAutocomplete: {
       styleOverrides: {
         root: {
@@ -49,7 +60,7 @@ const muiTheme = createTheme({
           },
         },
         popper: {
-          zIndex: 1500, // Higher than dialog z-index
+          zIndex: 9999, // Much higher than dialog z-index
         },
       },
     },
@@ -124,45 +135,51 @@ const OfferingRow: React.FC<{
         <TableRow>
             <TableCell className="font-medium text-center">{offering.serviceAction?.name}</TableCell>
             <TableCell className="text-center">
-                {isDimensionBased ? (
-                    <Input
-                        onFocus={(e) => e.target.select()}
-                        type="number"
-                        step="0.01"
-                        value={pricePerSqMeter}
-                        onChange={(e) => handlePricePerSqMeterChange(e.target.value)}
-                        className="h-8 max-w-[120px]"
-                        // disabled={isUpdating}
-                    />
-                ) : (
-                    <Input
-                        onFocus={(e) => e.target.select()}
-                        type="number"
-                        step="0.01"
-                        value={price}
-                        onChange={(e) => handlePriceChange(e.target.value)}
-                        className="h-8 max-w-[120px]"
-                        // disabled={isUpdating}
-                    />
-                )}
+                <div className="flex justify-center">
+                    {isDimensionBased ? (
+                        <Input
+                            onFocus={(e) => e.target.select()}
+                            type="number"
+                            step="0.01"
+                            value={pricePerSqMeter}
+                            onChange={(e) => handlePricePerSqMeterChange(e.target.value)}
+                            className="h-8 max-w-[120px]"
+                            // disabled={isUpdating}
+                        />
+                    ) : (
+                        <Input
+                            onFocus={(e) => e.target.select()}
+                            type="number"
+                            step="0.01"
+                            value={price}
+                            onChange={(e) => handlePriceChange(e.target.value)}
+                            className="h-8 max-w-[120px]"
+                            // disabled={isUpdating}
+                        />
+                    )}
+                </div>
             </TableCell>
             <TableCell className="text-center w-[120px]">
-                <Switch
-                    checked={isActive}
-                    onCheckedChange={handleActiveChange}
-                    disabled={isUpdating}
-                />
+                <div className="flex justify-center">
+                    <Switch
+                        checked={isActive}
+                        onCheckedChange={handleActiveChange}
+                        disabled={isUpdating}
+                    />
+                </div>
             </TableCell>
             <TableCell className="text-center">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => onDelete(offering)}
-                    disabled={isUpdating}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex justify-center">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(offering)}
+                        disabled={isUpdating}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
             </TableCell>
         </TableRow>
     )
@@ -282,12 +299,19 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
 
     return (
         <ThemeProvider theme={muiTheme}>
-            <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-[90vw] w-[1200px] sm:max-w-[90vw] md:max-w-[90vw] z-[1000]">
-                    <DialogHeader>
-                        <DialogTitle>{productType.name}</DialogTitle>
-                        <DialogDescription>{t('manageOfferingsDescription', { ns: 'services' })}</DialogDescription>
-                    </DialogHeader>
+            <Dialog 
+                open={isOpen} 
+                onClose={() => onOpenChange(false)}
+                maxWidth={false}
+                fullWidth
+            >
+                <DialogContent sx={{ p: 3 }}>
+                    <DialogTitle sx={{ pb: 1 }}>
+                        {productType.name}
+                    </DialogTitle>
+                    <div className="text-sm text-muted-foreground mb-4">
+                        {t('manageOfferingsDescription', { ns: 'services' })}
+                    </div>
                     
                     {/* Add Service Action Section */}
                     <div className="my-4 space-y-4">
@@ -315,6 +339,12 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
                                     onChange={(_, newValue) => setSelectedServiceAction(newValue)}
                                     loading={isLoadingServiceActions}
                                     disabled={isMutating}
+                                    disablePortal={false}
+                                    slotProps={{
+                                        popper: {
+                                            style: { zIndex: 9999 }
+                                        }
+                                    }}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
@@ -347,7 +377,7 @@ export const ManageOfferingsDialog: React.FC<ManageOfferingsDialogProps> = ({ is
                                     <TableHead className='text-center'>{t('serviceAction', { ns: 'services' })}</TableHead>
                                     <TableHead className='text-center'>{productType.is_dimension_based ? t('pricePerSqMeter', {ns:'services'}) : t('pricePerItem', {ns:'services'})}</TableHead>
                                     <TableHead className="text-center">{t('active')}</TableHead>
-                                    <TableHead className="text-center rtl:text-left w-[120px]">{t('actions')}</TableHead>
+                                    <TableHead className="text-center w-[120px]">{t('actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

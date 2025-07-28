@@ -61,7 +61,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   // Ensure customerTypesArray is always an array
   const customerTypesArray = Array.isArray(customerTypes) ? customerTypes : [];
 
-  const { control, register, handleSubmit, formState: { errors }, setValue, reset, watch } = useForm<CustomerFormData>({
+  const { control, register, handleSubmit, formState: { errors }, setValue, reset } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: { name: '', phone: '', address: '', notes: '', customer_type_id: '', is_default: false },
   });
@@ -199,7 +199,11 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         isOpen={isTypeModalOpen}
         onOpenChange={setIsTypeModalOpen}
         onSuccess={(newType) => {
-          setValue('customer_type_id', newType.id.toString(), { shouldDirty: true });
+          // Handle the response structure where data might be nested
+          const typeId = newType?.id || (newType as { data?: { id: number } })?.data?.id;
+          if (typeId) {
+            setValue('customer_type_id', typeId.toString(), { shouldDirty: true });
+          }
         }}
       />
     </>

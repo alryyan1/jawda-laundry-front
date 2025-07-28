@@ -18,9 +18,13 @@ const MenuPage: React.FC = () => {
   });
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto px-4 py-6 max-w-7xl h-full">
       <h1 className="text-2xl font-bold mb-6">{t('menuPageTitle', { ns: 'services', defaultValue: 'Service Menu' })}</h1>
-      <div className="flex gap-6 min-h-[60vh]">
+      
+    
+
+      {/* Desktop Layout: Side by side */}
+      <div className=" flex gap-6  scroll-auto">
         {/* Left: CategoryColumn */}
         <div className="w-64 shrink-0">
           <CategoryColumn
@@ -29,14 +33,14 @@ const MenuPage: React.FC = () => {
           />
         </div>
         {/* Right: ProductType Grid */}
-        <div className="flex-1">
+        <div className="flex-1 h-[calc(100vh-100px)] overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-64 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
               {t('loadingProductTypes', { ns: 'services' })}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {productTypes.length === 0 ? (
                 <div className="col-span-full text-center text-muted-foreground text-lg py-12">
                   {t('noProductTypesFound', { ns: 'services', defaultValue: 'No products found for this category.' })}

@@ -105,5 +105,19 @@
     "posAutoShowPdf": "Auto-show PDF after order completion",
     "posAutoShowPdfDesc": "Automatically display the PDF receipt after an order is completed",
     "posShowProductsAsList": "Show products as list instead of grid",
-    "posShowProductsAsListDesc": "Display products in a list format without images instead of the grid layout"
+    "posShowProductsAsListDesc": "Display products in a list format without images instead of the grid layout",
+    "appName": "App Name",
+    "appNameDesc": "The name displayed in the app bar and login page",
+    "appDescription": "App Description",
+    "appDescriptionDesc": "The description displayed on the login page",
+    "themeSettings": "Theme",
+    "themeSettingsTitle": "Theme Settings",
+    "themeSettingsDesc": "Customize the appearance of your application with different color themes",
+    "primaryColor": "Primary Color",
+    "primaryColorDesc": "Main color used throughout the application",
+    "secondaryColor": "Secondary Color",
+    "secondaryColorDesc": "Accent color used for highlights and secondary elements",
+    "themePreview": "Theme Preview",
+    "themeNote": "Changes will be applied immediately after saving. The theme affects buttons, headers, and other UI elements throughout the application.",
+    "resetToDefaults": "Reset to Defaults"
 }

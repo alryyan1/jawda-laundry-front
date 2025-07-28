@@ -8,6 +8,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { materialColors } from "@/lib/colors";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useTheme } from "@/context/ThemeContext";
 
 import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, OrderStatus, PricingStrategy } from '@/types';
 import type { DiningTable } from '@/types/dining.types';
@@ -23,7 +24,8 @@ import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice, getTodayOrders, updateOrder, OrderResponseWithWarnings } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice, getTodayOrders, updateOrder } from "@/api/orderService";
+import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
@@ -34,6 +36,7 @@ import { getTodayDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -105,6 +108,7 @@ const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
   const { can } = useAuth();
+  const { getPrimaryColor, getSecondaryColor } = useTheme();
   
   // Initialize real-time updates
   useRealtimeUpdates();
@@ -585,7 +589,7 @@ const POSPage: React.FC = () => {
       const updatedOrder = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
       
       // Update the selected order with the new data
-      setSelectedOrder(updatedOrder);
+      setSelectedOrder(updatedOrder.order);
       
       // Clear the cart items
       setCartItems([]);
@@ -711,7 +715,11 @@ const POSPage: React.FC = () => {
       userSelect: 'none',
     }} className="flex flex-col h-[calc(100vh-64px)] ">
       {/* Customer Selection Bar */}
-      <div className="border-b shadow-sm bg-background flex-shrink-0" style={{ borderColor: materialColors.divider }}>
+      <div className="border-b shadow-sm flex-shrink-0" style={{ 
+        borderColor: getPrimaryColor(700),
+        backgroundColor: getPrimaryColor(),
+        boxShadow: `0 2px 4px ${getPrimaryColor(200)}40`
+      }}>
         <div className="container mx-auto px-4 py-1 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <CustomerSelection
@@ -725,7 +733,7 @@ const POSPage: React.FC = () => {
             {/* Order Type Selection - Only show when not viewing an existing order */}
             {!selectedOrder && (
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                <Label className="text-xs text-white whitespace-nowrap">
                   {t("orderType", { ns: "orders", defaultValue: "Order Type" })}:
                 </Label>
                 <Select
@@ -736,7 +744,10 @@ const POSPage: React.FC = () => {
                   }}
                   disabled={isProcessing}
                 >
-                  <SelectTrigger className="w-32 h-8">
+                  <SelectTrigger 
+                    className="w-32 h-8"
+                  
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -751,7 +762,7 @@ const POSPage: React.FC = () => {
             {/* Table Selection - Only show for in-house orders when not viewing an existing order */}
             {!selectedOrder && orderType === 'in_house' && (
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                <Label className="text-xs text-white whitespace-nowrap">
                   {t("table", { ns: "dining", defaultValue: "Table" })}:
                 </Label>
                 <Select
@@ -759,7 +770,10 @@ const POSPage: React.FC = () => {
                   onValueChange={(tableId) => setSelectedTableId(tableId || ' ')}
                   disabled={isProcessing}
                 >
-                  <SelectTrigger className="w-32 h-8">
+                  <SelectTrigger 
+                    className="w-32 h-8"
+                  
+                  >
                     <SelectValue placeholder={t("selectTable", { ns: "dining", defaultValue: "Select Table" })} />
                   </SelectTrigger>
                   <SelectContent>
@@ -793,8 +807,13 @@ const POSPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              variant="outline"
               onClick={() => setIsCalculatorOpen(true)}
+              style={{
+                backgroundColor: getSecondaryColor(),
+                borderColor: getSecondaryColor(700),
+                color: 'white'
+              }}
+              className="hover:opacity-90 transition-opacity"
             >
               <Calculator className="h-4 w-4 mr-1" />
               {t("calculator", { ns: "common", defaultValue: "Calculator" })}
@@ -813,10 +832,18 @@ const POSPage: React.FC = () => {
               {/* Table Display - Show when order has a dining table */}
               {(selectedOrder.dining_table || selectedOrder.dining_table_id) && (
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                  <Label className="text-xs text-white whitespace-nowrap">
                     {t("table", { ns: "dining", defaultValue: "Table" })}:
                   </Label>
-                  <Badge variant="outline" className="text-xs px-2 py-1 bg-primary/10 border-primary/30 text-primary">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs px-2 py-1"
+                    style={{
+                      backgroundColor: getSecondaryColor(50),
+                      borderColor: getSecondaryColor(300),
+                      color: getSecondaryColor(700)
+                    }}
+                  >
                     {selectedOrder.dining_table ? (
                       `${selectedOrder.dining_table.name} (${selectedOrder.dining_table.capacity} ${t("seats", { ns: "dining", defaultValue: "seats" })})`
                     ) : (
@@ -829,7 +856,7 @@ const POSPage: React.FC = () => {
               {/* Status Change Select */}
               {can("order:update-status") && (
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                  <Label className="text-xs text-white whitespace-nowrap">
                     {t("changeStatus", { ns: "orders" })}:
                   </Label>
                   <Select
@@ -839,7 +866,13 @@ const POSPage: React.FC = () => {
                     }
                     disabled={updateStatusMutation.isPending || selectedOrder.status === 'completed' || selectedOrder.status === 'cancelled'}
                   >
-                    <SelectTrigger className="w-32 h-8">
+                    <SelectTrigger 
+                      className="w-32 h-8"
+                      style={{
+                        borderColor: getSecondaryColor(300),
+                        backgroundColor: getSecondaryColor(50)
+                      }}
+                    >
                       <SelectValue
                         placeholder={t("changeStatus", { ns: "orders" })}
                       />
@@ -861,8 +894,13 @@ const POSPage: React.FC = () => {
               {/* Print and Download Buttons */}
               <Button
                 size="sm"
-                variant="outline"
                 onClick={() => setIsPdfDialogOpen(true)}
+                style={{
+                  backgroundColor: getSecondaryColor(),
+                  borderColor: getSecondaryColor(700),
+                  color: 'white'
+                }}
+                className="hover:opacity-90 transition-opacity"
               >
                 <Printer className="h-4 w-4 mr-1" />
               </Button>
@@ -873,8 +911,13 @@ const POSPage: React.FC = () => {
                 selectedOrder.status !== 'cancelled' && 
                 <Button
                   size="sm"
-                  variant="outline"
                   onClick={() => setIsPaymentModalOpen(true)}
+                  style={{
+                    backgroundColor: getSecondaryColor(),
+                    borderColor: getSecondaryColor(700),
+                    color: 'white'
+                  }}
+                  className="hover:opacity-90 transition-opacity"
                 >
                   {t("recordOrUpdatePayment", {
                     ns: "orders",
@@ -890,7 +933,12 @@ const POSPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant={selectedOrder.whatsapp_text_sent ? "default" : "outline"}
-                    className={selectedOrder.whatsapp_text_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                    style={{
+                      backgroundColor: selectedOrder.whatsapp_text_sent ? getSecondaryColor() : 'transparent',
+                      borderColor: getSecondaryColor(300),
+                      color: selectedOrder.whatsapp_text_sent ? 'white' : getSecondaryColor()
+                    }}
+                    className="hover:opacity-90 transition-opacity"
                     disabled
                   >
                     <WhatsAppIcon className="h-4 w-4 mr-1" />
@@ -900,7 +948,12 @@ const POSPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant={selectedOrder.whatsapp_pdf_sent ? "default" : "outline"}
-                    className={selectedOrder.whatsapp_pdf_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                    style={{
+                      backgroundColor: selectedOrder.whatsapp_pdf_sent ? getSecondaryColor() : 'transparent',
+                      borderColor: getSecondaryColor(300),
+                      color: selectedOrder.whatsapp_pdf_sent ? 'white' : getSecondaryColor()
+                    }}
+                    className="hover:opacity-90 transition-opacity"
                     onClick={handleSendWhatsAppInvoice}
                     disabled={sendWhatsAppInvoiceMutation.isPending}
                   >
@@ -917,16 +970,15 @@ const POSPage: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto  overflow-hidden">
+      <main className="flex-1 container mx-auto mt-1  overflow-hidden">
         <div className="flex gap-4 h-full">
           {/* iPad Layout */}
           {isIpadView ? (
             <>
               {/* Categories View */}
               {showCategoriesOnIpad && (
-                <div className="flex-1 bg-background rounded-lg shadow-sm overflow-hidden">
-                 
-                  <div className="p-4">
+                <Card className="flex-1">
+                  <CardContent className="p-4 h-full">
                     <CategoryColumn
                       onSelectCategory={(categoryId) => {
                         setSelectedCategoryId(categoryId);
@@ -934,8 +986,8 @@ const POSPage: React.FC = () => {
                       }}
                       selectedCategoryId={selectedCategoryId}
                     />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Products and Cart View */}
@@ -944,7 +996,6 @@ const POSPage: React.FC = () => {
                   {/* Back Button */}
                   <div className="absolute top-4 left-4 z-10">
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={handleBackToCategories}
                       className="flex items-center gap-2"
@@ -955,9 +1006,8 @@ const POSPage: React.FC = () => {
                   </div>
 
                   {/* Products */}
-                  <div className={`flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
-                
-                    <div className="flex-1 min-h-0">
+                  <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                    <CardContent className="flex-1 min-h-0 p-0">
                       {settings?.pos_show_products_as_list ? (
                         <ProductListColumn
                           categoryId={selectedCategoryId}
@@ -972,11 +1022,12 @@ const POSPage: React.FC = () => {
                           isIpadView={isIpadView}
                         />
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Cart */}
-                  <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
+                  <Card className="w-[400px]">
+                    <CardContent className="p-0 h-full">
                     <CartColumn
                       items={selectedOrder ? [
                         // Existing order items
@@ -1025,25 +1076,29 @@ const POSPage: React.FC = () => {
                       orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                       isReadOnly={selectedOrder?.status === 'completed'}
                     />
-                  </div>
+                    </CardContent>
+                  </Card>
                 </>
               )}
             </>
           ) : (
             <>
               {/* Desktop Layout */}
-          {/* Left Section: Categories */}
-          <div className="w-[170px] bg-background rounded-lg shadow-sm overflow-hidden">
+                        {/* Left Section: Categories */}
+              <Card className="w-[250px]">
+                <CardContent className="p-0 h-full">
             <CategoryColumn
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategoryId}
             />
-          </div>
+                </CardContent>
+              </Card>
 
           {/* Middle Section: Products and Services */}
           <div className="flex-1 flex gap-4 min-h-0">
             {/* Products */}
-            <div className={`flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                  <CardContent className="flex-1 min-h-0 p-0">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("product", { ns: "common" })}
               </h2>
@@ -1063,10 +1118,12 @@ const POSPage: React.FC = () => {
                   />
                 )}
               </div>
-            </div>
+                  </CardContent>
+                </Card>
 
             {/* Services */}
-            <div className={`flex-1 bg-background rounded-lg shadow-sm overflow-hidden flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                  <CardContent className="flex-1 min-h-0 p-0">
               <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
                 {t("serviceOffering", { ns: "common" })}
               </h2>
@@ -1079,11 +1136,13 @@ const POSPage: React.FC = () => {
                   activeOfferingId={selectedOfferingId}
                 />
               </div>
-            </div>
+                  </CardContent>
+                </Card>
           </div>
        
           {/* Right Section: Cart */}
-          <div className="w-[400px] bg-background rounded-lg shadow-sm overflow-hidden">
+              <Card className="w-[400px]">
+                <CardContent className="p-0 h-full">
             <CartColumn
               items={selectedOrder ? [
                 // Existing order items
@@ -1132,7 +1191,8 @@ const POSPage: React.FC = () => {
               orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
               isReadOnly={selectedOrder?.status === 'completed'}
             />
-          </div>
+                </CardContent>
+              </Card>
             </>
           )}
 
@@ -1218,7 +1278,6 @@ const POSPage: React.FC = () => {
               .map((offering) => (
                 <Button
                   key={offering.id}
-                  variant="outline"
                   className="w-full justify-start text-left h-auto p-4"
                   onClick={() => handleServiceOfferingSelect(offering)}
                 >

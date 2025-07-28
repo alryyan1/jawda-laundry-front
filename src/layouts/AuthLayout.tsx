@@ -2,16 +2,26 @@
 import { Outlet } from 'react-router-dom';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useTranslation } from 'react-i18next';
-import { Coffee } from 'lucide-react';
+import { Shirt } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import settingService from '@/services/settingService';
+import AppIcon from '@/components/ui/app-icon';
 
 const AuthLayout = () => {
   const { t } = useTranslation('common');
+  
+  // Fetch settings for app branding
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingService.getSettings,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   return (
     <div 
       className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative"
       style={{
-        backgroundImage: 'url(/assets/login-background.png)',
+        backgroundImage: 'url(/assets/back.jpg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -27,11 +37,18 @@ const AuthLayout = () => {
       <div className="w-full max-w-md bg-background/80 backdrop-blur-sm rounded-lg p-6 shadow-lg"> {/* Constrain width of the form container */}
         {/* Branding - Centered above the form */}
         <div className="mb-8 flex flex-col items-center">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t('appName')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('appSubtitle', { ns: 'auth', defaultValue: 'COFFEE SHOP MANAGER' })}
+          <div className="flex items-center space-x-2 mb-2">
+            <AppIcon 
+              iconUrl={settings?.company_logo_url} 
+              className="h-8 w-8" 
+              fallbackIcon={Shirt}
+            />
+            <h1 className="text-3xl font-bold tracking-tight">
+              {settings?.app_name || t('appName')}
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {settings?.app_description || t('appSubtitle', { ns: 'auth', defaultValue: 'LAUNDRY MANAGEMENT SYSTEM' })}
           </p>
         </div>
 
@@ -40,7 +57,7 @@ const AuthLayout = () => {
 
       {/* Optional: Footer */}
       <footer className="absolute bottom-6 text-center text-xs text-muted-foreground w-full">
-        © {new Date().getFullYear()} {t('appName')}. {t('allRightsReserved', { ns: 'common' })}
+        © {new Date().getFullYear()} {settings?.app_name || t('appName')}. {t('allRightsReserved', { ns: 'common' })}
       </footer>
     </div>
   );

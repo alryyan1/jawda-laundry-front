@@ -105,5 +105,19 @@
     "posAutoShowPdf": "عرض PDF تلقائياً بعد اكتمال الطلب",
     "posAutoShowPdfDesc": "عرض إيصال PDF تلقائياً بعد اكتمال الطلب",
     "posShowProductsAsList": "عرض المنتجات كقائمة بدلاً من الشبكة",
-    "posShowProductsAsListDesc": "عرض المنتجات بتنسيق قائمة بدون صور بدلاً من تخطيط الشبكة"
+    "posShowProductsAsListDesc": "عرض المنتجات بتنسيق قائمة بدون صور بدلاً من تخطيط الشبكة",
+    "appName": "اسم التطبيق",
+    "appNameDesc": "الاسم المعروض في شريط التطبيق وصفحة تسجيل الدخول",
+    "appDescription": "وصف التطبيق",
+    "appDescriptionDesc": "الوصف المعروض في صفحة تسجيل الدخول",
+    "themeSettings": "المظهر",
+    "themeSettingsTitle": "إعدادات المظهر",
+    "themeSettingsDesc": "تخصيص مظهر التطبيق بألوان مختلفة",
+    "primaryColor": "اللون الأساسي",
+    "primaryColorDesc": "اللون الرئيسي المستخدم في جميع أنحاء التطبيق",
+    "secondaryColor": "اللون الثانوي",
+    "secondaryColorDesc": "لون التمييز المستخدم للعناوين والعناصر الثانوية",
+    "themePreview": "معاينة المظهر",
+    "themeNote": "سيتم تطبيق التغييرات فوراً بعد الحفظ. يؤثر المظهر على الأزرار والعناوين وعناصر واجهة المستخدم الأخرى في جميع أنحاء التطبيق.",
+    "resetToDefaults": "إعادة تعيين إلى الافتراضي"
 }

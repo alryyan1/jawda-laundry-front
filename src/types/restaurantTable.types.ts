@@ -1,4 +1,4 @@
-export interface RestaurantTable {
+export interface ServiceTable {
   id: number;
   name: string;
   number: string;
@@ -12,7 +12,7 @@ export interface RestaurantTable {
   updated_at?: string;
 }
 
-export interface CreateRestaurantTableRequest {
+export interface CreateServiceTableRequest {
   name: string;
   number: string;
   capacity: number;
@@ -21,7 +21,7 @@ export interface CreateRestaurantTableRequest {
   is_active?: boolean;
 }
 
-export interface UpdateRestaurantTableRequest {
+export interface UpdateServiceTableRequest {
   name?: string;
   number?: string;
   capacity?: number;
@@ -30,7 +30,7 @@ export interface UpdateRestaurantTableRequest {
   is_active?: boolean;
 }
 
-export interface RestaurantTableFilters {
+export interface ServiceTableFilters {
   status?: string;
   active_only?: boolean;
   available_only?: boolean;

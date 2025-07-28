@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
   X,
@@ -64,7 +65,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
 
   // Get currency from settings, fallback to USD
-  const currency = getSetting('currency_symbol', 'USD');
+  const currency = getSetting('currency_symbol', 'OMR');
 
   const isDimensionBased = item.productType.is_dimension_based;
 
@@ -79,7 +80,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
 
   return (
     <>
-      <div
+      <div dir={i18n.language === "ar" ? "rtl" : "ltr"}
         className={cn(
           "relative rounded-lg border bg-card text-card-foreground shadow-sm",
           item._isQuoting && "opacity-70 pointer-events-none"
@@ -88,10 +89,10 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
         {/* Header */}
         <div className="flex items-start justify-between p-3 border-b">
           <div className="flex-1 pr-2">
-            <p className="font-semibold text-sm leading-tight">
+            <Badge variant="info" className="text-xs mb-1">
               {item.serviceOffering.display_name}
-            </p>
-            <p className="text-xs text-muted-foreground">
+            </Badge>
+            <p className=" text-muted-foreground text-2xl">
               {item.productType.name}
             </p>
             {item.productType.category && (

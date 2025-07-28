@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import apiClient from "@/api/apiClient";
+import settingService from "@/services/settingService";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ import {
     Settings as SettingsIcon,
     LogOut,
     Menu,
-    Coffee,
+    Shirt,
     Layers,
     Box,
     Wand2,
@@ -59,6 +60,7 @@ import type { NavigationItem } from "@/types/navigation.types";
 import { useEffect, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import AppIcon from '@/components/ui/app-icon';
 
 // Type declaration for Echo
 declare global {
@@ -85,7 +87,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
   Settings: SettingsIcon,
   Menu,
-  Coffee,
+      Shirt,
   Layers,
   Box,
   Wand2,
@@ -100,7 +102,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Utensils,
   // Navigation item icon mappings
   LayoutDashboard: Home,
-  Briefcase: Coffee,
+      Briefcase: Shirt,
   Receipt: DollarSign,
   Truck: Users,
   BarChart3: ChartBar,
@@ -123,6 +125,13 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout: storeLogout } = useAuthStore();
+
+  // Fetch settings for app branding
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingService.getSettings,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const [collapsedStates, setCollapsedStates] = useState<Record<number, boolean>>({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -368,24 +377,34 @@ const MainLayout: React.FC = () => {
   );
   };
 
+  // Check if current route is MenuPage
+  const isMenuPage = location.pathname.includes('/services/offerings/menu');
+
   // --- Main Layout JSX ---
   return (
     <div className={`grid min-h-screen w-full transition-all duration-300 ${
-      isSidebarCollapsed 
-        ? "md:grid-cols-[60px_1fr]" 
-        : "md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
+      isMenuPage 
+        ? "grid-cols-1" 
+        : isSidebarCollapsed 
+          ? "md:grid-cols-[60px_1fr]" 
+          : "md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
     }`}>
-      {/* Desktop Sidebar */}
-      <div className="hidden border-r bg-background md:block dark:bg-muted/40">
+      {/* Desktop Sidebar - Hidden on MenuPage */}
+      {!isMenuPage && (
+        <div className="hidden border-r bg-background md:block dark:bg-muted/40">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <div className="flex items-center justify-between w-full">
-              {!isSidebarCollapsed && (
-                <Link to="/" className="flex items-center gap-2 font-semibold">
-                  <Coffee className="h-6 w-6 text-primary" />
-                  <span className="text-lg">{t("appName", { ns: "common" })}</span>
-                </Link>
-              )}
+                              {!isSidebarCollapsed && (
+                  <Link to="/" className="flex items-center gap-2 font-semibold">
+                    <AppIcon 
+                      iconUrl={settings?.company_logo_url} 
+                      className="h-6 w-6" 
+                      fallbackIcon={Shirt}
+                    />
+                    <span className="text-lg">{settings?.app_name || t("appName", { ns: "common" })}</span>
+                  </Link>
+                )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -406,12 +425,14 @@ const MainLayout: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       <div className="flex flex-col">
         {/* Header (App Bar) */}
         <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 dark:bg-muted/40">
-          {/* Mobile Navigation Trigger */}
-          <Sheet>
+          {/* Mobile Navigation Trigger - Hidden on MenuPage */}
+          {!isMenuPage && (
+            <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
@@ -432,9 +453,13 @@ const MainLayout: React.FC = () => {
               {/* Remove padding for full height nav */}
               <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6 self-start w-full">
                 <Link to="/" className="flex items-center gap-2 font-semibold">
-                  <Coffee className="h-6 w-6 text-primary" />
+                  <AppIcon 
+                    iconUrl={settings?.company_logo_url} 
+                    className="h-6 w-6" 
+                    fallbackIcon={Shirt}
+                  />
                   <span className="text-lg">
-                    {t("appName", { ns: "common" })}
+                    {settings?.app_name || t("appName", { ns: "common" })}
                   </span>
                 </Link>
               </div>
@@ -444,6 +469,7 @@ const MainLayout: React.FC = () => {
               </div>
             </SheetContent>
           </Sheet>
+          )}
 
           {/* Flexible space to push items to the right */}
           <div className="w-full flex-1">

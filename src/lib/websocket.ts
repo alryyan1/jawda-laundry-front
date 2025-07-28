@@ -51,7 +51,7 @@ if (isPusherConfigured) {
       enabledTransports: ['ws', 'wss'],
       disableStats: true,
       // Add timeout to prevent long loading times
-      timeout: 10000, // 10 seconds timeout
+      timeout: 2000, // 10 seconds timeout
     });
     console.log('Pusher configured successfully');
   } catch (error) {

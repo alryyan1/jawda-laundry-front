@@ -3,7 +3,7 @@ import apiClient from './apiClient';
 import type { User } from '@/types'; // Assuming User type is defined
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 

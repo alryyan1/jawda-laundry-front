@@ -17,6 +17,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, MessageSquareWarning } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Link } from 'react-router-dom';
@@ -26,6 +28,9 @@ const OverduePickupsReport: React.FC = () => {
     const { can } = useAuth();
 
     const [overdueDaysFilter, setOverdueDaysFilter] = useState<number | ''>(7); // Default to overdue by 7 days
+    const [showMessageDialog, setShowMessageDialog] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [messageContent, setMessageContent] = useState('');
 
     const { data: paginatedData, isLoading, isFetching, refetch } = useQuery<PaginatedResponse<Order>, Error>({
         queryKey: ['overdueOrders', overdueDaysFilter],
@@ -44,6 +49,39 @@ const OverduePickupsReport: React.FC = () => {
     });
 
     const orders = paginatedData?.data || [];
+
+    // دالة لتوليد رسالة افتراضية
+    const generateDefaultMessage = (order: Order) => {
+        const customerName = order.customer.name;
+        const orderNumber = order.id;
+        const overdueDays = order.overdue_days;
+        
+        return `مرحباً ${customerName}،
+
+نود تذكيركم أن طلبكم رقم ${orderNumber} جاهز للاستلام منذ ${overdueDays} يوم/أيام.
+
+يرجى التواصل معنا لترتيب موعد الاستلام.
+
+شكراً لكم،
+فريق العمل`;
+    };
+
+    // دالة لفتح ديالوق الرسالة
+    const handleSendReminder = (order: Order) => {
+        setSelectedOrder(order);
+        setMessageContent(generateDefaultMessage(order));
+        setShowMessageDialog(true);
+    };
+
+    // دالة لإرسال الرسالة
+    const handleConfirmSendMessage = () => {
+        if (selectedOrder) {
+            sendReminderMutation.mutate(selectedOrder);
+            setShowMessageDialog(false);
+            setSelectedOrder(null);
+            setMessageContent('');
+        }
+    };
 
     if (!can('report:view-operational')) {
         return <p className="p-8 text-center text-destructive">{t('accessDenied')}</p>;
@@ -82,23 +120,36 @@ const OverduePickupsReport: React.FC = () => {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>ID</TableHead>
                             <TableHead>Order #</TableHead>
                             <TableHead>{t('customerName')}</TableHead>
                             <TableHead>{t('customerPhone', {ns:'customers'})}</TableHead>
-                            <TableHead>{t('dueDate')}</TableHead>
-                            <TableHead className="text-center">{t('daysOverdue', {ns:'reports'})}</TableHead>
+                            <TableHead>{t('status')}</TableHead>
+                            <TableHead>{t('pickupDate')}</TableHead>
+                            <TableHead className="text-center">{t('daysOverduePickup', {ns:'reports'})}</TableHead>
                             <TableHead className="text-right">{t('actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? <TableRow><TableCell colSpan={6} className="h-32 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                        {isLoading ? <TableRow><TableCell colSpan={8} className="h-32 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
                         : orders.length > 0 ? (
                             orders.map(order => (
                                 <TableRow key={order.id}>
+                                    <TableCell className="font-mono text-sm">{order.id}</TableCell>
                                     <TableCell><Link to={`/orders/${order.id}`} className="font-medium hover:underline text-primary">{order.order_number}</Link></TableCell>
                                     <TableCell>{order.customer.name}</TableCell>
                                     <TableCell className="text-muted-foreground">{order.customer.phone || '-'}</TableCell>
-                                    <TableCell>{format(new Date(order.due_date!), 'PP')}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={
+                                            order.status === 'completed' ? 'default' :
+                                            order.status === 'ready_for_pickup' ? 'secondary' :
+                                            order.status === 'processing' ? 'outline' :
+                                            'destructive'
+                                        }>
+                                            {t(`status_${order.status}`, { ns: 'orders' })}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{format(new Date(order.pickup_date!), 'PP')}</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="destructive">{order.overdue_days}</Badge>
                                     </TableCell>
@@ -106,7 +157,7 @@ const OverduePickupsReport: React.FC = () => {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => sendReminderMutation.mutate(order)}
+                                            onClick={() => handleSendReminder(order)}
                                             disabled={sendReminderMutation.isPending}
                                         >
                                             <MessageSquareWarning className="mr-2 h-4 w-4" />
@@ -116,12 +167,86 @@ const OverduePickupsReport: React.FC = () => {
                                 </TableRow>
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan={6} className="h-32 text-center">{t('noOverdueOrdersFound')}</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={8} className="h-32 text-center">{t('noOverdueOrdersFound')}</TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
              {/* Pagination Controls */}
+
+            {/* Message Dialog */}
+            <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{t('sendReminder', {ns:'reports'})}</DialogTitle>
+                        <DialogDescription>
+                            {t('sendReminderDescription', {ns:'reports', defaultValue: 'Send a reminder message to the customer about their overdue order.'})}
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4">
+                        {selectedOrder && (
+                            <div className="bg-muted p-4 rounded-lg">
+                                <h4 className="font-medium mb-2">{t('orderDetails', {ns:'reports', defaultValue: 'Order Details'})}</h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">{t('orderNumber', {ns:'orders'})}:</span>
+                                        <span className="ml-2 font-medium">{selectedOrder.order_number}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">{t('customerName')}:</span>
+                                        <span className="ml-2 font-medium">{selectedOrder.customer.name}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">{t('pickupDate')}:</span>
+                                        <span className="ml-2 font-medium">{format(new Date(selectedOrder.pickup_date!), 'PP')}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">{t('daysOverduePickup', {ns:'reports'})}:</span>
+                                        <span className="ml-2 font-medium text-destructive">{selectedOrder.overdue_days}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                            <Label htmlFor="message-content">{t('messageContent', {ns:'reports', defaultValue: 'Message Content'})}</Label>
+                            <Textarea
+                                id="message-content"
+                                value={messageContent}
+                                onChange={(e) => setMessageContent(e.target.value)}
+                                placeholder={t('messagePlaceholder', {ns:'reports', defaultValue: 'Enter your message here...'})}
+                                className="min-h-[200px]"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowMessageDialog(false)}
+                        >
+                            {t('cancel', {ns:'common'})}
+                        </Button>
+                        <Button
+                            onClick={handleConfirmSendMessage}
+                            disabled={sendReminderMutation.isPending || !messageContent.trim()}
+                        >
+                            {sendReminderMutation.isPending ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    {t('sending', {ns:'reports', defaultValue: 'Sending...'})}
+                                </>
+                            ) : (
+                                <>
+                                    <MessageSquareWarning className="mr-2 h-4 w-4" />
+                                    {t('sendMessage', {ns:'reports', defaultValue: 'Send Message'})}
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

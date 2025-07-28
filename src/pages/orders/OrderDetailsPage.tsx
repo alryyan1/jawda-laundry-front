@@ -308,7 +308,7 @@ const OrderDetailsPage: React.FC = () => {
     ""
   )}/orders/${order.id}/invoice/download`;
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto">
       <PageHeader
         title={`${t("orderDetailsTitle", { ns: "orders" })} #${
           order.id
@@ -369,7 +369,7 @@ const OrderDetailsPage: React.FC = () => {
         )}
         {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
       </PageHeader>
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-6 ">
         {/* Customer & Order Info Card */}
         <Card className="md:col-span-2">
           <CardHeader>
