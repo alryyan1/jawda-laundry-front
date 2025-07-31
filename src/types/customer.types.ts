@@ -51,6 +51,10 @@ export interface LedgerTransaction {
   credit: number;
   balance: number;
   reference_id: number; // The Order ID
+  total_amount?: number; // Total order amount
+  paid_amount?: number; // Total amount paid
+  remaining_balance?: number; // Remaining balance to be paid
+  payment_status?: 'paid' | 'unpaid' | 'partially_paid'; // Payment status
 }
 
 export interface CustomerLedger {

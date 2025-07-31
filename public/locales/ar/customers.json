@@ -59,5 +59,21 @@
   "customerTypeCreatedSuccess": "تم إنشاء نوع العميل \"{{name}}\" بنجاح.",
   "customerTypeCreationFailed": "فشل إنشاء نوع العميل.",
   "customerPhone": "هاتف العميل",
-  "setAsDefault": "تعيين كعميل افتراضي"
+  "setAsDefault": "تعيين كعميل افتراضي",
+  "addPayment": "إضافة دفعة",
+  "currentBalance": "الرصيد الحالي",
+  "paymentAmountExceedsBalance": "المبلغ المدخل أكبر من الرصيد المطلوب",
+  "paymentDistribution": "توزيع الدفع",
+  "noUnpaidOrders": "لا توجد فواتير معلقة",
+  "remainingAmount": "المبلغ المتبقي",
+  "confirmPayment": "هل أنت متأكد من تسجيل دفعة بقيمة {{amount}} للفواتير التالية: {{orders}}؟",
+  "noBalanceToPay": "لا يوجد رصيد معلق",
+  "noPermissionToRecordPayment": "لا توجد صلاحية لتسجيل الدفع",
+  "filterByDate": "تصفية بالتاريخ",
+  "fromDate": "من تاريخ",
+  "toDate": "إلى تاريخ",
+  "selectDate": "اختر تاريخاً",
+  "showingResults": "عرض {{count}} من {{total}} معاملة",
+  "remainingAfterPayment": "المتبقي",
+  "fullyPaid": "مدفوع بالكامل"
 } 

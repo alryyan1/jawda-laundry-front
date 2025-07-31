@@ -61,5 +61,21 @@
   "customerTypeCreatedSuccess": "Customer type \"{{name}}\" created successfully.",
   "customerTypeCreationFailed": "Failed to create customer type.",
   "customerPhone": "Customer Phone",
-  "setAsDefault": "Set as default customer"
+  "setAsDefault": "Set as default customer",
+  "addPayment": "Add Payment",
+  "currentBalance": "Current Balance",
+  "paymentAmountExceedsBalance": "Payment amount exceeds the required balance",
+  "paymentDistribution": "Payment Distribution",
+  "noUnpaidOrders": "No unpaid orders",
+  "remainingAmount": "Remaining Amount",
+  "confirmPayment": "Are you sure you want to record a payment of {{amount}} for the following orders: {{orders}}?",
+  "noBalanceToPay": "No balance to pay",
+  "noPermissionToRecordPayment": "No permission to record payment",
+  "filterByDate": "Filter by Date",
+  "fromDate": "From Date",
+  "toDate": "To Date",
+  "selectDate": "Select Date",
+  "showingResults": "Showing {{count}} of {{total}} transactions",
+  "remainingAfterPayment": "Remaining",
+  "fullyPaid": "Fully Paid"
 }
