@@ -7,6 +7,9 @@ import { useAuthStore } from "@/store/authStore";
 import apiClient from "@/api/apiClient";
 import settingService from "@/services/settingService";
 import { toast } from "sonner";
+import { useSearch } from "@/context/SearchContext";
+import { POSSearch } from "@/components/ui/pos-search";
+import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -119,12 +122,111 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   UtensilsCrossed: Utensils,
 };
 
+// Real-time connection status lamp
+const RealtimeLamp: React.FC = () => {
+  const [connected, setConnected] = useState(false);
+  const [state, setState] = useState('disconnected');
+  const [lastEvent, setLastEvent] = useState('');
+  const [showReconnectDialog, setShowReconnectDialog] = useState(false);
+  const [reconnectStatus, setReconnectStatus] = useState<'idle'|'reconnecting'|'success'|'failed'>('idle');
+
+  useEffect(() => {
+    const echo = window.Echo;
+    if (!echo || !echo.connector) return;
+    const pusher = echo.connector.pusher;
+    if (!pusher) return;
+    const updateStatus = () => {
+      setConnected(pusher.connection.state === 'connected');
+      setState(pusher.connection.state);
+      // If dialog is open and reconnecting, update status
+      if (showReconnectDialog && reconnectStatus === 'reconnecting') {
+        if (pusher.connection.state === 'connected') {
+          setReconnectStatus('success');
+          setTimeout(() => setShowReconnectDialog(false), 1000); // auto-close
+        } else if (pusher.connection.state === 'failed' || pusher.connection.state === 'unavailable') {
+          setReconnectStatus('failed');
+        }
+      }
+    };
+    const handleEvent = (...args: unknown[]) => {
+      const event = args[0];
+      const eventString = typeof event === 'object' && event && 'type' in event && typeof event.type === 'string' 
+        ? event.type 
+        : String(event);
+      setLastEvent(eventString);
+    };
+    updateStatus();
+    pusher.connection.bind('state_change', updateStatus);
+    pusher.connection.bind('message', handleEvent);
+    return () => {
+      pusher.connection.unbind('state_change', updateStatus);
+      pusher.connection.unbind('message', handleEvent);
+    };
+  }, [showReconnectDialog, reconnectStatus]);
+
+  const handleReconnect = () => {
+    const echo = window.Echo;
+    console.log(echo,'echo');
+    if (echo && echo.connector && echo.connector.pusher) {
+      setShowReconnectDialog(true);
+      setReconnectStatus('reconnecting');
+      echo.connector.pusher.connect();
+    }
+  };
+
+  return (
+    <>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="p-0 h-8 w-8" aria-label="Real-time connection status">
+            <Lamp className={`h-6 w-6 ${connected ? 'text-green-500' : 'text-gray-400'}`} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 text-sm">
+          <div className="mb-2 font-semibold">Real-time Connection</div>
+          <div>Status: <span className={connected ? 'text-green-600' : 'text-red-500'}>{state}</span></div>
+          <div>Last Event: <span className="text-muted-foreground">{lastEvent || 'N/A'}</span></div>
+          <Button onClick={handleReconnect} size="sm" className="mt-2">Reconnect</Button>
+        </PopoverContent>
+      </Popover>
+      <Dialog open={showReconnectDialog} onOpenChange={setShowReconnectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reconnecting...</DialogTitle>
+            <DialogDescription>
+              {reconnectStatus === 'reconnecting' && (
+                <span className="flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Attempting to reconnect to real-time server...</span>
+              )}
+              {reconnectStatus === 'success' && (
+                <span className="text-green-600">Reconnected successfully!</span>
+              )}
+              {reconnectStatus === 'failed' && (
+                <span className="text-red-600">Failed to reconnect. Please try again.</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogClose asChild>
+            <Button variant="outline" className="mt-4 w-full">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 // MainLayout Component
 const MainLayout: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "auth", "settings"]);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout: storeLogout } = useAuthStore();
+  const { setIsSearchVisible } = useSearch();
+
+  // Show search when on POS route
+  React.useEffect(() => {
+    const isPOSRoute = location.pathname === '/pos';
+    setIsSearchVisible(isPOSRoute);
+  }, [location.pathname, setIsSearchVisible]);
 
   // Fetch settings for app branding
   const { data: settings } = useQuery({
@@ -387,7 +489,7 @@ const MainLayout: React.FC = () => {
         ? "grid-cols-1" 
         : isSidebarCollapsed 
           ? "md:grid-cols-[60px_1fr]" 
-          : "md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
+          : "md:grid-cols-[132px_1fr] lg:grid-cols-[250px_1fr]"
     }`}>
       {/* Desktop Sidebar - Hidden on MenuPage */}
       {!isMenuPage && (
@@ -472,8 +574,9 @@ const MainLayout: React.FC = () => {
           )}
 
           {/* Flexible space to push items to the right */}
-          <div className="w-full flex-1">
-            {/* Placeholder for Breadcrumbs or Global Search Bar if needed */}
+          <div className="w-full flex-1 flex items-center justify-center gap-4">
+            <POSSearch />
+            {location.pathname === '/pos' && <POSNewOrderButton />}
           </div>
 
           {/* Right-aligned Header Items */}
@@ -495,99 +598,3 @@ const MainLayout: React.FC = () => {
 };
 
 export default MainLayout;
-
-// Real-time connection status lamp
-const RealtimeLamp: React.FC = () => {
-  const [connected, setConnected] = useState(false);
-  const [state, setState] = useState('disconnected');
-  const [lastEvent, setLastEvent] = useState('');
-  const [showReconnectDialog, setShowReconnectDialog] = useState(false);
-  const [reconnectStatus, setReconnectStatus] = useState<'idle'|'reconnecting'|'success'|'failed'>('idle');
-
-  useEffect(() => {
-    const echo = window.Echo;
-    if (!echo || !echo.connector) return;
-    const pusher = echo.connector.pusher;
-    if (!pusher) return;
-    const updateStatus = () => {
-      setConnected(pusher.connection.state === 'connected');
-      setState(pusher.connection.state);
-      // If dialog is open and reconnecting, update status
-      if (showReconnectDialog && reconnectStatus === 'reconnecting') {
-        if (pusher.connection.state === 'connected') {
-          setReconnectStatus('success');
-          setTimeout(() => setShowReconnectDialog(false), 1000); // auto-close
-        } else if (pusher.connection.state === 'failed' || pusher.connection.state === 'unavailable') {
-          setReconnectStatus('failed');
-        }
-      }
-    };
-    const handleEvent = (...args: unknown[]) => {
-      const event = args[0];
-      const eventString = typeof event === 'object' && event && 'type' in event && typeof event.type === 'string' 
-        ? event.type 
-        : String(event);
-      setLastEvent(eventString);
-    };
-    updateStatus();
-    pusher.connection.bind('state_change', updateStatus);
-    pusher.connection.bind('message', handleEvent);
-    return () => {
-      pusher.connection.unbind('state_change', updateStatus);
-      pusher.connection.unbind('message', handleEvent);
-    };
-  }, [showReconnectDialog, reconnectStatus]);
-
-  const handleReconnect = () => {
-    const echo = window.Echo;
-    console.log(echo,'echo');
-    if (echo && echo.connector && echo.connector.pusher) {
-      setShowReconnectDialog(true);
-      setReconnectStatus('reconnecting');
-      echo.connector.pusher.connect();
-    }
-  };
-
-  // Dialog UI
-  // Import Dialog components at the top if not already:
-  // import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-
-  return (
-    <>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="p-0 h-8 w-8" aria-label="Real-time connection status">
-            <Lamp className={`h-6 w-6 ${connected ? 'text-green-500' : 'text-gray-400'}`} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 text-sm">
-          <div className="mb-2 font-semibold">Real-time Connection</div>
-          <div>Status: <span className={connected ? 'text-green-600' : 'text-red-500'}>{state}</span></div>
-          <div>Last Event: <span className="text-muted-foreground">{lastEvent || 'N/A'}</span></div>
-          <Button onClick={handleReconnect} size="sm" className="mt-2">Reconnect</Button>
-        </PopoverContent>
-      </Popover>
-      <Dialog open={showReconnectDialog} onOpenChange={setShowReconnectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reconnecting...</DialogTitle>
-            <DialogDescription>
-              {reconnectStatus === 'reconnecting' && (
-                <span className="flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Attempting to reconnect to real-time server...</span>
-              )}
-              {reconnectStatus === 'success' && (
-                <span className="text-green-600">Reconnected successfully!</span>
-              )}
-              {reconnectStatus === 'failed' && (
-                <span className="text-red-600">Failed to reconnect. Please try again.</span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogClose asChild>
-            <Button variant="outline" className="mt-4 w-full">Close</Button>
-          </DialogClose>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-};

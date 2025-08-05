@@ -127,9 +127,10 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
                     className={cn(
                       "relative cursor-pointer rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:scale-[1.02]",
                       selectedOrderId === order.id.toString()
-                        ? "border-primary ring-2 ring-primary/20 shadow-lg"
+                        ? "border-primary ring-2 ring-primary/30 shadow-xl bg-gradient-to-br from-primary/5 via-primary/8 to-primary/10 shadow-primary/20"
                         : "border-border hover:border-primary/50",
-                      "bg-card p-4"
+                      selectedOrderId === order.id.toString() ? "" : "bg-card",
+                      "p-4"
                     )}
                   >
                     {/* Status indicator */}
@@ -137,6 +138,11 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
                       "absolute top-2 right-2 w-3 h-3 rounded-full",
                       getStatusColor(order.status)
                     )} />
+                    
+                    {/* Selected indicator */}
+                    {selectedOrderId === order.id.toString() && (
+                      <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-primary animate-pulse" />
+                    )}
 
                     <div className="space-y-3">
                       {/* Order header */}
@@ -152,7 +158,9 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
                       {/* Customer info */}
                       <div className="flex items-center gap-2 text-sm">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate">{order.customer.name}</span>
+                        <span className="truncate">
+                          {order.customer ? order.customer.name : t("noCustomer", { ns: "orders", defaultValue: "No Customer" })}
+                        </span>
                       </div>
 
                       {/* Order details */}

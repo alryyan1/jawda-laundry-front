@@ -43,22 +43,15 @@ export const CartColumn: React.FC<CartColumnProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      <header className="p-4 border-b shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">
-            {mode === 'order_view' || mode === 'order_edit'
-              ? `${t("order", { ns: "orders" })} #${orderNumber}` 
-              : t("cart", { ns: "orders" })
-            }
-          </h2>
-          <span className="text-sm text-muted-foreground">
-            {t("itemCount", { count: items.length, ns: "orders" })}
-          </span>
+      {orderNumber && (
+        <div className="p-2 border-b bg-muted/50">
+          <div className="text-sm font-medium text-muted-foreground">
+            {t("orderNumber", { ns: "orders", defaultValue: "Order" })}: {orderNumber}
+          </div>
         </div>
-      </header>
-
+      )}
       <ScrollArea className="flex-grow  h-[calc(100vh-500px)]">
-        <div className="p-4 space-y-4">
+        <div className="p-1 space-y-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
               <p>{t("cartIsEmpty", { ns: "orders" })}</p>
@@ -80,7 +73,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
       </ScrollArea>
       
       {mode === 'cart' && (
-        <div className="p-4 border-t space-y-4">
+        <div className="p-1 border-t space-y-4">
           <Separator />
 
           <div className="flex justify-between items-center text-lg font-bold">
@@ -121,7 +114,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
               disabled={isProcessing}
             >
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("addItemsToOrder", { ns: "orders", defaultValue: "Add Items to Order" })}
+              {t("completeOrder", { ns: "orders", defaultValue: "Complete Order" })}
             </Button>
           </div>
         </div>

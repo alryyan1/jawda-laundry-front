@@ -4,9 +4,18 @@ import axios from 'axios';
 // Be cautious with this pattern if it causes circular dependencies.
 // import { useAuthStore } from '@/store/authStore';
 
+// Determine the base URL based on environment
+const getBaseURL = () => {
+  // For local development with XAMPP
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://127.0.0.1/laundry/jawda-laundry-backend/public/api';
+  }
+  // For production or other environments
+  return import.meta.env.VITE_API_BASE_URL || 'https://shai-khadri.com/api';
+};
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

@@ -3,28 +3,25 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from 'uuid';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
-import { materialColors } from "@/lib/colors";
-import { ORDER_STATUSES } from "@/lib/constants";
+
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useTheme } from "@/context/ThemeContext";
+import { useNewOrder } from "@/context/NewOrderContext";
 
-import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, OrderStatus, PricingStrategy } from '@/types';
+import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, PricingStrategy } from '@/types';
 import type { DiningTable } from '@/types/dining.types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
 import { ProductListColumn } from '@/features/pos/components/ProductListColumn';
-import { ServiceOfferingColumn } from '@/features/pos/components/ServiceOfferingColumn';
 import { CartColumn } from '@/features/pos/components/CartColumn';
-import { CustomerSelection } from '@/features/pos/components/CustomerSelection';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
 import { TodayOrders } from '@/features/pos/components/TodayOrders';
 import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
+import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, updateOrderStatus, sendOrderWhatsAppInvoice, getTodayOrders, updateOrder } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails } from "@/api/orderService";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
@@ -34,21 +31,10 @@ import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
 import { getTodayDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Loader2,
-  Printer,
-  Calculator,
   ArrowLeft,
+  Plus,
 } from "lucide-react";
 import {
   Dialog,
@@ -56,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { Customer } from "@/types/customer.types";
 
 
 interface CartItem {
@@ -70,52 +57,34 @@ interface CartItem {
   _isQuoting?: boolean;
   _quoteError?: string | null;
   _quotedSubTotal?: number;
+  _isAdding?: boolean; // Flag to show loading state while adding to backend
 }
-
-// Re-usable OrderStatusBadgeComponent
-const OrderStatusBadgeComponent: React.FC<{
-  status: OrderStatus;
-  className?: string;
-}> = ({ status, className }) => {
-  const { t } = useTranslation("orders");
-  let bgColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-  if (status === "pending")
-    bgColor =
-      "bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/50";
-  if (status === "processing")
-    bgColor =
-      "bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50";
-  if (status === "ready_for_pickup")
-    bgColor =
-      "bg-green-400/20 text-green-600 dark:text-green-400 border border-green-500/50";
-  if (status === "completed")
-    bgColor =
-      "bg-slate-400/20 text-slate-600 dark:text-slate-400 border border-slate-500/50";
-  if (status === "cancelled")
-    bgColor =
-      "bg-red-400/20 text-red-600 dark:text-red-400 border border-red-500/50";
-
-  return (
-    <Badge
-      className={`capitalize px-2.5 py-1 text-xs font-medium ${bgColor} ${className}`}
-    >
-      {t(`status_${status}`)}
-    </Badge>
-  );
-};
 
 const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
   const { can } = useAuth();
-  const { getPrimaryColor, getSecondaryColor } = useTheme();
+  const { newlyCreatedOrder, clearNewlyCreatedOrder } = useNewOrder();
   
   // Initialize real-time updates
   useRealtimeUpdates();
+  
+  // Auto-select newly created order
+  useEffect(() => {
+    if (newlyCreatedOrder) {
+      setSelectedOrder(newlyCreatedOrder);
+      // Reset customer selection to show "required" state for new orders
+      setSelectedCustomerId(null);
+      // Clear cart for new orders
+      setCartItems([]);
+      // Set new order mode
+      setIsNewOrderMode(true);
+      clearNewlyCreatedOrder();
+    }
+  }, [newlyCreatedOrder, clearNewlyCreatedOrder]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
-  const [selectedOfferingId, setSelectedOfferingId] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string>(' ');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<'in_house' | 'take_away' | 'delivery'>('in_house');
@@ -132,6 +101,7 @@ const POSPage: React.FC = () => {
   const [selectedProductForDialog, setSelectedProductForDialog] = useState<ProductType | null>(null);
   const [isIpadView, setIsIpadView] = useState(false);
   const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
+  const [isNewOrderMode, setIsNewOrderMode] = useState(false);
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Get today's date for statistics (using local timezone)
@@ -183,15 +153,23 @@ const POSPage: React.FC = () => {
         }
       }
       
-      // Clear the cart and reset selections
+      // Clear the cart and reset selections - ensure cart is empty for new orders
       setCartItems([]);
+      
+      // Always reset customer selection to null for new orders to show "required" state
+      // This ensures the customer selection component shows the animation and required state
       setSelectedCustomerId(null);
+      
       setSelectedCategoryId(null);
       setSelectedProductType(null);
-      setSelectedOfferingId(null);
-      setSelectedTableId(' ');
-      setOrderType('in_house');
+      setSelectedTableId(createdOrder.dining_table_id?.toString() || ' ');
+      setOrderType(createdOrder.order_type);
       setIsProcessing(false);
+      
+      // Clear dialog state
+      setSelectedProductForDialog(null);
+      setIsServiceOfferingDialogOpen(false);
+      setIsNewOrderMode(true); // Keep new order mode active
       
       // Automatically select the newly created order
       if (createdOrder) {
@@ -207,80 +185,6 @@ const POSPage: React.FC = () => {
       console.error('Failed to create order:', error);
       toast.error(t("failedToCreateOrder", { ns: "orders" }));
       setIsProcessing(false);
-    },
-  });
-
-  // Mutation for updating order status
-  const updateStatusMutation = useMutation<
-    OrderResponseWithWarnings,
-    Error,
-    { orderId: string | number; status: OrderStatus }
-  >({
-    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
-    onSuccess: async (response) => {
-      const updatedOrder = handleOrderResponse(response, t("orderStatusUpdatedSuccess", {
-        ns: "orders",
-        status: t(`status_${response.order.status}`, { ns: "orders" }),
-      }));
-      queryClient.setQueryData(["order", updatedOrder.id], updatedOrder);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-      
-      // Release table if order is completed and has a dining table
-      if (updatedOrder.status === 'completed' && updatedOrder.table_id) {
-        try {
-          await updateDiningTableStatus(updatedOrder.table_id, 'available');
-          queryClient.invalidateQueries({ queryKey: ["diningTables"] });
-        } catch (error) {
-          console.error('Failed to release table:', error);
-        }
-      }
-      
-      // Update the selected order if it's the same one
-      if (selectedOrder && selectedOrder.id === updatedOrder.id) {
-        setSelectedOrder(updatedOrder);
-        
-        // If the order was completed, automatically reset to new order mode after a short delay
-        if (updatedOrder.status === 'completed') {
-          setTimeout(() => {
-            setSelectedOrder(null);
-            setCartItems([]);
-            setSelectedCustomerId(null);
-            setSelectedCategoryId(null);
-            setSelectedProductType(null);
-            setSelectedOfferingId(null);
-            setSelectedTableId(' ');
-            setOrderType('in_house');
-          }, 2000); // 2 second delay to show completion status
-        }
-      }
-    },
-    onError: (error) => {
-      toast.error(
-        error.message || t("orderStatusUpdateFailed", { ns: "orders" })
-      );
-    },
-  });
-
-  // Mutation for sending WhatsApp invoice
-  const sendWhatsAppInvoiceMutation = useMutation<
-    { message: string },
-    Error,
-    string | number
-  >({
-    mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
-    onSuccess: () => {
-      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
-      // Refresh the order data to get updated WhatsApp status
-      if (selectedOrder) {
-        queryClient.invalidateQueries({ queryKey: ["order", selectedOrder.id] });
-        queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-      }
-    },
-    onError: (error) => {
-      toast.error(
-        error.message || t("whatsappInvoiceSendFailed", { ns: "orders" })
-      );
     },
   });
 
@@ -325,60 +229,42 @@ const POSPage: React.FC = () => {
   };
 
   const handleSelectProduct = (product: ProductType) => {
+    // Prevent adding items to completed orders
+    if (selectedOrder?.status === 'completed') {
+      toast.error(t("orderCompletedCannotEdit", { ns: "orders", defaultValue: "This order is completed and cannot be edited" }));
+      return;
+    }
+
+    // Check if we have a customer (either from order or selected customer)
+    const hasCustomer = selectedOrder?.customer || selectedCustomerId;
+    if (!hasCustomer) {
+      toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before adding items" }));
+      return;
+    }
+
     setSelectedProductType(product);
-    setSelectedOfferingId(null); // Reset selected offering when product changes
     
     // Check if product has only one service offering and auto-add to cart
     const productOfferings = allServiceOfferings.filter(
       offering => offering.product_type_id === product.id
     );
     
-    // Use selectedCustomerId or customer from selected order
-    const hasCustomer = selectedCustomerId || selectedOrder?.customer;
-    
     if (productOfferings.length === 1 && hasCustomer) {
       const offering = productOfferings[0];
-      setSelectedOfferingId(offering.id.toString());
-      const newItem: CartItem = {
-        id: uuidv4(),
-        productType: product,
-        serviceOffering: offering,
-        quantity: 1,
-        price: product.is_dimension_based 
-          ? offering.default_price_per_sq_meter || 0
-          : offering.default_price || 0,
-        _isQuoting: false,
-      };
-      setCartItems(prev => [...prev, newItem]);
+      // Add to backend first, then show in cart
+      handleAddItemToBackend(product, offering);
     } else if (productOfferings.length > 1 && hasCustomer) {
-      // For iPad view, show dialog for multiple service offerings
-      if (isIpadView) {
-        setSelectedProductForDialog(product);
-        setIsServiceOfferingDialogOpen(true);
-      } else {
-        // For desktop, just select the product and let user choose offering
-        setSelectedProductType(product);
-      }
+      // Show dialog for multiple service offerings
+      setSelectedProductForDialog(product);
+      setIsServiceOfferingDialogOpen(true);
     } else if (isIpadView && hasCustomer) {
       // For iPad view, switch to product view when category is selected
       setShowCategoriesOnIpad(false);
     }
   };
 
-  const handleSelectOffering = (offering: ServiceOffering) => {
-    setSelectedOfferingId(offering.id.toString());
-    const newItem: CartItem = {
-      id: uuidv4(),
-      productType: selectedProductType!,
-      serviceOffering: offering,
-      quantity: 1,
-      price: selectedProductType?.is_dimension_based 
-        ? offering.default_price_per_sq_meter || 0
-        : offering.default_price || 0,
-      _isQuoting: false,
-    };
-    setCartItems(prev => [...prev, newItem]);
-  };
+  // Remove handleSelectOffering function since it's no longer needed
+  // const handleSelectOffering = (offering: ServiceOffering) => { ... };
 
   const handleRemoveItem = (id: string) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
@@ -478,6 +364,52 @@ const POSPage: React.FC = () => {
 
   const handleOrderSelect = (order: Order) => {
     setSelectedOrder(order);
+    setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
+    
+    // Clear current cart items
+    setCartItems([]);
+    
+    // Set customer if order has one
+    if (order.customer) {
+      setSelectedCustomerId(order.customer.id.toString());
+    } else {
+      setSelectedCustomerId(null);
+    }
+    
+    // Set order type
+    setOrderType(order.order_type);
+    
+    // Set table if order has one
+    if (order.dining_table_id) {
+      setSelectedTableId(order.dining_table_id.toString());
+    } else {
+      setSelectedTableId(' ');
+    }
+    
+    // Convert order items to cart items and populate cart only if order has items
+    if (order.items && order.items.length > 0) {
+      const cartItemsFromOrder: CartItem[] = order.items.map(item => ({
+        id: uuidv4(), // Generate new ID for cart item
+        productType: {
+          id: item.serviceOffering?.product_type_id || 0,
+          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
+          name: item.serviceOffering?.productType?.name || 'Unknown Product',
+          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
+          is_active: item.serviceOffering?.productType?.is_active || true,
+        } as ProductType,
+        serviceOffering: item.serviceOffering || {} as ServiceOffering,
+        quantity: item.quantity,
+        price: item.calculated_price_per_unit_item,
+        notes: item.notes || undefined,
+        length_meters: item.length_meters || undefined,
+        width_meters: item.width_meters || undefined,
+        _isQuoting: false,
+        _quotedSubTotal: item.sub_total,
+      }));
+      
+      setCartItems(cartItemsFromOrder);
+    }
+    // If order has no items, cart remains empty (which is correct for new orders)
     
     // Update dining table status to occupied if the order has a table
     if (order.table_id) {
@@ -491,61 +423,92 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (newStatus: OrderStatus) => {
-    if (selectedOrder && newStatus !== selectedOrder.status) {
-      updateStatusMutation.mutate({ orderId: selectedOrder.id, status: newStatus });
-    }
-  };
-
-  const handleSendWhatsAppInvoice = () => {
-    if (selectedOrder) {
-      sendWhatsAppInvoiceMutation.mutate(selectedOrder.id);
-    }
-  };
-
   const handleBackToCategories = () => {
     setShowCategoriesOnIpad(true);
     setSelectedProductType(null);
-    setSelectedOfferingId(null);
+    // setSelectedOfferingId(null); // Removed this line
   };
 
   const handleServiceOfferingSelect = (offering: ServiceOffering) => {
+    // Prevent adding items to completed orders
+    if (selectedOrder?.status === 'completed') {
+      toast.error(t("orderCompletedCannotEdit", { ns: "orders", defaultValue: "This order is completed and cannot be edited" }));
+      setIsServiceOfferingDialogOpen(false);
+      setSelectedProductForDialog(null);
+      return;
+    }
+
+    // Check if we have a customer (either from order or selected customer)
+    const hasCustomer = selectedOrder?.customer || selectedCustomerId;
+    if (!hasCustomer) {
+      toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before adding items" }));
+      setIsServiceOfferingDialogOpen(false);
+      setSelectedProductForDialog(null);
+      return;
+    }
+
     if (selectedProductForDialog) {
-      const newItem: CartItem = {
-        id: uuidv4(),
-        productType: selectedProductForDialog,
-        serviceOffering: offering,
-        quantity: 1,
-        price: selectedProductForDialog.is_dimension_based 
-          ? offering.default_price_per_sq_meter || 0
-          : offering.default_price || 0,
-        _isQuoting: false,
-      };
-      setCartItems(prev => [...prev, newItem]);
+      // Add to backend first, then show in cart
+      handleAddItemToBackend(selectedProductForDialog, offering);
       setIsServiceOfferingDialogOpen(false);
       setSelectedProductForDialog(null);
     }
   };
 
+  const handleCustomerSelected = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    // If we have a selected order without a customer, update it
+    if (selectedOrder && !selectedOrder.customer) {
+      // Create a new order with the selected customer
+      const newOrderData = {
+        customer_id: customerId,
+        items: [], // Empty items array for new order
+        order_type: orderType,
+        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
+      };
+      createOrderMutation.mutate(newOrderData);
+    } else if (isNewOrderMode) {
+      // If we're in new order mode, create a new order with the selected customer
+      const newOrderData = {
+        customer_id: customerId,
+        items: [], // Empty items array for new order
+        order_type: orderType,
+        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
+      };
+      createOrderMutation.mutate(newOrderData);
+    }
+    queryClient.invalidateQueries({ queryKey: ['customersForSelect'] });
+  };
 
+  const handleNewCustomerClick = () => {
+    setIsCustomerModalOpen(true);
+  };
 
-
-
-  const handleAddItemsToOrder = async () => {
+  const handleAddItemToBackend = async (product: ProductType, offering: ServiceOffering) => {
     if (!selectedOrder) {
       toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
       return;
     }
 
-    if (cartItems.length === 0) {
-      toast.error(t("noItemsToAdd", { ns: "orders", defaultValue: "No items to add" }));
-      return;
-    }
+    // Create a temporary cart item with loading state
+    const tempItemId = uuidv4();
+    const tempItem: CartItem = {
+      id: tempItemId,
+      productType: product,
+      serviceOffering: offering,
+      quantity: 1,
+      price: product.is_dimension_based 
+        ? offering.default_price_per_sq_meter || 0
+        : offering.default_price || 0,
+      _isQuoting: false,
+      _isAdding: true, // Flag to show loading state
+    };
 
-    setIsProcessing(true);
+    // Add temporary item to cart with loading state
+    setCartItems(prev => [...prev, tempItem]);
 
     try {
-      // Prepare the order data with existing items + new items
+      // Prepare the order data with existing items + new item
       const existingItems = selectedOrder.items?.map(item => ({
         id: item.id.toString(),
         service_offering_id: item.serviceOffering?.id || 0,
@@ -561,53 +524,95 @@ const POSPage: React.FC = () => {
         _quoted_sub_total: item.sub_total,
       })) || [];
 
-      const newItems = cartItems.map(item => ({
-        id: item.id,
-        service_offering_id: item.serviceOffering.id,
-        product_type_id: item.productType.id.toString(),
-        service_action_id: item.serviceOffering.service_action_id.toString(),
-        quantity: item.quantity,
-        notes: item.notes,
-        length_meters: item.length_meters,
-        width_meters: item.width_meters,
-        _derivedServiceOffering: item.serviceOffering,
-        _pricingStrategy: (item.productType.is_dimension_based ? 'dimension_based' : 'fixed') as PricingStrategy,
-        _quoted_price_per_unit_item: item.price,
-        _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
-      }));
+      const newItem = {
+        id: tempItemId,
+        service_offering_id: offering.id,
+        product_type_id: product.id.toString(),
+        service_action_id: offering.service_action_id.toString(),
+        quantity: 1,
+        notes: undefined,
+        length_meters: undefined,
+        width_meters: undefined,
+        _derivedServiceOffering: offering,
+        _pricingStrategy: (product.is_dimension_based ? 'dimension_based' : 'fixed') as PricingStrategy,
+        _quoted_price_per_unit_item: tempItem.price,
+        _quoted_sub_total: tempItem.price,
+      };
 
       const orderData = {
         customer_id: selectedOrder.customer?.id?.toString() || '',
-        items: [...existingItems, ...newItems],
+        items: [...existingItems, newItem],
         notes: selectedOrder.notes || undefined,
         due_date: selectedOrder.due_date || undefined,
         order_type: selectedOrder.order_type,
         dining_table_id: selectedOrder.dining_table_id,
       };
 
-      // Call the updateOrder API to add items to the existing order
+      // Call the updateOrder API to add item to the existing order
       const updatedOrder = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
       
       // Update the selected order with the new data
       setSelectedOrder(updatedOrder.order);
       
-      // Clear the cart items
-      setCartItems([]);
+      // Remove the temporary item and add the real item from the updated order
+      setCartItems(prev => {
+        const filtered = prev.filter(item => item.id !== tempItemId);
+        // Find the newly added item in the updated order
+        const newOrderItem = updatedOrder.order.items?.find(item => 
+          item.serviceOffering?.id === offering.id && 
+          item.quantity === 1
+        );
+        
+        if (newOrderItem) {
+          const realCartItem: CartItem = {
+            id: uuidv4(), // Generate new ID for cart item
+            productType: {
+              id: newOrderItem.serviceOffering?.product_type_id || 0,
+              product_category_id: newOrderItem.serviceOffering?.productType?.product_category_id || 0,
+              name: newOrderItem.serviceOffering?.productType?.name || 'Unknown Product',
+              is_dimension_based: newOrderItem.serviceOffering?.productType?.is_dimension_based || false,
+              is_active: newOrderItem.serviceOffering?.productType?.is_active || true,
+            } as ProductType,
+            serviceOffering: newOrderItem.serviceOffering || {} as ServiceOffering,
+            quantity: newOrderItem.quantity,
+            price: newOrderItem.calculated_price_per_unit_item,
+            notes: newOrderItem.notes || undefined,
+            length_meters: newOrderItem.length_meters || undefined,
+            width_meters: newOrderItem.width_meters || undefined,
+            _isQuoting: false,
+            _quotedSubTotal: newOrderItem.sub_total,
+          };
+          return [...filtered, realCartItem];
+        }
+        return filtered;
+      });
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
-      toast.success(t("itemsAddedToOrder", { ns: "orders", defaultValue: "Items added to order successfully" }));
+      toast.success(t("itemAddedToOrder", { ns: "orders", defaultValue: "Item added to order successfully" }));
     } catch (error) {
-      console.error('Failed to add items to order:', error);
-      toast.error(t("failedToAddItems", { ns: "orders", defaultValue: "Failed to add items to order" }));
-    } finally {
-      setIsProcessing(false);
+      console.error('Failed to add item to order:', error);
+      toast.error(t("failedToAddItem", { ns: "orders", defaultValue: "Failed to add item to order" }));
+      
+      // Remove the temporary item on error
+      setCartItems(prev => prev.filter(item => item.id !== tempItemId));
     }
   };
 
+
+
+
   const handleCheckout = async () => {
+    // If we have a selected order, we should complete it instead of creating a new one
+    if (selectedOrder) {
+      // Complete the selected order
+      await handleCompleteOrder();
+      return;
+    }
+
+    // Otherwise, create a new order (this should rarely happen now with the new workflow)
     if (!selectedCustomerId) {
       toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
       return;
@@ -652,6 +657,58 @@ const POSPage: React.FC = () => {
 
     console.log('Creating order with dining table ID:', orderData.dining_table_id);
     createOrderMutation.mutate(orderData);
+  };
+
+  const handleCompleteOrder = async () => {
+    if (!selectedOrder) {
+      toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
+      return;
+    }
+
+    // Prevent completing already completed orders
+    if (selectedOrder.status === 'completed') {
+      toast.error(t("orderAlreadyCompleted", { ns: "orders", defaultValue: "This order is already completed" }));
+      return;
+    }
+
+    // Check if order has a customer (required for completion)
+    if (!selectedOrder.customer) {
+      toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before completing it" }));
+      return;
+    }
+
+    // Complete the order directly (items are already in the backend)
+    try {
+      setIsProcessing(true);
+      
+      // Update the order status to completed
+      const updatedOrder = await updateOrderDetails(selectedOrder.id, {
+        status: 'completed',
+        pickup_date: new Date().toISOString(),
+      });
+
+      // Update the selected order with the completed status
+      setSelectedOrder(updatedOrder);
+      
+      // Clear the cart
+      setCartItems([]);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      
+      toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
+      
+      // Auto-show PDF if setting is enabled
+      if (settings?.pos_auto_show_pdf) {
+        setIsPdfDialogOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to complete order:', error);
+      toast.error(t("failedToCompleteOrder", { ns: "orders", defaultValue: "Failed to complete order" }));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Effect for quoting items
@@ -713,507 +770,250 @@ const POSPage: React.FC = () => {
   return (
     <div style={{
       userSelect: 'none',
-    }} className="flex flex-col h-[calc(100vh-64px)] ">
-      {/* Customer Selection Bar */}
-      <div className="border-b shadow-sm flex-shrink-0" style={{ 
-        borderColor: getPrimaryColor(700),
-        backgroundColor: getPrimaryColor(),
-        boxShadow: `0 2px 4px ${getPrimaryColor(200)}40`
-      }}>
-        <div className="container mx-auto px-4 py-1 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <CustomerSelection
-              selectedCustomerId={selectedCustomerId}
-              onCustomerSelected={setSelectedCustomerId}
-              onNewCustomerClick={() => setIsCustomerModalOpen(true)}
-              disabled={!!selectedOrder}
-              forcedCustomer={selectedOrder?.customer || null}
-            />
-            
-            {/* Order Type Selection - Only show when not viewing an existing order */}
-            {!selectedOrder && (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-white whitespace-nowrap">
-                  {t("orderType", { ns: "orders", defaultValue: "Order Type" })}:
-                </Label>
-                <Select
-                  value={orderType}
-                  onValueChange={(newOrderType: 'in_house' | 'take_away' | 'delivery') => {
-                    setOrderType(newOrderType);
-                    setSelectedTableId(' '); // Reset table selection when order type changes
-                  }}
-                  disabled={isProcessing}
-                >
-                  <SelectTrigger 
-                    className="w-32 h-8"
-                  
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in_house">{t('inHouse', { ns: 'orders', defaultValue: 'In House' })}</SelectItem>
-                    <SelectItem value="take_away">{t('takeAway', { ns: 'orders', defaultValue: 'Take Away' })}</SelectItem>
-                    <SelectItem value="delivery">{t('delivery', { ns: 'orders', defaultValue: 'Delivery' })}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+    }} className="flex flex-col h-[calc(100vh-64px)]  mx-2">
+               <POSHeader
+          selectedCustomerId={selectedCustomerId}
+          onCustomerSelected={setSelectedCustomerId}
+          onNewCustomerClick={() => setIsCustomerModalOpen(true)}
+          selectedOrder={selectedOrder}
+          orderType={orderType}
+          onOrderTypeChange={setOrderType}
+          selectedTableId={selectedTableId}
+          onTableIdChange={setSelectedTableId}
+          diningTables={diningTables}
+          todayOrders={todayOrders}
+          isProcessing={isProcessing}
+          onCalculatorClick={() => setIsCalculatorOpen(true)}
+          onPdfClick={() => setIsPdfDialogOpen(true)}
+          onPaymentClick={() => setIsPaymentModalOpen(true)}
+          onOrderSelect={setSelectedOrder}
+          selectedCategoryId={selectedCategoryId}
+          onCategorySelect={setSelectedCategoryId}
+          isNewOrderMode={isNewOrderMode}
+          onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
+        />
 
-            {/* Table Selection - Only show for in-house orders when not viewing an existing order */}
-            {!selectedOrder && orderType === 'in_house' && (
-              <div className="flex items-center gap-2">
-                <Label className="text-xs text-white whitespace-nowrap">
-                  {t("table", { ns: "dining", defaultValue: "Table" })}:
-                </Label>
-                <Select
-                  value={selectedTableId || ''}
-                  onValueChange={(tableId) => setSelectedTableId(tableId || ' ')}
-                  disabled={isProcessing}
-                >
-                  <SelectTrigger 
-                    className="w-32 h-8"
-                  
-                  >
-                    <SelectValue placeholder={t("selectTable", { ns: "dining", defaultValue: "Select Table" })} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=" ">{t("noTable", { ns: "dining", defaultValue: "No Table" })}</SelectItem>
-                    {diningTables
-                      .filter(table => {
-                        // Only show tables that are available or reserved
-                        const isStatusAvailable = table.status === 'available' || table.status === 'reserved';
-                        
-                        // Check if this table has any incomplete orders
-                        const hasIncompleteOrders = todayOrders.some((order: Order) => 
-                          order.table_id === table.id && 
-                          order.status !== 'completed' && 
-                          order.status !== 'cancelled'
-                        );
-                        
-                        return isStatusAvailable && !hasIncompleteOrders;
-                      })
-                      .map((table) => (
-                        <SelectItem key={table.id} value={table.id.toString()}>
-                          {table.name} ({table.capacity} {t("seats", { ns: "dining", defaultValue: "seats" })})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-          
-          {/* Calculator Button - Always visible */}
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setIsCalculatorOpen(true)}
-              style={{
-                backgroundColor: getSecondaryColor(),
-                borderColor: getSecondaryColor(700),
-                color: 'white'
-              }}
-              className="hover:opacity-90 transition-opacity"
-            >
-              <Calculator className="h-4 w-4 mr-1" />
-              {t("calculator", { ns: "common", defaultValue: "Calculator" })}
-            </Button>
-          </div>
-
-          {/* Order Action Buttons - Only show when an order is selected */}
-          {selectedOrder && (
-            <div className="flex items-center gap-2">
-              {/* Status Badge */}
-              <OrderStatusBadgeComponent
-                status={selectedOrder.status}
-                className="text-sm px-2 py-1"
-              />
-              
-              {/* Table Display - Show when order has a dining table */}
-              {(selectedOrder.dining_table || selectedOrder.dining_table_id) && (
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-white whitespace-nowrap">
-                    {t("table", { ns: "dining", defaultValue: "Table" })}:
-                  </Label>
-                  <Badge 
-                    variant="outline" 
-                    className="text-xs px-2 py-1"
-                    style={{
-                      backgroundColor: getSecondaryColor(50),
-                      borderColor: getSecondaryColor(300),
-                      color: getSecondaryColor(700)
-                    }}
-                  >
-                    {selectedOrder.dining_table ? (
-                      `${selectedOrder.dining_table.name} (${selectedOrder.dining_table.capacity} ${t("seats", { ns: "dining", defaultValue: "seats" })})`
-                    ) : (
-                      `Table ${selectedOrder.dining_table_id}`
-                    )}
-                  </Badge>
-                </div>
-              )}
-              
-              {/* Status Change Select */}
-              {can("order:update-status") && (
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-white whitespace-nowrap">
-                    {t("changeStatus", { ns: "orders" })}:
-                  </Label>
-                  <Select
-                    value={selectedOrder.status}
-                    onValueChange={(newStatus: OrderStatus) =>
-                      handleStatusChange(newStatus)
-                    }
-                    disabled={updateStatusMutation.isPending || selectedOrder.status === 'completed' || selectedOrder.status === 'cancelled'}
-                  >
-                    <SelectTrigger 
-                      className="w-32 h-8"
-                      style={{
-                        borderColor: getSecondaryColor(300),
-                        backgroundColor: getSecondaryColor(50)
-                      }}
-                    >
-                      <SelectValue
-                        placeholder={t("changeStatus", { ns: "orders" })}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {t(`status.${status}`, { ns: "services" })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {updateStatusMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+      <main className="flex-1 container mx-auto mt-1 overflow-hidden">
+        <div className="flex gap-2 h-full">
+          {/* Show product columns only when an order is selected */}
+          {selectedOrder ? (
+            <>
+              {/* iPad Layout */}
+              {isIpadView ? (
+                <>
+                  {/* Categories View */}
+                  {showCategoriesOnIpad && (
+                    <Card className="flex-1">
+                      <CardContent className=" h-full">
+                        <CategoryColumn
+                          onSelectCategory={(categoryId) => {
+                            setSelectedCategoryId(categoryId);
+                            setShowCategoriesOnIpad(false);
+                          }}
+                          selectedCategoryId={selectedCategoryId}
+                        />
+                      </CardContent>
+                    </Card>
                   )}
+
+                  {/* Products and Cart View */}
+                  {!showCategoriesOnIpad && (
+                    <div className="relative flex-1 flex gap-2">
+                    <>
+                      {/* Back Button */}
+                      <div className="absolute top-4 left-4 z-10">
+                        <Button
+                          size="sm"
+                          onClick={handleBackToCategories}
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
+                        </Button>
+                      </div>
+                      
+                      {/* Show helpful message when order is selected but cart is empty (iPad) */}
+                      {selectedOrder && cartItems.length === 0 && (
+                        <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs z-10">
+                          <div className="flex items-center gap-2 text-sm text-primary">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                            <span>{t("addItemsToCart", { ns: "orders", defaultValue: "Add items to see cart" })}</span>
+                          </div>
+                        </div>
+                      )}
+
+                                             {/* Products */}
+                       <Card className={`flex-1 flex flex-col ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                         <CardContent className="flex-1 min-h-0 p-0">
+                           {selectedOrder?.status === 'completed' ? (
+                             <div className="flex items-center justify-center h-full">
+                               <div className="text-center">
+                                 <div className="text-4xl mb-2">✅</div>
+                                 <p className="text-muted-foreground">
+                                   {t("orderCompleted", { ns: "orders", defaultValue: "Order Completed" })}
+                                 </p>
+                                 <p className="text-sm text-muted-foreground">
+                                   {t("noMoreEdits", { ns: "orders", defaultValue: "No more edits allowed" })}
+                                 </p>
+                               </div>
+                             </div>
+                           ) : (
+                             <>
+                               {settings?.pos_show_products_as_list ? (
+                                 <ProductListColumn
+                                   categoryId={selectedCategoryId}
+                                   onSelectProduct={handleSelectProduct}
+                                   activeProductId={selectedProductType?.id.toString()}
+                                 />
+                               ) : (
+                                 <ProductColumn
+                                   categoryId={selectedCategoryId}
+                                   onSelectProduct={handleSelectProduct}
+                                   activeProductId={selectedProductType?.id.toString()}
+                                 />
+                               )}
+                             </>
+                           )}
+                         </CardContent>
+                       </Card>
+
+                      {/* Cart - Only show when there are items or an order is selected */}
+                      {(cartItems.length > 0 || selectedOrder) && (
+                        <Card className="flex-1">
+                          <CardContent className="p-1 h-full">
+                          <CartColumn
+                            items={cartItems}
+                            onRemoveItem={handleRemoveItem}
+                            onUpdateQuantity={handleUpdateQuantity}
+                            onUpdateDimensions={handleUpdateDimensions}
+                            onUpdateNotes={handleUpdateNotes}
+                            onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
+                            isProcessing={isProcessing}
+                            mode={selectedOrder ? 'order_edit' : 'cart'}
+                            orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                            isReadOnly={selectedOrder?.status === 'completed'}
+                          />
+                          </CardContent>
+                        </Card>
+                      )}
+                    </>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Desktop Layout */}
+                  {/* Left Section: Categories */}
+                  <Card className="w-[100px] flex-shrink-0">
+                    <CardContent className="p-1 h-full">
+                  <CategoryColumn
+                    onSelectCategory={handleSelectCategory}
+                    selectedCategoryId={selectedCategoryId}
+                  />
+                    </CardContent>
+                  </Card>
+
+              {/* Middle Section: Products and Services */}
+              <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
+                                 {/* Products */}
+                     <Card className={`flex-1 flex flex-col ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                       <CardContent className="flex-1 min-h-0 p-1">
+                   <div className="flex-1 min-h-0">
+                     {selectedOrder?.status === 'completed' ? (
+                       <div className="flex items-center justify-center h-full">
+                         <div className="text-center">
+                           <div className="text-4xl mb-2">✅</div>
+                           <p className="text-muted-foreground">
+                             {t("orderCompleted", { ns: "orders", defaultValue: "Order Completed" })}
+                           </p>
+                           <p className="text-sm text-muted-foreground">
+                             {t("noMoreEdits", { ns: "orders", defaultValue: "No more edits allowed" })}
+                           </p>
+                         </div>
+                       </div>
+                     ) : (
+                       <>
+                         {settings?.pos_show_products_as_list ? (
+                           <ProductListColumn
+                             categoryId={selectedCategoryId}
+                             onSelectProduct={handleSelectProduct}
+                             activeProductId={selectedProductType?.id.toString()}
+                           />
+                         ) : (
+                           <ProductColumn
+                             categoryId={selectedCategoryId}
+                             onSelectProduct={handleSelectProduct}
+                             activeProductId={selectedProductType?.id.toString()}
+                           />
+                         )}
+                       </>
+                     )}
+                   </div>
+                       </CardContent>
+                     </Card>
+
+                {/* Removed ServiceOfferingColumn - now handled by dialog */}
+              </div>
+              
+              {/* Show helpful message when order is selected but cart is empty */}
+              {selectedOrder && cartItems.length === 0 && (
+                <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs">
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <span>{t("addItemsToCart", { ns: "orders", defaultValue: "Add items to see cart" })}</span>
+                  </div>
                 </div>
               )}
-
-              {/* Print and Download Buttons */}
-              <Button
-                size="sm"
-                onClick={() => setIsPdfDialogOpen(true)}
-                style={{
-                  backgroundColor: getSecondaryColor(),
-                  borderColor: getSecondaryColor(700),
-                  color: 'white'
-                }}
-                className="hover:opacity-90 transition-opacity"
-              >
-                <Printer className="h-4 w-4 mr-1" />
-              </Button>
-             
+           
+                           {/* Right Section: Cart - Only show when there are items or an order is selected */}
+                           {(cartItems.length > 0 || selectedOrder) && (
+                             <Card className="w-[400px] flex-shrink-0">
+                               <CardContent className="p-1 h-full">
+                             <CartColumn
+                               items={cartItems}
+                               onRemoveItem={handleRemoveItem}
+                               onUpdateQuantity={handleUpdateQuantity}
+                               onUpdateDimensions={handleUpdateDimensions}
+                               onUpdateNotes={handleUpdateNotes}
+                               onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
+                               isProcessing={isProcessing}
+                               mode={selectedOrder ? 'order_edit' : 'cart'}
+                               orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                               isReadOnly={selectedOrder?.status === 'completed'}
+                                                          />
+                                 </CardContent>
+                             </Card>
+                           )}
+                  </>
+              )}
+            </>
+                     ) : (
+              /* No order selected - show empty state */
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📋</div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    {t("noOrderSelected", { ns: "orders", defaultValue: "No Order Selected" })}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {t("selectOrderToStart", { ns: "orders", defaultValue: "Select an order from the right panel to start adding items" })}
+                  </p>
+                  <div className="flex flex-col gap-2 items-center">
               
-              {/* Payment Button */}
-              {can("order:record-payment") && selectedOrder && (selectedOrder.amount_due || 0) > 0 && (
-                selectedOrder.status !== 'cancelled' && 
-                <Button
-                  size="sm"
-                  onClick={() => setIsPaymentModalOpen(true)}
-                  style={{
-                    backgroundColor: getSecondaryColor(),
-                    borderColor: getSecondaryColor(700),
-                    color: 'white'
-                  }}
-                  className="hover:opacity-90 transition-opacity"
-                >
-                  {t("recordOrUpdatePayment", {
-                    ns: "orders",
-                    defaultValue: "Record/Update Payment",
-                  })}
-                </Button>
-                
-              )}
-              
-              {/* WhatsApp Buttons */}
-              {can("order:send-whatsapp") && selectedOrder.customer?.phone && (
-                <>
-                  <Button
-                    size="sm"
-                    variant={selectedOrder.whatsapp_text_sent ? "default" : "outline"}
-                    style={{
-                      backgroundColor: selectedOrder.whatsapp_text_sent ? getSecondaryColor() : 'transparent',
-                      borderColor: getSecondaryColor(300),
-                      color: selectedOrder.whatsapp_text_sent ? 'white' : getSecondaryColor()
-                    }}
-                    className="hover:opacity-90 transition-opacity"
-                    disabled
-                  >
-                    <WhatsAppIcon className="h-4 w-4 mr-1" />
-                    {selectedOrder.whatsapp_text_sent ? t("messageSent", { ns: "orders" }) : t("sendMessage", { ns: "orders" })}
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant={selectedOrder.whatsapp_pdf_sent ? "default" : "outline"}
-                    style={{
-                      backgroundColor: selectedOrder.whatsapp_pdf_sent ? getSecondaryColor() : 'transparent',
-                      borderColor: getSecondaryColor(300),
-                      color: selectedOrder.whatsapp_pdf_sent ? 'white' : getSecondaryColor()
-                    }}
-                    className="hover:opacity-90 transition-opacity"
-                    onClick={handleSendWhatsAppInvoice}
-                    disabled={sendWhatsAppInvoiceMutation.isPending}
-                  >
-                    <WhatsAppIcon className="h-4 w-4 mr-1" />
-                    {sendWhatsAppInvoiceMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    ) : null}
-                    {selectedOrder.whatsapp_pdf_sent ? t("invoiceSent", { ns: "orders" }) : t("sendInvoice", { ns: "orders" })}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <main className="flex-1 container mx-auto mt-1  overflow-hidden">
-        <div className="flex gap-4 h-full">
-          {/* iPad Layout */}
-          {isIpadView ? (
-            <>
-              {/* Categories View */}
-              {showCategoriesOnIpad && (
-                <Card className="flex-1">
-                  <CardContent className="p-4 h-full">
-                    <CategoryColumn
-                      onSelectCategory={(categoryId) => {
-                        setSelectedCategoryId(categoryId);
-                        setShowCategoriesOnIpad(false);
-                      }}
-                      selectedCategoryId={selectedCategoryId}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Products and Cart View */}
-              {!showCategoriesOnIpad && (
-                <>
-                  {/* Back Button */}
-                  <div className="absolute top-4 left-4 z-10">
-                    <Button
-                      size="sm"
-                      onClick={handleBackToCategories}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
-                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      {t("orSelectExistingOrder", { ns: "orders", defaultValue: "Or select an existing order from the right panel" })}
+                    </p>
                   </div>
-
-                  {/* Products */}
-                  <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
-                    <CardContent className="flex-1 min-h-0 p-0">
-                      {settings?.pos_show_products_as_list ? (
-                        <ProductListColumn
-                          categoryId={selectedCategoryId}
-                          onSelectProduct={handleSelectProduct}
-                          activeProductId={selectedProductType?.id.toString()}
-                        />
-                      ) : (
-                        <ProductColumn
-                          categoryId={selectedCategoryId}
-                          onSelectProduct={handleSelectProduct}
-                          activeProductId={selectedProductType?.id.toString()}
-                          isIpadView={isIpadView}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Cart */}
-                  <Card className="w-[400px]">
-                    <CardContent className="p-0 h-full">
-                    <CartColumn
-                      items={selectedOrder ? [
-                        // Existing order items
-                        ...(selectedOrder.items?.map(item => ({
-                          id: item.id.toString(),
-                          productType: item.serviceOffering?.productType || {} as ProductType,
-                          serviceOffering: item.serviceOffering || {} as ServiceOffering,
-                          quantity: item.quantity,
-                          price: item.calculated_price_per_unit_item,
-                          notes: item.notes || undefined,
-                          length_meters: item.length_meters || undefined,
-                          width_meters: item.width_meters || undefined,
-                          _quotedSubTotal: item.sub_total,
-                          _isExistingOrderItem: true,
-                        })) || []),
-                        // New cart items being added
-                        ...cartItems
-                      ] : cartItems}
-                      onRemoveItem={selectedOrder ? (id: string) => {
-                        if (cartItems.find(item => item.id === id)) {
-                          handleRemoveItem(id);
-                        }
-                      } : handleRemoveItem}
-                      onUpdateQuantity={selectedOrder ? (id: string, quantity: number) => {
-                        if (cartItems.find(item => item.id === id)) {
-                          handleUpdateQuantity(id, quantity);
-                        }
-                      } : handleUpdateQuantity}
-                      onUpdateDimensions={selectedOrder ? (id: string, dimensions: { length?: number; width?: number }) => {
-                        if (cartItems.find(item => item.id === id)) {
-                          handleUpdateDimensions(id, dimensions);
-                        }
-                      } : handleUpdateDimensions}
-                      onUpdateNotes={selectedOrder ? (id: string, notes: string) => {
-                        if (cartItems.find(item => item.id === id)) {
-                          handleUpdateNotes(id, notes);
-                        }
-                      } : handleUpdateNotes}
-                      onCheckout={selectedOrder ? () => {
-                        if (cartItems.length > 0) {
-                          handleAddItemsToOrder();
-                        }
-                      } : handleCheckout}
-                      isProcessing={isProcessing}
-                      mode={selectedOrder ? 'order_edit' : 'cart'}
-                      orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
-                      isReadOnly={selectedOrder?.status === 'completed'}
-                    />
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Desktop Layout */}
-                        {/* Left Section: Categories */}
-              <Card className="w-[250px]">
-                <CardContent className="p-0 h-full">
-            <CategoryColumn
-              onSelectCategory={handleSelectCategory}
-              selectedCategoryId={selectedCategoryId}
-            />
-                </CardContent>
-              </Card>
-
-          {/* Middle Section: Products and Services */}
-          <div className="flex-1 flex gap-4 min-h-0">
-            {/* Products */}
-                <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
-                  <CardContent className="flex-1 min-h-0 p-0">
-              <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
-                {t("product", { ns: "common" })}
-              </h2>
-              <div className="flex-1 min-h-0">
-                {settings?.pos_show_products_as_list ? (
-                  <ProductListColumn
-                    categoryId={selectedCategoryId}
-                    onSelectProduct={handleSelectProduct}
-                    activeProductId={selectedProductType?.id.toString()}
-                  />
-                ) : (
-                  <ProductColumn
-                    categoryId={selectedCategoryId}
-                    onSelectProduct={handleSelectProduct}
-                    activeProductId={selectedProductType?.id.toString()}
-                        isIpadView={isIpadView}
-                  />
-                )}
+                </div>
               </div>
-                  </CardContent>
-                </Card>
+            )}
 
-            {/* Services */}
-                <Card className={`flex-1 flex flex-col min-w-[160px] ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
-                  <CardContent className="flex-1 min-h-0 p-0">
-              <h2 className="text-lg font-semibold p-4 border-b" style={{ borderColor: materialColors.divider }}>
-                {t("serviceOffering", { ns: "common" })}
-              </h2>
-              <div className="flex-1 min-h-0">
-                <ServiceOfferingColumn
-                  productType={selectedProductType}
-                  onSelectOffering={handleSelectOffering}
-                  disabled={!selectedCustomerId && !selectedOrder?.customer}
-                  disabledMessage={t("selectCustomerFirst", { ns: "orders" })}
-                  activeOfferingId={selectedOfferingId}
-                />
-              </div>
-                  </CardContent>
-                </Card>
-          </div>
-       
-          {/* Right Section: Cart */}
-              <Card className="w-[400px]">
-                <CardContent className="p-0 h-full">
-            <CartColumn
-              items={selectedOrder ? [
-                // Existing order items
-                ...(selectedOrder.items?.map(item => ({
-                  id: item.id.toString(),
-                  productType: item.serviceOffering?.productType || {} as ProductType,
-                  serviceOffering: item.serviceOffering || {} as ServiceOffering,
-                  quantity: item.quantity,
-                  price: item.calculated_price_per_unit_item,
-                  notes: item.notes || undefined,
-                  length_meters: item.length_meters || undefined,
-                  width_meters: item.width_meters || undefined,
-                  _quotedSubTotal: item.sub_total,
-                      _isExistingOrderItem: true,
-                })) || []),
-                // New cart items being added
-                ...cartItems
-              ] : cartItems}
-              onRemoveItem={selectedOrder ? (id: string) => {
-                if (cartItems.find(item => item.id === id)) {
-                  handleRemoveItem(id);
-                }
-              } : handleRemoveItem}
-              onUpdateQuantity={selectedOrder ? (id: string, quantity: number) => {
-                if (cartItems.find(item => item.id === id)) {
-                  handleUpdateQuantity(id, quantity);
-                }
-              } : handleUpdateQuantity}
-              onUpdateDimensions={selectedOrder ? (id: string, dimensions: { length?: number; width?: number }) => {
-                if (cartItems.find(item => item.id === id)) {
-                  handleUpdateDimensions(id, dimensions);
-                }
-              } : handleUpdateDimensions}
-              onUpdateNotes={selectedOrder ? (id: string, notes: string) => {
-                if (cartItems.find(item => item.id === id)) {
-                  handleUpdateNotes(id, notes);
-                }
-              } : handleUpdateNotes}
-              onCheckout={selectedOrder ? () => {
-                if (cartItems.length > 0) {
-                  handleAddItemsToOrder();
-                }
-              } : handleCheckout}
-              isProcessing={isProcessing}
-              mode={selectedOrder ? 'order_edit' : 'cart'}
-              orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
-              isReadOnly={selectedOrder?.status === 'completed'}
-            />
-                </CardContent>
-              </Card>
-            </>
-          )}
+
 
           {/* Today's Orders Column - Always visible */}
           <TodayOrdersColumn
             onOrderSelect={handleOrderSelect}
             selectedOrderId={selectedOrder?.id?.toString() || undefined}
-            isOrderViewMode={!!selectedOrder}
-            onNewOrder={() => {
-              setSelectedOrder(null);
-              setCartItems([]);
-              setSelectedCustomerId(null);
-              setSelectedCategoryId(null);
-              setSelectedProductType(null);
-              setSelectedOfferingId(null);
-              setSelectedTableId(' ');
-              setOrderType('in_house');
-              if (isIpadView) {
-                setShowCategoriesOnIpad(true);
-              }
-            }}
           />
         </div>
       </main>
@@ -1223,9 +1023,22 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsCustomerModalOpen}
         onSuccess={(customer) => {
           setSelectedCustomerId(customer.id.toString());
+          // If we have a selected order without a customer, update it
+          if (selectedOrder && !selectedOrder.customer) {
+            // Create a new order with the selected customer - ensure empty cart
+            const newOrderData = {
+              customer_id: customer.id.toString(),
+              items: [], // Empty items array for new order
+              order_type: orderType,
+              dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
+            };
+            createOrderMutation.mutate(newOrderData);
+          }
           queryClient.invalidateQueries({ queryKey: ['customersForSelect'] });
         }}
       />
+
+
 
       <TodayOrders
         isOpen={isTodayOrdersOpen}
@@ -1261,7 +1074,7 @@ const POSPage: React.FC = () => {
         dateTo={today}
       />
 
-      {/* Service Offering Selection Dialog for iPad */}
+      {/* Service Offering Selection Dialog */}
       <Dialog open={isServiceOfferingDialogOpen} onOpenChange={setIsServiceOfferingDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1295,6 +1108,8 @@ const POSPage: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+
     </div>
   );
 };

@@ -9,11 +9,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProductListColumnProps {
@@ -49,11 +45,8 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b">
-          <Skeleton className="h-10 w-full" />
-        </div>
         <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
-          <div className="p-4 space-y-2">
+          <div className="p-1 space-y-2">
             {Array.from({ length: 10 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full" />
             ))}
@@ -66,9 +59,6 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   if (error) {
     return (
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b">
-          <Skeleton className="h-10 w-full" />
-        </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <p>{t("errorLoadingProducts", { ns: "services" })}</p>
@@ -80,22 +70,8 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search Bar */}
-      <div className="p-4 border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t("searchProductsByNameOrId", { ns: "services" })}
-            className="pl-9 bg-muted/50 dark:bg-muted/20 border-border/50 focus:border-primary"
-          />
-        </div>
-      </div>
-
       <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
-        <div className="p-4">
+        <div className="p-1">
           {filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[200px]">
               <Search className="h-12 w-12 mb-4 opacity-50" />

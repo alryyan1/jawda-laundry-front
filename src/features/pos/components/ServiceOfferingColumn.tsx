@@ -53,7 +53,7 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow h-[calc(100vh-200px)]">
-        <div className="p-4">
+        <div className="p-1">
           {isLoading ? (
             <div className="space-y-3">
               {[...Array(6)].map((_, i) => (

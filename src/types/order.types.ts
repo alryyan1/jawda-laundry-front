@@ -76,7 +76,7 @@ export interface Order {
     order_number: string;
     order_type: 'in_house' | 'take_away' | 'delivery';
     daily_order_number?: number;
-    customer: Customer;
+    customer: Customer | null;
     table_id?: number | null;
     table?: RestaurantTable;
     dining_table_id?: number | null;

@@ -298,6 +298,7 @@ export const updateOrder = async (
 
 // This type can be used for any partial update of order details
 export interface OrderDetailsUpdatePayload {
+    customer_id?: number;
     notes?: string | null;
     due_date?: string | null;
     status?: OrderStatus;

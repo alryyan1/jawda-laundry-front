@@ -65,6 +65,9 @@ const NewCustomerPage = React.lazy(
 const EditCustomerPage = React.lazy(
   () => import("@/pages/customers/EditCustomerPage")
 );
+const CustomerPriceListPage = React.lazy(
+  () => import("@/pages/customers/CustomerPriceListPage")
+);
 
 // Order Pages
 const OrdersListPage = React.lazy(
@@ -260,6 +263,14 @@ export const router = createHashRouter([
           {
             path: "customers/:id/ledger",
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><CustomerLedgerPage /></React.Suspense>,
+          },
+          {
+            path: "customers/:customerId/price-list",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <CustomerPriceListPage />
+              </React.Suspense>
+            ),
           },
           // Orders
           {

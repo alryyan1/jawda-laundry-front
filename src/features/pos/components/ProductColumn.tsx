@@ -1,17 +1,14 @@
 // src/features/pos/components/ProductColumn.tsx
-import React, { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
-import { getProductTypeInventory } from "@/api/inventoryService";
+// import { getProductTypeInventory } from "@/api/inventoryService"; // Removed inventory import
 import { useDebounce } from "@/hooks/useDebounce";
+import { useSearch } from "@/context/SearchContext";
 
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Search, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- MUI Import ---
@@ -50,17 +47,14 @@ interface ProductColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
-  isIpadView?: boolean;
 }
 
 export const ProductColumn: React.FC<ProductColumnProps> = ({
   categoryId,
   onSelectProduct,
   activeProductId,
-  isIpadView = false,
 }) => {
-  const { t } = useTranslation(["services", "common"]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { searchTerm } = useSearch();
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const { data: allProducts = [], isLoading, error } = useQuery<ProductType[], Error>({
@@ -69,10 +63,10 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: inventoryData = {} } = useQuery({
-    queryKey: ["productTypeInventory"],
-    queryFn: getProductTypeInventory,
-  });
+  // const { data: inventoryData = {} } = useQuery({ // Removed inventory data query
+  //   queryKey: ["productTypeInventory"],
+  //   queryFn: getProductTypeInventory,
+  // });
 
   const filteredProducts = useMemo(() => {
     return allProducts.filter(product => {
@@ -89,103 +83,63 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   return (
     <MuiThemeProvider theme={muiTheme}>
       <div className="flex flex-col h-full">
-        {/* Search Bar - Hidden on iPad */}
-        {!isIpadView && (
-        <div className="p-4 border-b">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={t("searchProductsByNameOrId", { ns: "services" })}
-              className="pl-9 bg-muted/50 dark:bg-muted/20 border-border/50 focus:border-primary"
-            />
-          </div>
-        </div>
-        )}
-
-        <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
-          <div className="p-4">
+        <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
+          <div className="p-0">
             {filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[50px]">
                 {/* ... empty state message ... */}
               </div>
             ) : (
-              <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 lg:gap-4" 
+              <div className="grid grid-cols-3 gap-2" 
                    style={{ 
-                     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 150px))",
+                     gridTemplateColumns: "repeat(3, 1fr)",
                      maxWidth: "100%"
                    }}>
                 {filteredProducts.map((product) => (
-                  <TooltipProvider key={product.id} delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {/* --- MUI Badge Implementation --- */}
-                        <Badge
-                          badgeContent={product.service_offerings_count || 0}
-                          color="info"
-                         
-                          // Use invisible prop to hide the badge if count is 0
-                          invisible={!product.service_offerings_count || product.service_offerings_count === 0}
-                          anchorOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                          }}
-                        >
-                          <button
-                            onClick={() => onSelectProduct(product)}
-                            className={cn(
-                              "w-full flex flex-col items-center justify-center p-2 rounded-lg transition-all text-center cursor-pointer",
-                              "bg-card hover:bg-card/90",
-                              "shadow-sm hover:shadow-md",
-                              "transform hover:-translate-y-0.5",
-                              "border border-border hover:border-primary/50",
-                              activeProductId === product.id.toString() && "border-2 border-primary bg-primary/5 shadow-primary/20"
-                            )}
-                            style={{ minHeight: "130px" }}
-                          >
-                            <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden">
-                              {product.image_url ? (
-                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-muted">
-                                  <span className="text-2xl font-medium text-muted-foreground">
-                                    {product.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                              )}
+                  <div key={product.id}>
+                    <button
+                      onClick={() => onSelectProduct(product)}
+                      className={cn(
+                        "w-full flex flex-col items-center justify-center p-1 rounded-lg transition-all text-center cursor-pointer",
+                        "bg-card hover:bg-card/90",
+                        "shadow-sm hover:shadow-md",
+                        "transform hover:-translate-y-0.5",
+                        "border border-border hover:border-primary/50",
+                        activeProductId === product.id.toString() && "border-2 border-primary bg-primary/5 shadow-primary/20"
+                      )}
+                      style={{ minHeight: "130px" }}
+                    >
+                      {/* --- MUI Badge Implementation --- */}
+                      <Badge
+                        badgeContent={product.service_offerings_count || 0}
+                        color="info"
+                       
+                        // Use invisible prop to hide the badge if count is 0
+                        invisible={!product.service_offerings_count || product.service_offerings_count === 0}
+                        anchorOrigin={{
+                          vertical: 'top',
+                          horizontal: 'right',
+                        }}
+                      >
+                        <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden">
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <span className="text-2xl font-medium text-muted-foreground">
+                                {product.name.charAt(0).toUpperCase()}
+                              </span>
                             </div>
-                            <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
-                              {product.name}
-                            </span>
-                            {/* Inventory Quantity Display */}
-                            {inventoryData[product.id] && (
-                              <div className="mt-1 text-xs flex items-center justify-center gap-1">
-                                <Package className="h-3 w-3 text-muted-foreground" />
-                                <span className={`font-medium ${
-                                  inventoryData[product.id].current_stock <= 0 
-                                    ? 'text-red-500' 
-                                    : inventoryData[product.id].current_stock <= 5 
-                                    ? 'text-orange-500' 
-                                    : 'text-green-600'
-                                }`}>
-                                  {inventoryData[product.id].current_stock} {inventoryData[product.id].unit}
-                                </span>
-                                {inventoryData[product.id].current_stock <= 0 && (
-                                  <span className="ml-1 text-red-500 font-semibold">(Out of Stock)</span>
-                                )}
-                                {inventoryData[product.id].current_stock > 0 && inventoryData[product.id].current_stock <= 5 && (
-                                  <span className="ml-1 text-orange-500 font-semibold">(Low Stock)</span>
-                                )}
-                              </div>
-                            )}
-                          </button>
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent><p>{product.name}</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                          )}
+                        </div>
+                      </Badge>
+                      <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
+                        {product.name}
+                      </span>
+                      {/* Inventory Quantity Display */}
+                      {/* Removed inventory data display */}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

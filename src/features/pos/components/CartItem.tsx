@@ -19,6 +19,7 @@ import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -35,6 +36,7 @@ export interface CartItem {
   _quoteError?: string | null;
   _quotedSubTotal?: number;
   _isExistingOrderItem?: boolean; // Flag to identify existing order items
+  _isAdding?: boolean; // Flag to show loading state while adding to backend
 }
 
 interface CartItemProps {
@@ -80,12 +82,48 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
 
   return (
     <>
-      <div dir={i18n.language === "ar" ? "rtl" : "ltr"}
-        className={cn(
-          "relative rounded-lg border bg-card text-card-foreground shadow-sm",
-          item._isQuoting && "opacity-70 pointer-events-none"
-        )}
-      >
+      {item._isAdding ? (
+        // Skeleton loading state while adding to backend
+        <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="flex items-start justify-between p-3 border-b">
+            <div className="flex-1 pr-2">
+              <Skeleton className="h-4 w-16 mb-1" />
+              <Skeleton className="h-6 w-32 mb-1" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <Skeleton className="h-8 w-8" />
+          </div>
+          <div className="p-3 space-y-3">
+            <div className="grid grid-cols-5 gap-2 items-end">
+              <div className="col-span-2">
+                <Skeleton className="h-3 w-12 mb-1" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+              <div className="col-span-2">
+                <Skeleton className="h-3 w-12 mb-1" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+              <div className="col-span-1">
+                <Skeleton className="h-8 w-full" />
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div dir={i18n.language === "ar" ? "rtl" : "ltr"}
+          className={cn(
+            "relative rounded-lg border bg-card text-card-foreground shadow-sm",
+            item._isQuoting && "opacity-70 pointer-events-none"
+          )}
+        >
         {/* Header */}
         <div className="flex items-start justify-between p-3 border-b">
           <div className="flex-1 pr-2">
@@ -273,6 +311,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           )}
         </div>
       </div>
+      )}
 
       {item.productType && isDimensionBased && !effectiveReadOnly && (
         <SelectSizeDialog
