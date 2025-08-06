@@ -155,22 +155,7 @@ const DetailedReportsMainPage: React.FC = () => {
         t('salesTrendsFeatures.4')
       ]
     },
-    {
-      id: 'inventory-report',
-      title: t('inventoryReportTitle'),
-      description: t('inventoryReportDescription'),
-      icon: ShoppingCart,
-      color: 'text-cyan-600',
-      bgColor: 'bg-cyan-50',
-      route: '/reports/inventory',
-      permission: 'report:view-financial',
-      features: [
-        t('inventoryFeatures.1'),
-        t('inventoryFeatures.2'),
-        t('inventoryFeatures.3'),
-        t('inventoryFeatures.4')
-      ]
-    }
+
   ];
 
   const availableReports = reports.filter(report => can(report.permission));

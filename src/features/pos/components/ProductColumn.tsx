@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { pricingRuleService } from "@/api/pricingRuleService";
-// import { getProductTypeInventory } from "@/api/inventoryService"; // Removed inventory import
+
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearch } from "@/context/SearchContext";
 
@@ -75,10 +75,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
-  // const { data: inventoryData = {} } = useQuery({ // Removed inventory data query
-  //   queryKey: ["productTypeInventory"],
-  //   queryFn: getProductTypeInventory,
-  // });
+
 
   // Determine which products to show based on customer selection
   const productsToShow = useMemo(() => {
@@ -170,8 +167,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                       <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
                         {product.name}
                       </span>
-                      {/* Inventory Quantity Display */}
-                      {/* Removed inventory data display */}
+
                     </button>
                   </div>
                 ))}
