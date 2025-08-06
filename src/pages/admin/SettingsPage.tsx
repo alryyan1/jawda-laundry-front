@@ -54,6 +54,7 @@ const settingsFormSchema = z.object({
   company_name: z.string().optional(),
   company_address: z.string().optional(),
   company_phone: z.string().optional(),
+  company_phone_2: z.string().optional(),
   company_email: z
     .string()
     .email({ message: "validation:email" })
@@ -103,6 +104,7 @@ const SettingsPage: React.FC = () => {
       company_name: "",
       company_address: "",
       company_phone: "",
+      company_phone_2: "",
       company_email: "",
       currency_symbol: "$",
       date_format: "YYYY-MM-DD",
@@ -140,6 +142,7 @@ const SettingsPage: React.FC = () => {
         company_name: settings.company_name || "",
         company_address: settings.company_address || "",
         company_phone: settings.company_phone || "",
+        company_phone_2: settings.company_phone_2 || "",
         company_email: settings.company_email || "",
         currency_symbol: settings.currency_symbol || "$",
         date_format: settings.date_format || "YYYY-MM-DD",
@@ -355,6 +358,22 @@ const SettingsPage: React.FC = () => {
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="company_phone_2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings:companyPhone2", { defaultValue: "Company Phone 2" })}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="+1-555-123-4567" />
+                          </FormControl>
+                          <FormDescription>
+                            {t("settings:companyPhone2Desc", { defaultValue: "Secondary phone number for your company" })}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

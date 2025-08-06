@@ -122,7 +122,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 
   return (
     <MuiThemeProvider theme={muiTheme}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full ">
         <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
           <div className="p-0">
             {filteredProducts.length === 0 ? (
@@ -136,7 +136,10 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                      maxWidth: "100%"
                    }}>
                 {filteredProducts.map((product) => (
-                  <div key={product.id}>
+                  <div key={product.id} className={cn(
+                    "rounded-lg transition-all",
+                    activeProductId === product.id.toString() && "ring-2 ring-primary ring-offset-2"
+                  )}>
                     <button
                       onClick={() => onSelectProduct(product)}
                       className={cn(
@@ -145,7 +148,8 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                         "shadow-sm hover:shadow-md",
                         "transform hover:-translate-y-0.5",
                         "border border-border hover:border-primary/50",
-                        activeProductId === product.id.toString() && "border-2 border-primary bg-primary/5 shadow-primary/20"
+                        isProductInCart(product.id) && "bg-sky-500/10 border-sky-500"
+                        
                       )}
                       style={{ minHeight: "130px" }}
                     >

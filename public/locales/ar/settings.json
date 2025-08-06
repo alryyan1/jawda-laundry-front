@@ -34,6 +34,8 @@
     "generalSettingsDescription": "تكوين الإعدادات الأساسية للتطبيق",
     "companyName": "اسم الشركة",
     "companyPhone": "هاتف الشركة",
+    "companyPhone2": "هاتف الشركة 2",
+    "companyPhone2Desc": "رقم الهاتف الثانوي للشركة",
     "currencySymbol": "رمز العملة",
     "selectCurrency": "اختر العملة",
     "companyAddress": "عنوان الشركة",
