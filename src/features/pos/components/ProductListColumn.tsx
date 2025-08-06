@@ -13,8 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { Search, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { CartItem } from "./CartItem";
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +28,7 @@ interface ProductListColumnProps {
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
   selectedCustomerId?: string | null;
+  cartItems?: CartItem[];
 }
 
 export const ProductListColumn: React.FC<ProductListColumnProps> = ({
@@ -34,6 +36,7 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   onSelectProduct,
   activeProductId,
   selectedCustomerId,
+  cartItems = [],
 }) => {
   const { t } = useTranslation(["services", "common"]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,6 +85,11 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
       return matchesSearch && matchesCategory;
     });
   }, [productsToShow, categoryId, debouncedSearchTerm]);
+
+  // Check if a product is in the cart
+  const isProductInCart = (productId: number): boolean => {
+    return cartItems.some(item => item.productType.id === productId);
+  };
 
   const isLoading = isLoadingCustomerProducts || isLoadingAllProducts;
 
@@ -164,6 +172,13 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
                             <Badge variant="outline" className="text-xs">
                               {t("dimensionBased", { ns: "services" })}
                             </Badge>
+                          )}
+                          
+                          {/* Green check circle for products in cart */}
+                          {isProductInCart(product.id) && (
+                            <div className="bg-green-500 rounded-full p-1">
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            </div>
                           )}
                         </div>
                       </button>

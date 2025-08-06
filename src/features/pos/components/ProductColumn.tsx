@@ -5,12 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { pricingRuleService } from "@/api/pricingRuleService";
+import type { CartItem } from "./CartItem";
 
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearch } from "@/context/SearchContext";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { CheckCircle } from "lucide-react";
 
 // --- MUI Import ---
 import Badge from '@mui/material/Badge';
@@ -49,6 +51,7 @@ interface ProductColumnProps {
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
   selectedCustomerId?: string | null;
+  cartItems?: CartItem[];
 }
 
 export const ProductColumn: React.FC<ProductColumnProps> = ({
@@ -56,6 +59,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   onSelectProduct,
   activeProductId,
   selectedCustomerId,
+  cartItems = [],
 }) => {
   const { searchTerm } = useSearch();
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -106,6 +110,11 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
     });
   }, [productsToShow, categoryId, debouncedSearchTerm]);
 
+  // Check if a product is in the cart
+  const isProductInCart = (productId: number): boolean => {
+    return cartItems.some(item => item.productType.id === productId);
+  };
+
   const isLoading = isLoadingCustomerProducts || isLoadingAllProducts;
 
   if (isLoading) { /* ... same as before ... */ }
@@ -140,6 +149,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                       )}
                       style={{ minHeight: "130px" }}
                     >
+                      
                       {/* --- MUI Badge Implementation --- */}
                       <Badge
                         badgeContent={product.service_offerings_count || 0}
@@ -152,7 +162,13 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                           horizontal: 'right',
                         }}
                       >
-                        <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden">
+                          {/* Green check circle for products in cart */}
+                          {isProductInCart(product.id) && (
+                            <div className="absolute -top-1 -left-8 bg-green-500 rounded-full p-0.5 shadow-md">
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
                           {product.image_url ? (
                             <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                           ) : (
@@ -162,6 +178,8 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                               </span>
                             </div>
                           )}
+                          
+                        
                         </div>
                       </Badge>
                       <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">

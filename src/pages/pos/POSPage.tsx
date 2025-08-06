@@ -912,6 +912,7 @@ const POSPage: React.FC = () => {
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
                                    selectedCustomerId={selectedCustomerId}
+                                   cartItems={cartItems}
                                  />
                                ) : (
                                  <ProductColumn
@@ -919,6 +920,7 @@ const POSPage: React.FC = () => {
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
                                    selectedCustomerId={selectedCustomerId}
+                                   cartItems={cartItems}
                                  />
                                )}
                              </>
@@ -989,6 +991,7 @@ const POSPage: React.FC = () => {
                              onSelectProduct={handleSelectProduct}
                              activeProductId={selectedProductType?.id.toString()}
                              selectedCustomerId={selectedCustomerId}
+                             cartItems={cartItems}
                            />
                          ) : (
                            <ProductColumn
@@ -996,6 +999,7 @@ const POSPage: React.FC = () => {
                              onSelectProduct={handleSelectProduct}
                              activeProductId={selectedProductType?.id.toString()}
                              selectedCustomerId={selectedCustomerId}
+                             cartItems={cartItems}
                            />
                          )}
                        </>
