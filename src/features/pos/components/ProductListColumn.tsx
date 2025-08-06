@@ -5,42 +5,85 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
+import { customerProductTypeService } from "@/api/customerProductTypeService";
+import type { CustomerProductTypesResponse } from "@/types/customerProductTypes.types";
 import { useDebounce } from "@/hooks/useDebounce";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProductListColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
+  selectedCustomerId?: string | null;
 }
 
 export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   categoryId,
   onSelectProduct,
   activeProductId,
+  selectedCustomerId,
 }) => {
   const { t } = useTranslation(["services", "common"]);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const { data: allProducts = [], isLoading, error } = useQuery<ProductType[], Error>({
+  // Fetch customer-specific product types if customer is selected
+  const { data: customerProductTypes, isLoading: isLoadingCustomerProducts } = useQuery<CustomerProductTypesResponse>({
+    queryKey: ["customerProductTypes", selectedCustomerId],
+    queryFn: () => customerProductTypeService.getCustomerProductTypes(parseInt(selectedCustomerId!)),
+    enabled: !!selectedCustomerId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch all product types (fallback when no customer or no customer-specific products)
+  const { data: allProducts = [], isLoading: isLoadingAllProducts, error } = useQuery<ProductType[], Error>({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
     staleTime: 5 * 60 * 1000,
   });
 
+  // Determine which products to show based on customer selection
+  const productsToShow = useMemo(() => {
+    if (selectedCustomerId && customerProductTypes?.product_types && customerProductTypes.product_types.length > 0) {
+      // Use customer-specific product types - convert to ProductType format
+      return customerProductTypes.product_types.map(cpt => ({
+        id: cpt.product_type.id,
+        product_category_id: cpt.product_type.category?.id || 0,
+        name: cpt.product_type.name,
+        is_dimension_based: cpt.product_type.is_dimension_based,
+        is_active: true, // Customer product types are always active
+        image_url: undefined, // Customer product types don't have image_url
+        service_offerings_count: 0, // Will be calculated separately
+        category: cpt.product_type.category,
+      } as ProductType));
+    } else {
+      // Use all product types
+      return allProducts;
+    }
+  }, [selectedCustomerId, customerProductTypes, allProducts]);
+
   const filteredProducts = useMemo(() => {
-    return allProducts.filter(product => {
+    return productsToShow.filter(product => {
       const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
       const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearch) || product.id.toString() === lowerCaseSearch;
       const matchesCategory = !categoryId || product.category?.id.toString() === categoryId;
       return matchesSearch && matchesCategory;
     });
-  }, [allProducts, categoryId, debouncedSearchTerm]);
+  }, [productsToShow, categoryId, debouncedSearchTerm]);
+
+  const isLoading = isLoadingCustomerProducts || isLoadingAllProducts;
 
   if (isLoading) {
     return (
@@ -112,9 +155,9 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 flex-shrink-0">
-                          {product.service_offerings_count > 0 && (
+                          {(product.service_offerings_count ?? 0) > 0 && (
                             <Badge variant="secondary" className="text-xs">
-                              {product.service_offerings_count}
+                              {product.service_offerings_count ?? 0}
                             </Badge>
                           )}
                           {product.is_dimension_based && (
@@ -132,7 +175,7 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
                           <p className="text-muted-foreground">{product.category.name}</p>
                         )}
                         <p className="text-muted-foreground">
-                          {t("offeringsCount", { ns: "services", count: product.service_offerings_count })}
+                          {t("offeringsCount", { ns: "services", count: product.service_offerings_count ?? 0 })}
                         </p>
                       </div>
                     </TooltipContent>

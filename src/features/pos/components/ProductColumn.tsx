@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
+import { pricingRuleService } from "@/api/pricingRuleService";
 // import { getProductTypeInventory } from "@/api/inventoryService"; // Removed inventory import
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSearch } from "@/context/SearchContext";
@@ -47,17 +48,28 @@ interface ProductColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
+  selectedCustomerId?: string | null;
 }
 
 export const ProductColumn: React.FC<ProductColumnProps> = ({
   categoryId,
   onSelectProduct,
   activeProductId,
+  selectedCustomerId,
 }) => {
   const { searchTerm } = useSearch();
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const { data: allProducts = [], isLoading, error } = useQuery<ProductType[], Error>({
+  // Fetch customer products with pricing rules if customer is selected
+  const { data: customerProductsWithPricingRules, isLoading: isLoadingCustomerProducts } = useQuery({
+    queryKey: ["customerProductsWithPricingRules", selectedCustomerId],
+    queryFn: () => pricingRuleService.getCustomerProductsWithPricingRules(parseInt(selectedCustomerId!)),
+    enabled: !!selectedCustomerId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch all product types (fallback when no customer or no customer-specific products)
+  const { data: allProducts = [], isLoading: isLoadingAllProducts, error } = useQuery<ProductType[], Error>({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
     staleTime: 5 * 60 * 1000,
@@ -68,14 +80,36 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   //   queryFn: getProductTypeInventory,
   // });
 
+  // Determine which products to show based on customer selection
+  const productsToShow = useMemo(() => {
+    if (selectedCustomerId && customerProductsWithPricingRules?.product_types && customerProductsWithPricingRules.product_types.length > 0) {
+      // Use customer products that have pricing rules
+      return customerProductsWithPricingRules.product_types.map(productType => ({
+        id: productType.id,
+        product_category_id: productType.category?.id || 0,
+        name: productType.name,
+        is_dimension_based: productType.is_dimension_based,
+        is_active: productType.is_active,
+        image_url: productType.image_url,
+        service_offerings_count: productType.service_offerings_count || 0,
+        category: productType.category,
+      } as ProductType));
+    } else {
+      // Use all product types (fallback when no customer or no pricing rules)
+      return allProducts;
+    }
+  }, [selectedCustomerId, customerProductsWithPricingRules, allProducts]);
+
   const filteredProducts = useMemo(() => {
-    return allProducts.filter(product => {
+    return productsToShow.filter(product => {
       const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
       const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearch) || product.id.toString() === lowerCaseSearch;
       const matchesCategory = !categoryId || product.category?.id.toString() === categoryId;
       return matchesSearch && matchesCategory;
     });
-  }, [allProducts, categoryId, debouncedSearchTerm]);
+  }, [productsToShow, categoryId, debouncedSearchTerm]);
+
+  const isLoading = isLoadingCustomerProducts || isLoadingAllProducts;
 
   if (isLoading) { /* ... same as before ... */ }
   if (error) { /* ... same as before ... */ }

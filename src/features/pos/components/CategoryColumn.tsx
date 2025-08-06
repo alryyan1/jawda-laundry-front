@@ -12,21 +12,49 @@ import {
 } from "@/components/ui/tooltip";
 
 import { getProductCategories } from "@/api/productCategoryService";
+import { pricingRuleService } from "@/api/pricingRuleService";
 import type { ProductCategory } from "@/types";
 
 interface CategoryColumnProps {
   onSelectCategory: (categoryId: string) => void;
   selectedCategoryId: string | null;
+  selectedCustomerId?: string | null;
 }
 
 export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   onSelectCategory,
   selectedCategoryId,
+  selectedCustomerId,
 }) => {
-  const { data: categories = [], isLoading } = useQuery<ProductCategory[], Error>({
+  const { data: allCategories = [], isLoading: isLoadingAllCategories } = useQuery<ProductCategory[], Error>({
     queryKey: ["productCategories"],
     queryFn: getProductCategories,
   });
+
+  const { data: customerProductsWithPricingRules, isLoading: isLoadingCustomerProducts } = useQuery({
+    queryKey: ["customerProductsWithPricingRules", selectedCustomerId],
+    queryFn: () => pricingRuleService.getCustomerProductsWithPricingRules(parseInt(selectedCustomerId!)),
+    enabled: !!selectedCustomerId,
+  });
+
+  // Determine which categories to show
+  const categoriesToShow = React.useMemo(() => {
+    if (!selectedCustomerId || !customerProductsWithPricingRules?.product_types?.length) {
+      return allCategories;
+    }
+
+    // Get unique category IDs from customer's products with pricing rules
+    const customerCategoryIds = new Set(
+      customerProductsWithPricingRules.product_types
+        .map(productType => productType.category?.id)
+        .filter(Boolean)
+    );
+
+    // Filter categories to only show those that have customer products with pricing rules
+    return allCategories.filter(category => customerCategoryIds.has(category.id));
+  }, [selectedCustomerId, customerProductsWithPricingRules, allCategories]);
+
+  const isLoading = isLoadingAllCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
 
   if (isLoading) {
     return (
@@ -40,7 +68,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     <TooltipProvider>
       <ScrollArea className="h-[calc(100vh-100px)]">
         <div className="grid grid-cols-1 gap-2 p-1">
-        {categories.map((category) => (
+        {categoriesToShow.map((category) => (
           <Tooltip key={category.id}>
             <TooltipTrigger asChild>
               <button

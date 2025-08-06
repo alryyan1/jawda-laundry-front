@@ -85,7 +85,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       {item._isAdding ? (
         // Skeleton loading state while adding to backend
         <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm">
-          <div className="flex items-start justify-between p-3 border-b">
+          <div className="flex items-start justify-between p-1 border-b">
             <div className="flex-1 pr-2">
               <Skeleton className="h-4 w-16 mb-1" />
               <Skeleton className="h-6 w-32 mb-1" />
@@ -125,7 +125,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           )}
         >
         {/* Header */}
-        <div className="flex items-start justify-between p-3 border-b">
+          <div className="flex items-center  justify-center p-1 border-b">
           <div className="flex-1 pr-2">
             <Badge variant="info" className="text-xs mb-1">
               {item.serviceOffering.display_name}
@@ -155,7 +155,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-3 space-y-3">
+        <div className="p-1 space-y-1">
           {/* Dimensions */}
           {isDimensionBased && (
             <div className="grid grid-cols-5 gap-2 items-end">

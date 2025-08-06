@@ -22,6 +22,7 @@ import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
 import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails } from "@/api/orderService";
+import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
@@ -34,7 +35,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
-  Plus,
 } from "lucide-react";
 import {
   Dialog,
@@ -42,7 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Customer } from "@/types/customer.types";
+
 
 
 interface CartItem {
@@ -107,12 +107,55 @@ const POSPage: React.FC = () => {
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
 
-  // Fetch all service offerings for order creation
+  // Fetch customer service offerings with pricing rules if customer is selected
+  const { data: customerServiceOfferings = [] } = useQuery({
+    queryKey: ["customerServiceOfferings", selectedCustomerId],
+    queryFn: async () => {
+      if (!selectedCustomerId) return [];
+      
+      try {
+        // Get customer pricing rules with service offerings
+        const pricingRulesResponse = await apiClient.get(`/customers/${selectedCustomerId}/pricing-rules`);
+        const pricingRules = pricingRulesResponse.data.pricing_rules || [];
+        
+        // Convert pricing rules to ServiceOffering format
+        const customerOfferings: ServiceOffering[] = pricingRules.map((rule: any) => ({
+          id: rule.service_offering.id,
+          product_type_id: rule.service_offering.product_type.id,
+          service_action_id: rule.service_offering.service_action.id,
+          name: rule.service_offering.name,
+          display_name: rule.service_offering.name,
+          description: rule.service_offering.description,
+          default_price: rule.price,
+          default_price_per_sq_meter: rule.price_per_sq_meter,
+          is_active: true,
+          serviceAction: rule.service_offering.service_action,
+          productType: rule.service_offering.product_type,
+          created_at: rule.created_at,
+          updated_at: rule.updated_at,
+        } as ServiceOffering));
+        
+        return customerOfferings;
+      } catch (error) {
+        console.error('Failed to fetch customer service offerings:', error);
+        return [];
+      }
+    },
+    enabled: !!selectedCustomerId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch all service offerings for order creation (fallback)
   const { data: allServiceOfferings = [] } = useQuery<ServiceOffering[], Error>({
     queryKey: ["allServiceOfferingsForSelect"],
     queryFn: () => getAllServiceOfferingsForSelect(),
     staleTime: 5 * 60 * 1000,
   });
+
+  // Determine which service offerings to use
+  const serviceOfferingsToUse = selectedCustomerId && customerServiceOfferings.length > 0 
+    ? customerServiceOfferings 
+    : allServiceOfferings;
 
   // Fetch dining tables for in-house orders
   const { data: diningTables = [] } = useQuery<DiningTable[], Error>({
@@ -245,7 +288,7 @@ const POSPage: React.FC = () => {
     setSelectedProductType(product);
     
     // Check if product has only one service offering and auto-add to cart
-    const productOfferings = allServiceOfferings.filter(
+    const productOfferings = serviceOfferingsToUse.filter(
       offering => offering.product_type_id === product.id
     );
     
@@ -455,19 +498,24 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleCustomerSelected = (customerId: string) => {
+  const handleCustomerSelected = (customerId: string | null) => {
     setSelectedCustomerId(customerId);
-    // If we have a selected order without a customer, update it
-    if (selectedOrder && !selectedOrder.customer) {
-      // Create a new order with the selected customer
-      const newOrderData = {
-        customer_id: customerId,
-        items: [], // Empty items array for new order
-        order_type: orderType,
-        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
-      };
-      createOrderMutation.mutate(newOrderData);
-    } else if (isNewOrderMode) {
+    
+    // If we have a selected order without a customer and a customer is selected, update it
+    if (selectedOrder && !selectedOrder.customer && customerId) {
+      // Update the existing order with the selected customer
+      updateOrderDetails(selectedOrder.id, { customer_id: parseInt(customerId) })
+        .then((updatedOrder) => {
+          setSelectedOrder(updatedOrder);
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+          toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
+        })
+        .catch((error) => {
+          console.error('Failed to update order with customer:', error);
+          toast.error(t("failedToAssignCustomer", { ns: "orders", defaultValue: "Failed to assign customer to order" }));
+        });
+    } else if (isNewOrderMode && customerId) {
       // If we're in new order mode, create a new order with the selected customer
       const newOrderData = {
         customer_id: customerId,
@@ -480,9 +528,7 @@ const POSPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['customersForSelect'] });
   };
 
-  const handleNewCustomerClick = () => {
-    setIsCustomerModalOpen(true);
-  };
+
 
   const handleAddItemToBackend = async (product: ProductType, offering: ServiceOffering) => {
     if (!selectedOrder) {
@@ -773,7 +819,7 @@ const POSPage: React.FC = () => {
     }} className="flex flex-col h-[calc(100vh-64px)]  mx-2">
                <POSHeader
           selectedCustomerId={selectedCustomerId}
-          onCustomerSelected={setSelectedCustomerId}
+          onCustomerSelected={handleCustomerSelected}
           onNewCustomerClick={() => setIsCustomerModalOpen(true)}
           selectedOrder={selectedOrder}
           orderType={orderType}
@@ -811,6 +857,7 @@ const POSPage: React.FC = () => {
                             setShowCategoriesOnIpad(false);
                           }}
                           selectedCategoryId={selectedCategoryId}
+                          selectedCustomerId={selectedCustomerId}
                         />
                       </CardContent>
                     </Card>
@@ -864,12 +911,14 @@ const POSPage: React.FC = () => {
                                    categoryId={selectedCategoryId}
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
+                                   selectedCustomerId={selectedCustomerId}
                                  />
                                ) : (
                                  <ProductColumn
                                    categoryId={selectedCategoryId}
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
+                                   selectedCustomerId={selectedCustomerId}
                                  />
                                )}
                              </>
@@ -909,6 +958,7 @@ const POSPage: React.FC = () => {
                   <CategoryColumn
                     onSelectCategory={handleSelectCategory}
                     selectedCategoryId={selectedCategoryId}
+                    selectedCustomerId={selectedCustomerId}
                   />
                     </CardContent>
                   </Card>
@@ -938,12 +988,14 @@ const POSPage: React.FC = () => {
                              categoryId={selectedCategoryId}
                              onSelectProduct={handleSelectProduct}
                              activeProductId={selectedProductType?.id.toString()}
+                             selectedCustomerId={selectedCustomerId}
                            />
                          ) : (
                            <ProductColumn
                              categoryId={selectedCategoryId}
                              onSelectProduct={handleSelectProduct}
                              activeProductId={selectedProductType?.id.toString()}
+                             selectedCustomerId={selectedCustomerId}
                            />
                          )}
                        </>
@@ -1025,14 +1077,18 @@ const POSPage: React.FC = () => {
           setSelectedCustomerId(customer.id.toString());
           // If we have a selected order without a customer, update it
           if (selectedOrder && !selectedOrder.customer) {
-            // Create a new order with the selected customer - ensure empty cart
-            const newOrderData = {
-              customer_id: customer.id.toString(),
-              items: [], // Empty items array for new order
-              order_type: orderType,
-              dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
-            };
-            createOrderMutation.mutate(newOrderData);
+            // Update the existing order with the newly created customer
+            updateOrderDetails(selectedOrder.id, { customer_id: customer.id })
+              .then((updatedOrder) => {
+                setSelectedOrder(updatedOrder);
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+                queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+                toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
+              })
+              .catch((error) => {
+                console.error('Failed to update order with customer:', error);
+                toast.error(t("failedToAssignCustomer", { ns: "orders", defaultValue: "Failed to assign customer to order" }));
+              });
           }
           queryClient.invalidateQueries({ queryKey: ['customersForSelect'] });
         }}
@@ -1086,7 +1142,7 @@ const POSPage: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            {selectedProductForDialog && allServiceOfferings
+            {selectedProductForDialog && serviceOfferingsToUse
               .filter(offering => offering.product_type_id === selectedProductForDialog.id)
               .map((offering) => (
                 <Button
