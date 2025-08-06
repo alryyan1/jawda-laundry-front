@@ -7,6 +7,10 @@ export interface ProductCategory {
     description?: string | null;
     image_url?: string | null;
     product_types_count?: number;
+    sequence_prefix?: string | null;
+    sequence_enabled?: boolean;
+    current_sequence?: number;
+    next_sequence?: string;
 }
 
 export interface ProductType {
@@ -83,6 +87,9 @@ export interface ProductCategoryFormData {
     name: string;
     description?: string;
     image?: File | null;
+    sequence_prefix?: string;
+    sequence_enabled?: boolean;
+    current_sequence?: number;
 }
 
 export interface ProductTypeFormData {

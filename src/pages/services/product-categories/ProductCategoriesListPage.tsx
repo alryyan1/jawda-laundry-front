@@ -118,6 +118,26 @@ const ProductCategoriesListPage: React.FC = () => {
           </p>
         ),
       },
+      {
+        accessorKey: "sequence",
+        header: "Sequence",
+        cell: ({ row }) => {
+          const category = row.original;
+          if (!category.sequence_enabled || !category.sequence_prefix) {
+            return <span className="text-muted-foreground text-sm">Disabled</span>;
+          }
+          return (
+            <div className="text-center">
+              <div className="text-sm font-medium">
+                {category.sequence_prefix}{String(category.current_sequence || 0).padStart(3, '0')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Next: {category.next_sequence}
+              </div>
+            </div>
+          );
+        },
+      },
       // Example: Count of product types in this category
       // {
       //     accessorKey: "product_types_count", // Assuming this is returned by API

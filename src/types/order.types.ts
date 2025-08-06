@@ -94,6 +94,8 @@ export interface Order {
     pickup_date?: string | null;
     whatsapp_text_sent?: boolean;
     whatsapp_pdf_sent?: boolean;
+    category_sequences?: Record<string, string> | null;
+    category_sequences_string?: string | null;
     items: OrderItem[];
     payments?: Payment[];
     created_at: string;

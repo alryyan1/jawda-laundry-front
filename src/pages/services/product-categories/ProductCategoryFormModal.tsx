@@ -33,6 +33,9 @@ const categorySchema = z.object({
     name: z.string().nonempty({ message: "validation.nameRequired" }),
     description: z.string().optional(),
     image: z.any().optional(),
+    sequence_prefix: z.string().optional(),
+    sequence_enabled: z.boolean().optional(),
+    current_sequence: z.number().optional(),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -56,6 +59,9 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
     defaultValues: {
         name: '',
         description: '',
+        sequence_prefix: '',
+        sequence_enabled: false,
+        current_sequence: 0,
     }
   });
 
@@ -66,10 +72,19 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
     if (editingCategory && isOpen) {
       setValue('name', editingCategory.name);
       setValue('description', editingCategory.description || '');
+      setValue('sequence_prefix', editingCategory.sequence_prefix || '');
+      setValue('sequence_enabled', editingCategory.sequence_enabled || false);
+      setValue('current_sequence', editingCategory.current_sequence || 0);
       setPreviewUrl(editingCategory.image_url || null);
       setSelectedImage(null); // Reset selected image when editing
     } else if (!isOpen) { // Reset form when modal is closed or if not editing
-      reset({ name: '', description: '' });
+      reset({ 
+        name: '', 
+        description: '', 
+        sequence_prefix: '', 
+        sequence_enabled: false, 
+        current_sequence: 0 
+      });
       setSelectedImage(null);
       setPreviewUrl(null);
     }
@@ -135,6 +150,52 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
           <div>
             <Label htmlFor="category-description">{t('descriptionOptional', { ns: 'common' })}</Label>
             <Textarea id="category-description" {...register('description')} />
+          </div>
+          
+          {/* Sequence Configuration Section */}
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <h3 className="text-sm font-medium">Sequence Configuration</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sequence-enabled">Enable Sequence</Label>
+                <div className="flex items-center space-x-2 mt-1">
+                  <input
+                    type="checkbox"
+                    id="sequence-enabled"
+                    {...register('sequence_enabled')}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Enable category-specific order numbering
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="sequence-prefix">Sequence Prefix</Label>
+                <Input 
+                  id="sequence-prefix" 
+                  {...register('sequence_prefix')} 
+                  placeholder="e.g., Z, C, S"
+                  maxLength={10}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Prefix for order sequences (e.g., Z001-2)
+                </p>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="current-sequence">Current Sequence Number</Label>
+              <Input 
+                id="current-sequence" 
+                type="number"
+                {...register('current_sequence', { valueAsNumber: true })} 
+                min={0}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Starting sequence number (will be incremented automatically)
+              </p>
+            </div>
           </div>
           <div>
             <Label htmlFor="category-image">{t('image', { ns: 'common' })}</Label>

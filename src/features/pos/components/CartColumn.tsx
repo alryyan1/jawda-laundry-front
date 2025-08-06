@@ -64,7 +64,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     <div className="flex flex-col h-full relative">
       {/* Cart Items Avatar Header - Positioned at top border */}
       {items.length > 0 && (
-        <div className="absolute -top-4 left-4 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+        <div className=" -top-4 left-4 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1">
               <span className="text-sm font-medium text-muted-foreground">
@@ -110,6 +110,20 @@ export const CartColumn: React.FC<CartColumnProps> = ({
               </button>
             ))}
           </div>
+          
+          {/* Order Category Sequence Display */}
+          {orderNumber && (
+            <div className="mt-2 text-center">
+              <div className="text-lg font-bold text-sky-700">
+                {orderNumber}
+              </div>
+              {orderNumber.includes('-') && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Category Sequences
+                </div>
+              )}
+            </div>
+          )}
           
     
         </div>

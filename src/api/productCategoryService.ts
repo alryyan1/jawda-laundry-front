@@ -6,6 +6,9 @@ export interface ProductCategoryFormData {
     name: string;
     description?: string;
     image?: File | null;
+    sequence_prefix?: string;
+    sequence_enabled?: boolean;
+    current_sequence?: number;
 }
 
 export const getProductCategories = async (): Promise<ProductCategory[]> => {
@@ -21,6 +24,15 @@ export const createProductCategory = async (categoryData: ProductCategoryFormDat
     }
     if (categoryData.image) {
         formData.append('image', categoryData.image);
+    }
+    if (categoryData.sequence_prefix) {
+        formData.append('sequence_prefix', categoryData.sequence_prefix);
+    }
+    if (categoryData.sequence_enabled !== undefined) {
+        formData.append('sequence_enabled', categoryData.sequence_enabled.toString());
+    }
+    if (categoryData.current_sequence !== undefined) {
+        formData.append('current_sequence', categoryData.current_sequence.toString());
     }
     
     const { data } = await apiClient.post<{data: ProductCategory}>('/product-categories', formData, {
@@ -45,6 +57,15 @@ export const updateProductCategory = async (id: number | string, categoryData: P
     }
     if (categoryData.image) {
         formData.append('image', categoryData.image);
+    }
+    if (categoryData.sequence_prefix !== undefined) {
+        formData.append('sequence_prefix', categoryData.sequence_prefix || '');
+    }
+    if (categoryData.sequence_enabled !== undefined) {
+        formData.append('sequence_enabled', categoryData.sequence_enabled.toString());
+    }
+    if (categoryData.current_sequence !== undefined) {
+        formData.append('current_sequence', categoryData.current_sequence.toString());
     }
     
     const { data } = await apiClient.post<{ data: ProductCategory }>(`/product-categories/${id}`, formData, {

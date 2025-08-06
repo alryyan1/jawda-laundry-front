@@ -939,7 +939,7 @@ const POSPage: React.FC = () => {
                             onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
                             isProcessing={isProcessing}
                             mode={selectedOrder ? 'order_edit' : 'cart'}
-                            orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                            orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                             isReadOnly={selectedOrder?.status === 'completed'}
                           />
                           </CardContent>
@@ -1030,7 +1030,7 @@ const POSPage: React.FC = () => {
                                onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
                                isProcessing={isProcessing}
                                mode={selectedOrder ? 'order_edit' : 'cart'}
-                               orderNumber={selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                               orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                                isReadOnly={selectedOrder?.status === 'completed'}
                                                           />
                                  </CardContent>
