@@ -43,7 +43,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Import WhatsApp Settings Component
-import WhatsAppSettings from "./components/WhatsAppSettings";
+import { WhatsAppSettings } from "@/features/settings/components/WhatsAppSettings";
 import { LogoUpload } from "@/components/ui/logo-upload";
 import { ColorPicker } from "@/components/ui/color-picker";
 
