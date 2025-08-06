@@ -326,5 +326,6 @@
   "asyncError": "خطأ غير متزامن: لن يتم التقاطه بواسطة ErrorBoundary (تحقق من وحدة تحكم المتصفح)",
   "errorBoundaryFeatures": "سيظهر ErrorBoundary التفاصيل التقنية ومعرف الخطأ وخيارات الاسترداد",
   "copyErrorDetails": "يمكنك نسخ تفاصيل الخطأ واستخدام وظيفة إعادة المحاولة",
-  "noErrorThrown": "لم يتم إطلاق خطأ"
+  "noErrorThrown": "لم يتم إطلاق خطأ",
+  "clearAllFilters": "مسح جميع المرشحات"
 }

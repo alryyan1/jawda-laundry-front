@@ -27,7 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Send, Bot } from "lucide-react";
 
 import type { SettingsFormValues } from "@/pages/admin/SettingsPage";
-import { sendTestWhatsappMessage } from "@/api/settingsService";
+import settingService from "@/services/settingService";
 import { Label } from "@/components/ui/label";
 
 export const WhatsAppSettings: React.FC = () => {
@@ -37,7 +37,7 @@ export const WhatsAppSettings: React.FC = () => {
   const [testPhone, setTestPhone] = useState("");
 
   const testMutation = useMutation<{ message: string }, Error, string>({
-    mutationFn: sendTestWhatsappMessage,
+    mutationFn: settingService.sendTestWhatsappMessage,
     onSuccess: (data) => {
       toast.success(t("testMessageSentSuccess"), { description: data.message });
     },

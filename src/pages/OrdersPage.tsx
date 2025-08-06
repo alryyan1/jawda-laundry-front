@@ -41,7 +41,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '@/components/theme-provider';
 
 const OrdersPage = () => {
   const { t, i18n } = useTranslation(["common", "orders"]);

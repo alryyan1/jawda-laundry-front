@@ -45,7 +45,7 @@ const settingService = {
     getSettings: async (): Promise<AppSettings> => {
         try {
             // Backend returns { data: AppSettings }
-            const response = await apiClient.get<{ data: AppSettings }>('/admin/settings');
+            const response = await apiClient.get<{ data: AppSettings }>('/settings');
             return response.data.data; // Assuming data is nested under 'data' key
         } catch (error) {
             console.error('Error fetching settings:', error);
@@ -60,7 +60,7 @@ const settingService = {
     updateSettings: async (settingsData: UpdateAppSettingsData): Promise<AppSettings> => {
         try {
             // Backend returns { message: '...', data: AppSettings }
-            const response = await apiClient.put<{ message: string, data: AppSettings }>('/admin/settings', settingsData);
+            const response = await apiClient.put<{ message: string, data: AppSettings }>('/settings/bulk', { settings: settingsData });
             return response.data.data; // Return the updated settings
         } catch (error) {
             console.error('Error updating settings:', error);
@@ -98,6 +98,21 @@ const settingService = {
             await apiClient.delete('/settings/logo');
         } catch (error) {
             console.error('Error deleting logo:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Send test WhatsApp message.
+     */
+    sendTestWhatsappMessage: async (phoneNumber: string): Promise<{ message: string }> => {
+        try {
+            const response = await apiClient.post<{ message: string }>('/settings/whatsapp/send-test', {
+                test_phone_number: phoneNumber
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error sending test WhatsApp message:', error);
             throw error;
         }
     },
