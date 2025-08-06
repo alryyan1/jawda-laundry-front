@@ -250,5 +250,15 @@
   "failedToAddItem": "Failed to add item to order",
   "orderAlreadyCompleted": "This order is already completed",
   "orderCompletedSuccessfully": "Order completed successfully",
-  "failedToCompleteOrder": "Failed to complete order"
+  "failedToCompleteOrder": "Failed to complete order",
+  
+  "searchByOrderNumber": "Search by Order Number",
+  "searchBySequenceNumber": "Search by Sequence Number",
+  "filterByCustomer": "Filter by Customer",
+  "filterByProduct": "Filter by Product",
+  "selectCustomer": "Select customer",
+  "selectProduct": "Select product",
+  "sequenceNumber": "Sequence Number",
+  "dateFrom": "From Date",
+  "dateTo": "To Date"
 }

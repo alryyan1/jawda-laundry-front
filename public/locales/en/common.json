@@ -359,5 +359,7 @@
   "asyncError": "Async Error: Won't be caught by ErrorBoundary (check browser console)",
   "errorBoundaryFeatures": "The ErrorBoundary will show technical details, error ID, and recovery options",
   "copyErrorDetails": "You can copy error details and use the retry functionality",
-  "noErrorThrown": "No error thrown"
+  "noErrorThrown": "No error thrown",
+  
+  "clearAllFilters": "Clear All Filters"
 }

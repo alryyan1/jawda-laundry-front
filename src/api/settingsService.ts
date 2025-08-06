@@ -18,13 +18,13 @@ export const getApplicationSettings = async (): Promise<ApplicationSettings> => 
     const { data } = await apiClient.get<BackendSettingsResponse>('/settings');
     // Map backend response to frontend expected structure
     return {
-        general: data.app_settings || {},
-        whatsapp: data.whatsapp || {},
+        general: data.data || {},
+        whatsapp: data.data || {},
     };
 };
 
 export const updateApplicationSettings = async (formData: SettingsFormData): Promise<{ message: string }> => {
-    const { data } = await apiClient.put<{ message: string }>('/settings', formData);
+    const { data } = await apiClient.put<{ message: string }>('/settings/bulk', { settings: formData });
     return data;
 };
 

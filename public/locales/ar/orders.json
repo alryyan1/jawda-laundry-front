@@ -68,7 +68,7 @@
   "itemNotesPlaceholder": "مثال: تعامل بحذر، مكان بقعة محدد",
   "pleaseCorrectErrorsInItems": "يرجى تصحيح الأخطاء في عناصر الطلب.",
   "noItemsAdded": "لم تتم إضافة أي عناصر لهذا الطلب بعد.",
-  "checkItemErrors": "يرجى التحقق من العناصر بحثًا عن أخطاء أو معلومات مفقودة.",
+  "checkItemErrors": "يرجى التحقق من العناصر بحثاً عن أخطاء أو معلومات مفقودة.",
   "payment_status_pending": "الدفع معلق",
   "payment_status_paid": "مدفوع",
   "payment_status_partially_paid": "مدفوع جزئياً",
@@ -245,5 +245,15 @@
   "failedToAddItem": "فشل في إضافة العنصر للطلب",
   "orderAlreadyCompleted": "هذا الطلب مكتمل بالفعل",
   "orderCompletedSuccessfully": "تم إكمال الطلب بنجاح",
-  "failedToCompleteOrder": "فشل في إكمال الطلب"
+  "failedToCompleteOrder": "فشل في إكمال الطلب",
+  
+  "searchByOrderNumber": "البحث برقم الطلب",
+  "searchBySequenceNumber": "البحث برقم التسلسل",
+  "filterByCustomer": "تصفية حسب العميل",
+  "filterByProduct": "تصفية حسب المنتج",
+  "selectCustomer": "اختر العميل",
+  "selectProduct": "اختر المنتج",
+  "sequenceNumber": "رقم التسلسل",
+  "dateFrom": "من تاريخ",
+  "dateTo": "إلى تاريخ"
 }
