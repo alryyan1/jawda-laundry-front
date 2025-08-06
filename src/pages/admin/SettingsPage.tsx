@@ -483,11 +483,7 @@ const SettingsPage: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="whatsapp">
-              <WhatsAppSettings
-                settings={settings}
-                isLoadingSettings={isLoadingSettings}
-                updateSettings={updateSettings}
-              />
+              <WhatsAppSettings />
             </TabsContent>
 
             <TabsContent value="pos">

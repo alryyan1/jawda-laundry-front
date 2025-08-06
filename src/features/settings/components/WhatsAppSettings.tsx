@@ -26,13 +26,13 @@ import { Switch } from "@/components/ui/switch";
 
 import { Loader2, Send, Bot } from "lucide-react";
 
-import type { SettingsFormData } from "@/types";
+import type { SettingsFormValues } from "@/pages/admin/SettingsPage";
 import { sendTestWhatsappMessage } from "@/api/settingsService";
 import { Label } from "@/components/ui/label";
 
 export const WhatsAppSettings: React.FC = () => {
   const { t } = useTranslation(["settings", "common"]);
-  const { control, watch } = useFormContext<SettingsFormData>();
+  const { control, watch } = useFormContext<SettingsFormValues>();
 
   const [testPhone, setTestPhone] = useState("");
 
@@ -57,7 +57,7 @@ export const WhatsAppSettings: React.FC = () => {
   };
 
   // Watch the enabled field to conditionally show other fields
-  const isWhatsAppEnabled = watch("whatsapp.enabled");
+  const isWhatsAppEnabled = watch("whatsapp_enabled");
 
   return (
     <div className="space-y-6">
@@ -74,7 +74,7 @@ export const WhatsAppSettings: React.FC = () => {
         <CardContent className="space-y-4">
           <FormField
             control={control}
-            name="whatsapp.enabled"
+            name="whatsapp_enabled"
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
@@ -99,7 +99,7 @@ export const WhatsAppSettings: React.FC = () => {
             <div className="space-y-4 pt-4 border-t">
               <FormField
                 control={control}
-                name="whatsapp.api_url"
+                name="whatsapp_api_url"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("apiUrl")}</FormLabel>
@@ -116,7 +116,7 @@ export const WhatsAppSettings: React.FC = () => {
               />
               <FormField
                 control={control}
-                name="whatsapp.api_token"
+                name="whatsapp_api_token"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("apiToken")}</FormLabel>
@@ -128,6 +128,42 @@ export const WhatsAppSettings: React.FC = () => {
                       />
                     </FormControl>
                     <FormDescription>{t("apiTokenHint")}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="whatsapp_notification_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("notificationNumber")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="98889761"
+                      />
+                    </FormControl>
+                    <FormDescription>{t("notificationNumberHint")}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="whatsapp_country_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("countryCode")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="968"
+                      />
+                    </FormControl>
+                    <FormDescription>{t("countryCodeHint")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

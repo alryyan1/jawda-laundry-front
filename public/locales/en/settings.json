@@ -98,6 +98,10 @@
     "whatsappSettingsUpdateFailed": "Failed to update WhatsApp settings",
     "testMessageSentSuccessfully": "Test message sent successfully",
     "testMessageFailed": "Failed to send test message",
+    "notificationNumber": "Notification Number",
+    "notificationNumberHint": "Phone number for receiving admin notifications",
+    "countryCode": "Country Code",
+    "countryCodeHint": "Country code for phone numbers (e.g., 968 for Oman)"
     "pleaseEnterNotificationNumber": "Please enter a notification phone number",
     "whatsappCountryCode": "Country Code",
     "whatsappCountryCodeDesc": "Default country code for WhatsApp messages (e.g., 968 for Oman)",
