@@ -10,6 +10,7 @@ import { SettingsProvider } from './context/SettingsContext.tsx';
 import { ThemeProvider as AppThemeProvider } from './context/ThemeContext.tsx';
 import { SearchProvider } from './context/SearchContext.tsx';
 import { NewOrderProvider } from './context/NewOrderContext.tsx';
+import { DateProvider } from './context/DateContext.tsx';
 import './lib/websocket';
 
 const queryClient = new QueryClient();
@@ -23,8 +24,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <QueryClientProvider client={queryClient}>
                              <SearchProvider>
                  <NewOrderProvider>
-                   <App />
-                   <ReactQueryDevtools initialIsOpen={false} />
+                   <DateProvider>
+                     <App />
+                     <ReactQueryDevtools initialIsOpen={false} />
+                   </DateProvider>
                  </NewOrderProvider>
                </SearchProvider>
             </QueryClientProvider>

@@ -8,8 +8,10 @@ import apiClient from "@/api/apiClient";
 import settingService from "@/services/settingService";
 import { toast } from "sonner";
 import { useSearch } from "@/context/SearchContext";
+import { useDate } from "@/context/DateContext";
 import { POSSearch } from "@/components/ui/pos-search";
 import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
+import { POSDatePicker } from "@/components/ui/pos-date-picker";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -221,6 +223,7 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout: storeLogout } = useAuthStore();
   const { setIsSearchVisible } = useSearch();
+  const { setSelectedDate } = useDate();
 
   // Show search when on POS route
   React.useEffect(() => {
@@ -576,6 +579,7 @@ const MainLayout: React.FC = () => {
           {/* Flexible space to push items to the right */}
           <div className="w-full flex-1 flex items-center justify-center gap-4">
             <POSSearch />
+            {location.pathname === '/pos' && <POSDatePicker onDateChange={setSelectedDate} />}
             {location.pathname === '/pos' && <POSNewOrderButton />}
           </div>
 

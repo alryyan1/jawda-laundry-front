@@ -36,6 +36,7 @@ interface BackendOrderPayload {
     dining_table_id?: number | null; // Add dining table ID for in-house orders
     // For updates, other fields might be included
     status?: OrderStatus;
+    order_complete?: boolean; // Add order_complete field for order completion
     payment_method?: string | null;
     payment_status?: string | null;
     paid_amount?: number | null;
@@ -200,16 +201,22 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
 };
 
 /**
- * Fetches today's orders.
+ * Fetches orders for a specific date.
  */
-export const getTodayOrders = async (): Promise<Order[]> => {
-    // Option 1: Let the backend determine today's date (recommended)
-    const { data } = await apiClient.get<{data: Order[]}>('/orders', { 
-        params: { 
-            today: true, // Tell backend to use today's date
-            per_page: 100 // Get more orders for today
-        } 
-    });
+export const getTodayOrders = async (date?: string): Promise<Order[]> => {
+    const params: any = { 
+        per_page: 100 // Get more orders
+    };
+    
+    if (date) {
+        // Use specific date
+        params.created_date = date;
+    } else {
+        // Use today's date
+        params.today = true;
+    }
+    
+    const { data } = await apiClient.get<{data: Order[]}>('/orders', { params });
     return data.data;
 };
 
@@ -282,7 +289,10 @@ export const updateOrder = async (
         notes: orderData.notes || null,
         due_date: orderData.due_date && orderData.due_date.trim() !== '' ? orderData.due_date : null,
         // Include other order-level fields from EditOrderPage form if any
-        // status: orderData.status, // If status is edited on this page
+        status: orderData.status, // Include status for order completion
+        order_complete: orderData.order_complete, // Include order_complete for order completion
+        order_type: orderData.order_type,
+        dining_table_id: orderData.dining_table_id,
     };
 
     const { data } = await apiClient.put<OrderResponseWithWarnings | { data: Order }>(`/orders/${orderId}`, payload);
@@ -302,6 +312,7 @@ export interface OrderDetailsUpdatePayload {
     notes?: string | null;
     due_date?: string | null;
     status?: OrderStatus;
+    order_complete?: boolean;
     pickup_date?: string | null; // e.g., "YYYY-MM-DD HH:mm:ss" UTC
     order_type?: 'in_house' | 'take_away' | 'delivery';
 }
@@ -366,6 +377,19 @@ export const getOrderStatistics = async (
   const { data } = await apiClient.get<OrderStatistics>(
     `/orders/statistics?${params.toString()}`
   );
+  return data;
+};
+
+export const deleteOrderItem = async (orderItemId: number | string): Promise<{ order: Order; message: string }> => {
+  const { data } = await apiClient.delete<{ order: Order; message: string }>(`/order-items/${orderItemId}`);
+  return data;
+};
+
+/**
+ * Cancel a completed order by setting order_complete to false.
+ */
+export const cancelOrder = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
+  const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/cancel`);
   return data;
 };
 

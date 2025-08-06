@@ -312,7 +312,7 @@
   "more": "More",
   "tryAgain": "Try again",
   "pointOfSale": "Point of Sale",
-      "diningManagement": "Store Management",
+  "diningManagement": "Store Management",
   "product": "Product",
   "serviceOffering": "Service Offering",
   "cart": "Cart",
@@ -346,5 +346,18 @@
   "deleteFailed": "Delete failed",
   "loading": "Loading...",
   "createdBy": "Created By",
-  "dateRange": "Date Range"
+  "dateRange": "Date Range",
+  
+  "backToCategories": "Back to Categories",
+  "perSqMeter": "per sq meter",
+  "perItem": "per item",
+  "selectServiceOffering": "Select Service Offering",
+  "errorComponentDemo": "Error Component Demo",
+  "noErrorComponentRendered": "No error component rendered yet. Click \"Trigger Render Error\" to see the ErrorBoundary in action.",
+  "componentError": "Component Error: Will also be caught and show component name \"TestErrorPage\"",
+  "renderError": "Render Error: Will be caught by ErrorBoundary and show the professional error page",
+  "asyncError": "Async Error: Won't be caught by ErrorBoundary (check browser console)",
+  "errorBoundaryFeatures": "The ErrorBoundary will show technical details, error ID, and recovery options",
+  "copyErrorDetails": "You can copy error details and use the retry functionality",
+  "noErrorThrown": "No error thrown"
 }

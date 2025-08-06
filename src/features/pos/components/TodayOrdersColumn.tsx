@@ -14,6 +14,7 @@ import MuiBadge from '@mui/material/Badge';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
 import { getTodayOrders } from "@/api/orderService";
+import { useDate } from "@/context/DateContext";
 import type { Order } from "@/types";
 
 // A minimal MUI theme to make the badge fit the Shadcn theme
@@ -69,10 +70,11 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   selectedOrderId,
 }) => {
   const { t } = useTranslation(["common", "orders"]);
+  const { selectedDate } = useDate();
 
   const { data: orders = [], isLoading } = useQuery<Order[], Error>({
-    queryKey: ["todayOrders"],
-    queryFn: getTodayOrders,
+    queryKey: ["todayOrders", selectedDate],
+    queryFn: () => getTodayOrders(selectedDate),
   });
 
   if (isLoading) {
@@ -111,13 +113,13 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
 
 
         {/* Orders List */}
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="flex-1 min-h-0 p-3" >
           <div className="p-1 space-y-1">
             {orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">
-                  {t("noOrdersToday", { ns: "orders", defaultValue: "No orders today" })}
+                  {t("noOrdersForDate", { ns: "orders", defaultValue: "No orders for" })} {selectedDate}
                 </p>
               </div>
             ) : (

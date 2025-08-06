@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, X } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { CartItemComponent, type CartItem } from "./CartItem";
 import { useSettings } from "@/context/SettingsContext";
@@ -16,10 +16,12 @@ interface CartColumnProps {
   onUpdateDimensions: (id: string, dimensions: { length?: number; width?: number }) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onCheckout: () => void;
+  onCancelOrder?: () => void;
   isProcessing: boolean;
   mode?: 'cart' | 'order_view' | 'order_edit';
   orderNumber?: string;
   isReadOnly?: boolean;
+  isCompleted?: boolean;
 }
 
 export const CartColumn: React.FC<CartColumnProps> = ({
@@ -29,10 +31,12 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onUpdateDimensions,
   onUpdateNotes,
   onCheckout,
+  onCancelOrder,
   isProcessing,
   mode = 'cart',
   orderNumber,
   isReadOnly = false,
+  isCompleted = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const { getSetting } = useSettings();
@@ -61,10 +65,18 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   };
 
     return (
-    <div className="flex flex-col h-full relative">
+    <div className={cn(
+      "flex flex-col h-full relative",
+      isCompleted && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
+    )}>
       {/* Cart Items Avatar Header - Positioned at top border */}
       {items.length > 0 && (
-        <div className="  bg-white border border-gray-200 rounded-lg p-2 shadow-lg ">
+        <div className={cn(
+          "rounded-lg p-1 shadow-lg",
+          isCompleted 
+            ? "bg-gradient-to-br from-sky-100 to-green-100 border border-sky-300 shadow-sky-200/50" 
+            : "bg-white border border-gray-200"
+        )}>
           <div className="flex items-center justify-between">
             <div className="flex items-center ">
               <span className="text-sm font-medium text-muted-foreground">
@@ -114,10 +126,15 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           {/* Order Category Sequence Display */}
           {orderNumber && (
             <div className="mt-2 text-center">
-              <div className="text-lg font-bold text-sky-700">
+              <div className={cn(
+                "text-lg font-bold",
+                isCompleted ? "text-green-700" : "text-sky-700"
+              )}>
                 {orderNumber}
+                {isCompleted && (
+                  <span className="ml-2 text-green-600">✓</span>
+                )}
               </div>
-            
             </div>
           )}
           
@@ -126,7 +143,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
       )}
 
       <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
-        <div className="p-1 space-y-4">
+        <div className={cn(
+          "p-1 space-y-4",
+          isCompleted && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
+        )}>
           {itemsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
               <p>{t("cartIsEmpty", { ns: "orders" })}</p>
@@ -183,14 +203,30 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           </div>
 
           <div className="flex flex-col gap-2">
-             <Button
-              className="w-full h-12 text-base font-semibold"
-              onClick={onCheckout}
-              disabled={isProcessing}
-            >
-              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("completeOrder", { ns: "orders", defaultValue: "Complete Order" })}
-            </Button>
+            {/* Show Complete Order button when order is NOT completed */}
+            {!isCompleted && (
+              <Button
+                className="w-full h-12 text-base font-semibold"
+                onClick={onCheckout}
+                disabled={isProcessing}
+              >
+                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("completeOrder", { ns: "orders", defaultValue: "Complete Order" })}
+              </Button>
+            )}
+            
+            {/* Show Cancel Order button when order IS completed */}
+            {isCompleted && onCancelOrder && (
+              <Button
+                variant="destructive"
+                className="w-full h-12 text-base font-semibold"
+                onClick={onCancelOrder}
+                disabled={isProcessing}
+              >
+                <X className="mr-2 h-4 w-4" />
+                {t("cancelOrder", { ns: "orders", defaultValue: "Cancel Order" })}
+              </Button>
+            )}
           </div>
         </div>
       )}

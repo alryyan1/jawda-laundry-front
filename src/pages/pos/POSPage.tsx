@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
+import { useDate } from "@/context/DateContext";
 
 import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, PricingStrategy } from '@/types';
 import type { DiningTable } from '@/types/dining.types';
@@ -14,6 +15,8 @@ import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
 import { ProductListColumn } from '@/features/pos/components/ProductListColumn';
 import { CartColumn } from '@/features/pos/components/CartColumn';
+import { ActionsComponent } from '@/features/pos/components/ActionsComponent';
+import { type CartItem } from '@/features/pos/components/CartItem';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
 import { TodayOrders } from '@/features/pos/components/TodayOrders';
 import { TodayOrdersColumn } from '@/features/pos/components/TodayOrdersColumn';
@@ -21,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -31,6 +34,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
 import { getTodayDate } from "@/lib/dateUtils";
+
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -45,26 +50,14 @@ import {
 
 
 
-interface CartItem {
-  id: string;
-  productType: ProductType;
-  serviceOffering: ServiceOffering;
-  quantity: number;
-  price: number;
-  notes?: string;
-  length_meters?: number;
-  width_meters?: number;
-  _isQuoting?: boolean;
-  _quoteError?: string | null;
-  _quotedSubTotal?: number;
-  _isAdding?: boolean; // Flag to show loading state while adding to backend
-}
+
 
 const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const { newlyCreatedOrder, clearNewlyCreatedOrder } = useNewOrder();
+  const { selectedDate } = useDate();
   
   // Initialize real-time updates
   useRealtimeUpdates();
@@ -119,7 +112,21 @@ const POSPage: React.FC = () => {
         const pricingRules = pricingRulesResponse.data.pricing_rules || [];
         
         // Convert pricing rules to ServiceOffering format
-        const customerOfferings: ServiceOffering[] = pricingRules.map((rule: any) => ({
+        const customerOfferings: ServiceOffering[] = pricingRules.map((rule: {
+          service_offering: {
+            id: number;
+            product_type: { id: number };
+            service_action: { id: number };
+            name: string;
+            description?: string;
+            created_at: string;
+            updated_at: string;
+          };
+          price: number;
+          price_per_sq_meter?: number;
+          created_at: string;
+          updated_at: string;
+        }) => ({
           id: rule.service_offering.id,
           product_type_id: rule.service_offering.product_type.id,
           service_action_id: rule.service_offering.service_action.id,
@@ -133,7 +140,7 @@ const POSPage: React.FC = () => {
           productType: rule.service_offering.product_type,
           created_at: rule.created_at,
           updated_at: rule.updated_at,
-        } as ServiceOffering));
+        } as unknown as ServiceOffering));
         
         return customerOfferings;
       } catch (error) {
@@ -170,10 +177,10 @@ const POSPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch today's orders for table availability checking
+  // Fetch orders for the selected date
   const { data: todayOrders = [] } = useQuery<Order[], Error>({
-    queryKey: ["todayOrders"],
-    queryFn: getTodayOrders,
+    queryKey: ["todayOrders", selectedDate],
+    queryFn: () => getTodayOrders(selectedDate),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -218,10 +225,8 @@ const POSPage: React.FC = () => {
       if (createdOrder) {
         setSelectedOrder(createdOrder);
         
-        // Auto-show PDF if setting is enabled
-        if (settings?.pos_auto_show_pdf) {
-          setIsPdfDialogOpen(true);
-        }
+        // Auto-show PDF when order is created
+        setIsPdfDialogOpen(true);
       }
     },
     onError: (error) => {
@@ -309,8 +314,77 @@ const POSPage: React.FC = () => {
   // Remove handleSelectOffering function since it's no longer needed
   // const handleSelectOffering = (offering: ServiceOffering) => { ... };
 
-  const handleRemoveItem = (id: string) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+  const handleRemoveItem = async (id: string) => {
+    // Find the item to check if it's an existing order item
+    const item = cartItems.find(cartItem => cartItem.id === id);
+    
+    if (!item) {
+      console.error('Item not found in cart:', id);
+      return;
+    }
+
+    console.log('Removing item:', {
+      id,
+      isExistingOrderItem: item._isExistingOrderItem,
+      selectedOrder: selectedOrder?.id,
+      serviceOfferingId: item.serviceOffering?.id,
+      quantity: item.quantity
+    });
+
+    // Set loading state immediately for all items
+    setCartItems(prev => prev.map(cartItem => 
+      cartItem.id === id ? { ...cartItem, _isDeleting: true } : cartItem
+    ));
+
+    try {
+      // If it's an existing order item, delete from backend first
+      if (item._isExistingOrderItem && selectedOrder) {
+        console.log('Looking for existing order item in selected order...');
+        
+        // Find the actual order item ID from the selected order
+        // Use a more flexible matching approach - match by service offering and quantity first
+        const orderItem = selectedOrder.items?.find(orderItem => 
+          orderItem.serviceOffering?.id === item.serviceOffering.id &&
+          orderItem.quantity === item.quantity
+        );
+
+        console.log('Found order item:', orderItem);
+
+        if (orderItem) {
+          console.log('Deleting order item from backend:', orderItem.id);
+          
+          // Delete from backend
+          const response = await deleteOrderItem(orderItem.id);
+          
+          console.log('Backend response:', response);
+          
+          // Update the selected order with the updated order from backend
+          setSelectedOrder(response.order);
+          
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+          
+          toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
+        } else {
+          console.warn('Order item not found in selected order, treating as new item');
+        }
+      } else {
+        console.log('Item is not an existing order item, removing from cart only');
+      }
+      
+      // Remove from cart only on success (for both existing and new items)
+      setCartItems(prev => prev.filter(cartItem => cartItem.id !== id));
+      
+    } catch (error) {
+      console.error('Failed to remove item from order:', error);
+      toast.error(t("failedToRemoveItem", { ns: "orders", defaultValue: "Failed to remove item from order" }));
+      
+      // Remove loading state on error
+      setCartItems(prev => prev.map(cartItem => 
+        cartItem.id === id ? { ...cartItem, _isDeleting: false } : cartItem
+      ));
+    }
   };
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
@@ -448,6 +522,7 @@ const POSPage: React.FC = () => {
         width_meters: item.width_meters || undefined,
         _isQuoting: false,
         _quotedSubTotal: item.sub_total,
+        _isExistingOrderItem: true, // Mark as existing order item
       }));
       
       setCartItems(cartItemsFromOrder);
@@ -627,6 +702,7 @@ const POSPage: React.FC = () => {
             width_meters: newOrderItem.width_meters || undefined,
             _isQuoting: false,
             _quotedSubTotal: newOrderItem.sub_total,
+            _isExistingOrderItem: true, // Mark as existing order item since it's now saved to backend
           };
           return [...filtered, realCartItem];
         }
@@ -723,21 +799,43 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Complete the order directly (items are already in the backend)
+    // Complete the order with items details
     try {
       setIsProcessing(true);
       
-      // Update the order status to completed
-      const updatedOrder = await updateOrderDetails(selectedOrder.id, {
-        status: 'completed',
-        pickup_date: new Date().toISOString(),
-      });
+      // Convert cart items to order items format
+      const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
+        id: item.id,
+        service_offering_id: item.serviceOffering.id,
+        product_type_id: item.productType.id.toString(),
+        service_action_id: item.serviceOffering.service_action_id.toString(),
+        quantity: item.quantity,
+        notes: item.notes,
+        length_meters: item.length_meters,
+        width_meters: item.width_meters,
+        _derivedServiceOffering: item.serviceOffering,
+        _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
+        _quoted_price_per_unit_item: item.price,
+        _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
+      }));
 
-      // Update the selected order with the completed status
-      setSelectedOrder(updatedOrder);
+      // Prepare order data with items and completion details
+      const orderData: NewOrderFormData = {
+        customer_id: selectedOrder.customer.id.toString(),
+        items: orderItems,
+        notes: selectedOrder.notes || undefined,
+        due_date: selectedOrder.due_date || undefined,
+        order_type: selectedOrder.order_type,
+        dining_table_id: selectedOrder.dining_table_id,
+        status: 'completed', // Set status to completed
+        order_complete: true, // Explicitly set order_complete to true
+      };
+
+      // Update the order with items and completion details
+      const response = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
       
-      // Clear the cart
-      setCartItems([]);
+      // Update the selected order with the completed status
+      setSelectedOrder(response.order);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -745,13 +843,66 @@ const POSPage: React.FC = () => {
       
       toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
       
-      // Auto-show PDF if setting is enabled
-      if (settings?.pos_auto_show_pdf) {
-        setIsPdfDialogOpen(true);
-      }
+      // Auto-show PDF when order is completed
+      setIsPdfDialogOpen(true);
     } catch (error) {
       console.error('Failed to complete order:', error);
       toast.error(t("failedToCompleteOrder", { ns: "orders", defaultValue: "Failed to complete order" }));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) {
+      toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
+      return;
+    }
+
+    // Check if order is completed (can only cancel completed orders)
+    if (!selectedOrder.order_complete) {
+      toast.error(t("orderNotCompleted", { ns: "orders", defaultValue: "Only completed orders can be cancelled" }));
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      // Use the dedicated cancel order endpoint
+      const response = await cancelOrder(selectedOrder.id);
+      
+      // Update the selected order with the cancelled status
+      setSelectedOrder(response.order);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      
+      toast.success(t("orderCancelledSuccessfully", { ns: "orders", defaultValue: "Order cancelled successfully" }));
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      toast.error(t("failedToCancelOrder", { ns: "orders", defaultValue: "Failed to cancel order" }));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSendInvoice = async () => {
+    if (!selectedOrder) {
+      toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      // Call the backend API to send WhatsApp invoice
+      const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
+      
+      toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }));
+    } catch (error) {
+      console.error('Failed to send invoice:', error);
+      toast.error(t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" }));
     } finally {
       setIsProcessing(false);
     }
@@ -841,8 +992,8 @@ const POSPage: React.FC = () => {
 
       <main className="flex-1 container mx-auto mt-1 overflow-hidden">
         <div className="flex gap-2 h-full">
-          {/* Show product columns only when an order is selected */}
-          {selectedOrder ? (
+          {/* Show product columns only when a customer is selected */}
+          {(selectedCustomerId || selectedOrder?.customer) ? (
             <>
               {/* iPad Layout */}
               {isIpadView ? (
@@ -879,8 +1030,8 @@ const POSPage: React.FC = () => {
                         </Button>
                       </div>
                       
-                      {/* Show helpful message when order is selected but cart is empty (iPad) */}
-                      {selectedOrder && cartItems.length === 0 && (
+                      {/* Show helpful message when customer is selected but cart is empty (iPad) */}
+                      {(selectedCustomerId || selectedOrder?.customer) && cartItems.length === 0 && (
                         <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs z-10">
                           <div className="flex items-center gap-2 text-sm text-primary">
                             <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
@@ -890,21 +1041,19 @@ const POSPage: React.FC = () => {
                       )}
 
                                              {/* Products */}
-                       <Card className={`flex-1 flex flex-col ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                       <Card className="flex-1 flex flex-col">
                          <CardContent className="flex-1 min-h-0 p-0">
-                           {selectedOrder?.status === 'completed' ? (
-                             <div className="flex items-center justify-center h-full">
-                               <div className="text-center">
-                                 <div className="text-4xl mb-2">✅</div>
-                                 <p className="text-muted-foreground">
-                                   {t("orderCompleted", { ns: "orders", defaultValue: "Order Completed" })}
-                                 </p>
-                                 <p className="text-sm text-muted-foreground">
-                                   {t("noMoreEdits", { ns: "orders", defaultValue: "No more edits allowed" })}
-                                 </p>
-                               </div>
-                             </div>
+                           {selectedOrder?.order_complete ? (
+                             // Show ActionsComponent when order is completed
+                             <ActionsComponent
+                               order={selectedOrder}
+                               onPaymentClick={() => setIsPaymentModalOpen(true)}
+                               onInvoiceClick={handleSendInvoice}
+                               onPdfClick={() => setIsPdfDialogOpen(true)}
+                               isProcessing={isProcessing}
+                             />
                            ) : (
+                             // Show ProductColumn when order is not completed
                              <>
                                {settings?.pos_show_products_as_list ? (
                                  <ProductListColumn
@@ -928,8 +1077,8 @@ const POSPage: React.FC = () => {
                          </CardContent>
                        </Card>
 
-                      {/* Cart - Only show when there are items or an order is selected */}
-                      {(cartItems.length > 0 || selectedOrder) && (
+                      {/* Cart - Only show when there are items */}
+                      {cartItems.length > 0 && (
                         <Card className="flex-1">
                           <CardContent className="p-1 h-full">
                           <CartColumn
@@ -939,10 +1088,12 @@ const POSPage: React.FC = () => {
                             onUpdateDimensions={handleUpdateDimensions}
                             onUpdateNotes={handleUpdateNotes}
                             onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
+                            onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
                             isProcessing={isProcessing}
                             mode={selectedOrder ? 'order_edit' : 'cart'}
                             orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                             isReadOnly={selectedOrder?.status === 'completed'}
+                            isCompleted={selectedOrder?.order_complete === true}
                           />
                           </CardContent>
                         </Card>
@@ -968,51 +1119,49 @@ const POSPage: React.FC = () => {
               {/* Middle Section: Products and Services */}
               <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
                                  {/* Products */}
-                     <Card className={`flex-1 flex flex-col ${selectedOrder?.status === 'completed' ? 'blur-sm pointer-events-none' : ''}`}>
+                     <Card className="flex-1 flex flex-col">
                        <CardContent className="flex-1 min-h-0 p-1">
-                   <div className="flex-1 min-h-0">
-                     {selectedOrder?.status === 'completed' ? (
-                       <div className="flex items-center justify-center h-full">
-                         <div className="text-center">
-                           <div className="text-4xl mb-2">✅</div>
-                           <p className="text-muted-foreground">
-                             {t("orderCompleted", { ns: "orders", defaultValue: "Order Completed" })}
-                           </p>
-                           <p className="text-sm text-muted-foreground">
-                             {t("noMoreEdits", { ns: "orders", defaultValue: "No more edits allowed" })}
-                           </p>
+                         <div className="flex-1 min-h-0">
+                           {selectedOrder?.order_complete ? (
+                             // Show ActionsComponent when order is completed
+                             <ActionsComponent
+                               order={selectedOrder}
+                               onPaymentClick={() => setIsPaymentModalOpen(true)}
+                               onInvoiceClick={handleSendInvoice}
+                               onPdfClick={() => setIsPdfDialogOpen(true)}
+                               isProcessing={isProcessing}
+                             />
+                           ) : (
+                             // Show ProductColumn when order is not completed
+                             <>
+                               {settings?.pos_show_products_as_list ? (
+                                 <ProductListColumn
+                                   categoryId={selectedCategoryId}
+                                   onSelectProduct={handleSelectProduct}
+                                   activeProductId={selectedProductType?.id.toString()}
+                                   selectedCustomerId={selectedCustomerId}
+                                   cartItems={cartItems}
+                                 />
+                               ) : (
+                                 <ProductColumn
+                                   categoryId={selectedCategoryId}
+                                   onSelectProduct={handleSelectProduct}
+                                   activeProductId={selectedProductType?.id.toString()}
+                                   selectedCustomerId={selectedCustomerId}
+                                   cartItems={cartItems}
+                                 />
+                               )}
+                             </>
+                           )}
                          </div>
-                       </div>
-                     ) : (
-                       <>
-                         {settings?.pos_show_products_as_list ? (
-                           <ProductListColumn
-                             categoryId={selectedCategoryId}
-                             onSelectProduct={handleSelectProduct}
-                             activeProductId={selectedProductType?.id.toString()}
-                             selectedCustomerId={selectedCustomerId}
-                             cartItems={cartItems}
-                           />
-                         ) : (
-                           <ProductColumn
-                             categoryId={selectedCategoryId}
-                             onSelectProduct={handleSelectProduct}
-                             activeProductId={selectedProductType?.id.toString()}
-                             selectedCustomerId={selectedCustomerId}
-                             cartItems={cartItems}
-                           />
-                         )}
-                       </>
-                     )}
-                   </div>
                        </CardContent>
                      </Card>
 
                 {/* Removed ServiceOfferingColumn - now handled by dialog */}
               </div>
               
-              {/* Show helpful message when order is selected but cart is empty */}
-              {selectedOrder && cartItems.length === 0 && (
+              {/* Show helpful message when customer is selected but cart is empty */}
+              {(selectedCustomerId || selectedOrder?.customer) && cartItems.length === 0 && (
                 <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs">
                   <div className="flex items-center gap-2 text-sm text-primary">
                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
@@ -1021,8 +1170,8 @@ const POSPage: React.FC = () => {
                 </div>
               )}
            
-                           {/* Right Section: Cart - Only show when there are items or an order is selected */}
-                           {(cartItems.length > 0 || selectedOrder) && (
+                           {/* Right Section: Cart - Only show when there are items */}
+                           {cartItems.length > 0 && (
                              <Card className="w-[400px] flex-shrink-0">
                                <CardContent className="p-1 h-full">
                              <CartColumn
@@ -1032,10 +1181,12 @@ const POSPage: React.FC = () => {
                                onUpdateDimensions={handleUpdateDimensions}
                                onUpdateNotes={handleUpdateNotes}
                                onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
+                               onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
                                isProcessing={isProcessing}
                                mode={selectedOrder ? 'order_edit' : 'cart'}
                                orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                                isReadOnly={selectedOrder?.status === 'completed'}
+                               isCompleted={selectedOrder?.order_complete === true}
                                                           />
                                  </CardContent>
                              </Card>
@@ -1044,20 +1195,19 @@ const POSPage: React.FC = () => {
               )}
             </>
                      ) : (
-              /* No order selected - show empty state */
+              /* No customer selected - show empty state */
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">📋</div>
+                  <div className="text-6xl mb-4">👤</div>
                   <h3 className="text-lg font-semibold mb-2">
-                    {t("noOrderSelected", { ns: "orders", defaultValue: "No Order Selected" })}
+                    {t("noCustomerSelected", { ns: "orders", defaultValue: "No Customer Selected" })}
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    {t("selectOrderToStart", { ns: "orders", defaultValue: "Select an order from the right panel to start adding items" })}
+                    {t("selectCustomerToStart", { ns: "orders", defaultValue: "Please select a customer to start adding items to your order" })}
                   </p>
                   <div className="flex flex-col gap-2 items-center">
-              
                     <p className="text-sm text-muted-foreground">
-                      {t("orSelectExistingOrder", { ns: "orders", defaultValue: "Or select an existing order from the right panel" })}
+                      {t("useCustomerSelection", { ns: "orders", defaultValue: "Use the customer selection in the header to choose a customer" })}
                     </p>
                   </div>
                 </div>

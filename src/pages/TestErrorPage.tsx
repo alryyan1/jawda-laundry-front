@@ -1,167 +1,149 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Bug, Zap, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
-const TestErrorPage: React.FC = () => {
-  const [shouldThrowError, setShouldThrowError] = useState(false);
-  const [errorType, setErrorType] = useState<'render' | 'async' | 'component'>('render');
+// Error component that throws different types of errors
+const ErrorComponent: React.FC<{ type: 'render' | 'async' }> = ({ type }) => {
+  const { t } = useTranslation(['common']);
 
-  // Component that throws an error
-  const ErrorComponent: React.FC<{ type: string }> = ({ type }) => {
-    if (type === 'render') {
-      throw new Error('This is a test render error thrown by TestErrorPage component');
-    }
-    return <div>No error thrown</div>;
-  };
-
-  const handleAsyncError = async () => {
-    try {
-      // Simulate an async operation that fails
-      await new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('This is a test async error from TestErrorPage'));
-        }, 1000);
-      });
-    } catch (error) {
-      // This won't be caught by ErrorBoundary since it's async
-      console.error('Async error:', error);
-      throw error;
-    }
-  };
-
-  const handleComponentError = () => {
-    setShouldThrowError(true);
-    setErrorType('component');
-  };
-
-  if (shouldThrowError && errorType === 'component') {
-    throw new Error('This is a test component error thrown by TestErrorPage');
+  if (type === 'render') {
+    throw new Error('This is a render error for testing ErrorBoundary');
   }
 
+  if (type === 'async') {
+    // This won't be caught by ErrorBoundary
+    setTimeout(() => {
+      throw new Error('This is an async error that won\'t be caught');
+    }, 100);
+  }
+
+  return <div>{t('noErrorThrown')}</div>;
+};
+
+const TestErrorPage: React.FC = () => {
+  const { t } = useTranslation(['common']);
+  const [renderError, setRenderError] = useState(false);
+  const [asyncError, setAsyncError] = useState(false);
+
+  const triggerRenderError = () => {
+    setRenderError(true);
+  };
+
+  const triggerAsyncError = () => {
+    setAsyncError(true);
+    // Reset after a short delay
+    setTimeout(() => setAsyncError(false), 100);
+  };
+
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold mb-2">Error Boundary Testing</h1>
+        <p className="text-muted-foreground">
+          Test the ErrorBoundary component with different types of errors
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        {/* Render Error Test */}
+        <Card className="border-destructive/20">
+          <CardContent className="p-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="text-destructive">⚠️</span>
+              {t('renderError')}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              This will trigger a render error that will be caught by ErrorBoundary
+            </CardDescription>
+            <Button
+              onClick={triggerRenderError}
+              variant="destructive"
+              size="sm"
+              className="mt-3"
+            >
+              Trigger Render Error
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Async Error Test */}
+        <Card className="border-orange-500/20">
+          <CardContent className="p-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="text-orange-500">⚡</span>
+              {t('asyncError')}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              This will trigger an async error that won't be caught by ErrorBoundary
+            </CardDescription>
+            <Button
+              onClick={triggerAsyncError}
+              variant="outline"
+              size="sm"
+              className="mt-3"
+            >
+              Trigger Async Error
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Component Error Test */}
+        <Card className="border-yellow-500/20">
+          <CardContent className="p-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="text-yellow-500">🔧</span>
+              {t('componentError')}
+            </CardTitle>
+            <CardDescription className="text-xs">
+              This will trigger a component error that will be caught by ErrorBoundary
+            </CardDescription>
+            <Button
+              onClick={() => setRenderError(true)}
+              variant="outline"
+              size="sm"
+              className="mt-3"
+            >
+              Trigger Component Error
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Error Component Demo */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bug className="h-5 w-5" />
-            Error Boundary Testing Page
-          </CardTitle>
-          <CardDescription>
-            This page is for testing the ErrorBoundary component. Use the buttons below to trigger different types of errors.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Render Error */}
-            <Card className="border-destructive/20">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                  Render Error
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Throws an error during component rendering
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => {
-                    setShouldThrowError(true);
-                    setErrorType('render');
-                  }}
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                >
-                  Trigger Render Error
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Component Error */}
-            <Card className="border-orange-500/20">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-orange-500" />
-                  Component Error
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Throws an error in component state update
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={handleComponentError}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-orange-500/20"
-                >
-                  Trigger Component Error
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Async Error */}
-            <Card className="border-yellow-500/20">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 text-yellow-600" />
-                  Async Error
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Async errors won't be caught by ErrorBoundary
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={handleAsyncError}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-yellow-500/20"
-                >
-                  Trigger Async Error
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Error Component Demo */}
-          <Card className="bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Error Component Demo</CardTitle>
-              <CardDescription>
-                This component will throw an error when the render error is triggered.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {shouldThrowError && errorType === 'render' ? (
+        <CardContent className="p-6">
+          <CardTitle className="text-lg">{t('errorComponentDemo')}</CardTitle>
+          <div className="mt-4 space-y-4">
+            {renderError ? (
+              <ErrorBoundary componentName="TestErrorPage">
                 <ErrorComponent type="render" />
-              ) : (
-                <div className="text-center py-4 text-muted-foreground">
-                  No error component rendered yet. Click "Trigger Render Error" to see the ErrorBoundary in action.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </ErrorBoundary>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                {t('noErrorComponentRendered')}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Instructions */}
-          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-            <CardHeader>
-              <CardTitle className="text-lg text-blue-900 dark:text-blue-100">
-                Testing Instructions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-blue-800 dark:text-blue-200 space-y-2">
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li><strong>Render Error:</strong> Will be caught by ErrorBoundary and show the professional error page</li>
-                <li><strong>Component Error:</strong> Will also be caught and show component name "TestErrorPage"</li>
-                <li><strong>Async Error:</strong> Won't be caught by ErrorBoundary (check browser console)</li>
-                <li>The ErrorBoundary will show technical details, error ID, and recovery options</li>
-                <li>You can copy error details and use the retry functionality</li>
-              </ul>
-            </CardContent>
-          </Card>
+      {/* Information Card */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardContent className="p-6">
+          <CardTitle className="text-lg text-blue-900 dark:text-blue-100">
+            How ErrorBoundary Works
+          </CardTitle>
+          <CardContent className="text-blue-800 dark:text-blue-200 space-y-2">
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li><strong>{t('renderError')}:</strong> Will be caught by ErrorBoundary and show the professional error page</li>
+              <li><strong>{t('componentError')}:</strong> Will also be caught and show component name "TestErrorPage"</li>
+              <li><strong>{t('asyncError')}:</strong> Won't be caught by ErrorBoundary (check browser console)</li>
+              <li>{t('errorBoundaryFeatures')}</li>
+              <li>{t('copyErrorDetails')}</li>
+            </ul>
+          </CardContent>
         </CardContent>
       </Card>
     </div>

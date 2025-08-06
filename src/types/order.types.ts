@@ -83,6 +83,7 @@ export interface Order {
     dining_table?: DiningTable;
     staff_user?: User;
     status: OrderStatus;
+    order_complete?: boolean;
     total_amount: number;
     paid_amount: number;
     amount_due?: number;
@@ -130,6 +131,7 @@ export interface NewOrderFormData {
     due_date?: string;
     status?: OrderStatus; // Added for edit page
     order_type?: 'in_house' | 'take_away' | 'delivery';
+    order_complete?: boolean; // Added for order completion
 }
 
 export interface PaymentBreakdownItem {

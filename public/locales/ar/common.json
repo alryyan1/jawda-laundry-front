@@ -274,7 +274,7 @@
   "selectCategoryFirst": "اختر فئة أولاً",
   "selectProductFirst": "اختر منتج أولاً",
   "pointOfSale": "نقطة البيع",
-      "diningManagement": "إدارة المحل",
+  "diningManagement": "إدارة المحل",
   "product": "المنتج",
   "serviceOffering": "عرض الخدمة",
   "username": "اسم المستخدم",
@@ -313,5 +313,18 @@
   "productCategoryLC": "فئة منتج",
   "allCategories": "جميع الفئات",
   "deleteSuccess": "تم الحذف بنجاح",
-  "deleteFailed": "فشل الحذف"
+  "deleteFailed": "فشل الحذف",
+  
+  "backToCategories": "العودة إلى الفئات",
+  "perSqMeter": "للمتر المربع",
+  "perItem": "للعنصر",
+  "selectServiceOffering": "اختر عرض الخدمة",
+  "errorComponentDemo": "عرض مكون الخطأ",
+  "noErrorComponentRendered": "لم يتم عرض مكون خطأ بعد. انقر على \"إطلاق خطأ العرض\" لرؤية ErrorBoundary في العمل.",
+  "componentError": "خطأ المكون: سيتم التقاطه أيضاً وإظهار اسم المكون \"TestErrorPage\"",
+  "renderError": "خطأ العرض: سيتم التقاطه بواسطة ErrorBoundary وإظهار صفحة الخطأ المهنية",
+  "asyncError": "خطأ غير متزامن: لن يتم التقاطه بواسطة ErrorBoundary (تحقق من وحدة تحكم المتصفح)",
+  "errorBoundaryFeatures": "سيظهر ErrorBoundary التفاصيل التقنية ومعرف الخطأ وخيارات الاسترداد",
+  "copyErrorDetails": "يمكنك نسخ تفاصيل الخطأ واستخدام وظيفة إعادة المحاولة",
+  "noErrorThrown": "لم يتم إطلاق خطأ"
 }

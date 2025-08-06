@@ -37,6 +37,7 @@ export interface CartItem {
   _quotedSubTotal?: number;
   _isExistingOrderItem?: boolean; // Flag to identify existing order items
   _isAdding?: boolean; // Flag to show loading state while adding to backend
+  _isDeleting?: boolean; // Flag to show loading state while deleting from backend
 }
 
 interface CartItemProps {
@@ -59,8 +60,8 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   onUpdateNotes,
   isReadOnly = false,
 }) => {
-  // Existing order items should always be read-only
-  const effectiveReadOnly = isReadOnly || item._isExistingOrderItem;
+  // Only use the isReadOnly prop, don't make existing order items read-only
+  const effectiveReadOnly = isReadOnly;
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
   const { getSetting } = useSettings();
   const [isDetailsOpen] = useState(!!item.notes);
@@ -147,8 +148,13 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
                 onClick={() => onRemoveItem(item.id)}
+                disabled={item._isDeleting}
               >
-                <X className="h-4 w-4" />
+                {item._isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
               </Button>
             )}
           </div>

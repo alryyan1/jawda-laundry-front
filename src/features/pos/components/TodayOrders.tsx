@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 import { getTodayDate } from "@/lib/dateUtils";
+import { useDate } from "@/context/DateContext";
 
 import type { Order } from "@/types";
 import { getOrders } from "@/api/orderService";
@@ -55,13 +56,11 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
   const { t, i18n } = useTranslation(["common", "orders"]);
   const [currentPage, setCurrentPage] = useState(0);
   const ordersPerPage = 12; // Show 12 orders at a time in dialog
-
-  // Get today's date in YYYY-MM-DD format (using local timezone)
-  const today = getTodayDate();
+  const { selectedDate } = useDate();
 
   const { data: ordersResponse, isLoading } = useQuery({
-    queryKey: ["todayOrders", today],
-    queryFn: () => getOrders(1, 100, { createdDate: today }),
+    queryKey: ["todayOrders", selectedDate],
+    queryFn: () => getOrders(1, 100, { createdDate: selectedDate }),
   });
 
   const orders = ordersResponse?.data || [];
@@ -103,7 +102,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {t("todayOrders", { ns: "orders" })} ({orders.length})
+            {t("ordersForDate", { ns: "orders", defaultValue: "Orders for" })} {selectedDate} ({orders.length})
           </DialogTitle>
           <DialogDescription>
             {t("selectOrderToView", { ns: "orders", defaultValue: "Select an order to view its details" })}
@@ -118,7 +117,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
           </div>
         ) : (
           <>
-            <ScrollArea className="max-h-[60vh]">
+            <ScrollArea className="max-h-[60vh] ">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 {currentOrders.map((order) => (
                   <div

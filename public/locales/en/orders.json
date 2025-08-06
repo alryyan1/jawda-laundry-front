@@ -229,8 +229,26 @@
   "to": "To",
   "dateRange": "Date Range",
   "orders": "Orders",
-    "cash": "Cash",
+  "cash": "Cash",
   "visa": "Visa",
-  "bank_transfer": "Bank Transfer"
+  "bank_transfer": "Bank Transfer",
   
+  "addItemsToCart": "Add items to see cart",
+  "orderCompleted": "Order Completed",
+  "noMoreEdits": "No more edits allowed",
+  "noCustomerSelected": "No Customer Selected",
+  "selectCustomerToStart": "Please select a customer to start adding items to your order",
+  "useCustomerSelection": "Use the customer selection in the header to choose a customer",
+  "orderCompletedCannotEdit": "This order is completed and cannot be edited",
+  "orderNeedsCustomer": "Please select a customer for this order before adding items",
+  "itemRemovedFromOrder": "Item removed from order successfully",
+  "failedToRemoveItem": "Failed to remove item from order",
+  "customerAssignedToOrder": "Customer assigned to order successfully",
+  "failedToAssignCustomer": "Failed to assign customer to order",
+  "noOrderSelected": "No order selected",
+  "itemAddedToOrder": "Item added to order successfully",
+  "failedToAddItem": "Failed to add item to order",
+  "orderAlreadyCompleted": "This order is already completed",
+  "orderCompletedSuccessfully": "Order completed successfully",
+  "failedToCompleteOrder": "Failed to complete order"
 }

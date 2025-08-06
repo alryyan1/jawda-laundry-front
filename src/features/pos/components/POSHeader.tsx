@@ -4,6 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
+// MUI imports for order ID display
+import { Card, CardContent, Typography } from '@mui/material';
+import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+
 import { ORDER_STATUSES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
@@ -77,6 +81,24 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   const { can } = useAuth();
   const { getSecondaryColor } = useTheme();
 
+  // MUI theme for order ID display
+  const muiTheme = createTheme({
+    palette: {
+      primary: {
+        main: getSecondaryColor(),
+      },
+      secondary: {
+        main: '#1976d2',
+      },
+    },
+    typography: {
+      h4: {
+        fontWeight: 700,
+        fontSize: '2rem',
+      },
+    },
+  });
+
   // Mutation for updating order status
   const updateStatusMutation = useMutation<
     { order: Order },
@@ -139,27 +161,48 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   };
 
   return (
-    <div className="border-b shadow-sm flex-shrink-0 p-1" >
-      <div className="container mx-auto px-2 py-0 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          {/* All Categories Button */}
-          <Button
-            size="sm"
-            variant={selectedCategoryId === "" || !selectedCategoryId ? "default" : "outline"}
-            onClick={() => onCategorySelect("")}
-            style={{
-              backgroundColor: selectedCategoryId === "" || !selectedCategoryId ? getSecondaryColor() : 'transparent',
-              borderColor: getSecondaryColor(300),
-              color: selectedCategoryId === "" || !selectedCategoryId ? 'white' : getSecondaryColor()
-            }}
-            className="hover:opacity-90 transition-opacity h-7 px-2"
-            title={t("allCategories", { ns: "common" })}
-          >
-            <Tags className="h-3 w-3" />
-          </Button>
+    <MuiThemeProvider theme={muiTheme}>
+      <div className="border-b shadow-sm flex-shrink-0 p-1" >
+        <div className="container mx-auto px-2 py-0 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            {/* All Categories Button */}
+            <Button
+              size="sm"
+              variant={selectedCategoryId === "" || !selectedCategoryId ? "default" : "outline"}
+              onClick={() => onCategorySelect("")}
+              style={{
+                backgroundColor: selectedCategoryId === "" || !selectedCategoryId ? getSecondaryColor() : 'transparent',
+                borderColor: getSecondaryColor(300),
+                color: selectedCategoryId === "" || !selectedCategoryId ? 'white' : getSecondaryColor()
+              }}
+              className="hover:opacity-90 transition-opacity h-7 px-2"
+              title={t("allCategories", { ns: "common" })}
+            >
+              <Tags className="h-3 w-3" />
+            </Button>
 
-        {/* Show CustomerSelection when there's a selected order OR when we're in new order mode */}
-        {(selectedOrder || isNewOrderMode) && <CustomerSelection
+            {/* Order ID Display - Show when there's a selected order */}
+            {selectedOrder && (
+              <Card 
+                sx={{ 
+                  background: `linear-gradient(135deg, ${getSecondaryColor()} 0%, ${getSecondaryColor()}dd 100%)`,
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                }}
+              >
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      color: 'white',
+                      fontWeight: 700,
+                    }}
+                  >
+                    #{selectedOrder.id}
+                  </Typography>
+              </Card>
+            )}
+
+          {/* Show CustomerSelection when there's a selected order OR when we're in new order mode */}
+          {(selectedOrder || isNewOrderMode) && <CustomerSelection
             selectedCustomerId={selectedCustomerId}
             onCustomerSelected={onCustomerSelected}
             onNewCustomerClick={onNewCustomerClick}
@@ -384,5 +427,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
         )}
       </div>
     </div>
+    </MuiThemeProvider>
   );
 }; 

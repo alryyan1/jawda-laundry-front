@@ -1,5 +1,5 @@
 // src/features/pos/components/ProductColumn.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { ProductType } from "@/types";
@@ -63,6 +63,41 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 }) => {
   const { searchTerm } = useSearch();
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  // Dynamic grid columns based on container width
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [gridColumns, setGridColumns] = useState(3);
+
+  // Calculate grid columns based on container width
+  useEffect(() => {
+    const calculateGridColumns = () => {
+      if (!containerRef.current) return;
+      
+      const containerWidth = containerRef.current.offsetWidth;
+      const minItemWidth = 120; // Minimum width for each product item
+      const gap = 8; // Gap between items (gap-2 = 8px)
+      
+      // Calculate how many columns can fit
+      const availableWidth = containerWidth - gap; // Account for gap
+      const columns = Math.max(1, Math.floor(availableWidth / (minItemWidth + gap)));
+      
+      // Cap at 6 columns maximum for very wide screens
+      const maxColumns = Math.min(columns, 6);
+      setGridColumns(maxColumns);
+    };
+
+    calculateGridColumns();
+    
+    // Add resize listener
+    const resizeObserver = new ResizeObserver(calculateGridColumns);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Fetch customer products with pricing rules if customer is selected
   const { data: customerProductsWithPricingRules, isLoading: isLoadingCustomerProducts } = useQuery({
@@ -85,7 +120,15 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   const productsToShow = useMemo(() => {
     if (selectedCustomerId && customerProductsWithPricingRules?.product_types && customerProductsWithPricingRules.product_types.length > 0) {
       // Use customer products that have pricing rules
-      return customerProductsWithPricingRules.product_types.map(productType => ({
+      return customerProductsWithPricingRules.product_types.map((productType: {
+        id: number;
+        category?: { id: number };
+        name: string;
+        is_dimension_based: boolean;
+        is_active: boolean;
+        image_url?: string;
+        service_offerings_count?: number;
+      }) => ({
         id: productType.id,
         product_category_id: productType.category?.id || 0,
         name: productType.name,
@@ -102,7 +145,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   }, [selectedCustomerId, customerProductsWithPricingRules, allProducts]);
 
   const filteredProducts = useMemo(() => {
-    return productsToShow.filter(product => {
+    return productsToShow.filter((product: ProductType) => {
       const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
       const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearch) || product.id.toString() === lowerCaseSearch;
       const matchesCategory = !categoryId || product.category?.id.toString() === categoryId;
@@ -122,7 +165,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 
   return (
     <MuiThemeProvider theme={muiTheme}>
-      <div className="flex flex-col h-full ">
+      <div className="flex flex-col h-full" ref={containerRef}>
         <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
           <div className="p-0">
             {filteredProducts.length === 0 ? (
@@ -130,12 +173,12 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                 {/* ... empty state message ... */}
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2" 
+              <div className="grid gap-2" 
                    style={{ 
-                     gridTemplateColumns: "repeat(3, 1fr)",
+                     gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
                      maxWidth: "100%"
                    }}>
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((product: ProductType) => (
                   <div key={product.id} className={cn(
                     "rounded-lg transition-all",
                     activeProductId === product.id.toString() && "ring-2 ring-primary ring-offset-2"
