@@ -63,6 +63,7 @@ export const getOrders = async (
     filters?: {
         status?: OrderStatus | '';
         search?: string;
+        orderId?: string;
         customerId?: string;
         productTypeId?: string;
         dateFrom?: string; // YYYY-MM-DD
@@ -73,6 +74,7 @@ export const getOrders = async (
     const params: any = { page, per_page: perPage };
     if (filters?.status) params.status = filters.status;
     if (filters?.search) params.search = filters.search;
+    if (filters?.orderId) params.order_id = filters.orderId;
     if (filters?.customerId) params.customer_id = filters.customerId;
     if (filters?.productTypeId) params.product_type_id = filters.productTypeId;
     if (filters?.dateFrom) params.date_from = filters.dateFrom;

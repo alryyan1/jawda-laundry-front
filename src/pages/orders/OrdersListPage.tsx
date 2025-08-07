@@ -71,6 +71,7 @@ const OrdersListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
     search?: string;
+    orderId?: string;
     status?: OrderStatus | "";
     customerId?: string;
     productTypeId?: string;
@@ -97,6 +98,7 @@ const OrdersListPage: React.FC = () => {
       itemsPerPage,
       filters.status,
       debouncedSearch,
+      filters.orderId,
       filters.customerId,
       filters.productTypeId,
       filters.dateFrom,
@@ -107,6 +109,7 @@ const OrdersListPage: React.FC = () => {
       itemsPerPage,
       filters.status,
       debouncedSearch,
+      filters.orderId,
       filters.customerId,
       filters.productTypeId,
       filters.dateFrom,
@@ -250,6 +253,7 @@ const OrdersListPage: React.FC = () => {
       getOrders(currentPage, itemsPerPage, {
         status: filters.status,
         search: debouncedSearch,
+        orderId: filters.orderId,
         customerId: filters.customerId,
         productTypeId: filters.productTypeId,
         dateFrom: filters.dateFrom,
@@ -273,6 +277,7 @@ const OrdersListPage: React.FC = () => {
   }, [
     filters.status,
     debouncedSearch,
+    filters.orderId,
     filters.customerId,
     filters.productTypeId,
     filters.dateFrom,
@@ -341,8 +346,10 @@ const OrdersListPage: React.FC = () => {
         </div>
       </PageHeader>
 
+      
+
       {/* Mobile Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           <Input
@@ -352,6 +359,16 @@ const OrdersListPage: React.FC = () => {
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
             className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
+          />
+        </div>
+        <div className="relative w-20 sm:w-24">
+          <Input
+            placeholder="ID"
+            value={filters.orderId || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, orderId: e.target.value }))
+            }
+            className="text-xs sm:text-sm h-8 sm:h-10 text-center"
           />
         </div>
         <Button
@@ -444,13 +461,21 @@ const OrdersListPage: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-lg">{t("filters")}</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Input
             placeholder={t("searchOrdersPlaceholder")}
             value={filters.search || ""}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
+          />
+          <Input
+            placeholder="Order ID"
+            value={filters.orderId || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, orderId: e.target.value }))
+            }
+            className="w-full"
           />
           <Select
             value={filters.status || ""}
