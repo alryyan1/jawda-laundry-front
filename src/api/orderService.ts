@@ -432,8 +432,24 @@ export const updateOrderItemQuantity = async (
  * Download order invoice PDF
  */
 export const downloadOrderInvoice = async (orderId: string | number): Promise<void> => {
-    // Open the PDF in a new window/tab
-    window.open(`${apiClient.defaults.baseURL}/orders/${orderId}/invoice/download`, '_blank');
+    try {
+        const response = await apiClient.get(`/orders/${orderId}/invoice/download`, {
+            responseType: 'blob',
+        });
+        
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `invoice-${orderId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        throw error;
+    }
 };
 
 /**
@@ -448,17 +464,33 @@ export const downloadOrdersListPdf = async (filters: {
     dateFrom?: string;
     dateTo?: string;
 }): Promise<void> => {
-    const params = new URLSearchParams();
-    if (filters.status) params.append('status', filters.status);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.orderId) params.append('order_id', filters.orderId);
-    if (filters.customerId) params.append('customer_id', filters.customerId);
-    if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
-    if (filters.dateFrom) params.append('date_from', filters.dateFrom);
-    if (filters.dateTo) params.append('date_to', filters.dateTo);
-    
-    // Open the PDF in a new window/tab
-    window.open(`${apiClient.defaults.baseURL}/orders/pdf/download?${params.toString()}`, '_blank');
+    try {
+        const params = new URLSearchParams();
+        if (filters.status) params.append('status', filters.status);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.orderId) params.append('order_id', filters.orderId);
+        if (filters.customerId) params.append('customer_id', filters.customerId);
+        if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+        if (filters.dateFrom) params.append('date_from', filters.dateFrom);
+        if (filters.dateTo) params.append('date_to', filters.dateTo);
+        
+        const response = await apiClient.get(`/orders/pdf/download?${params.toString()}`, {
+            responseType: 'blob',
+        });
+        
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `orders-list-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        throw error;
+    }
 };
 
 
