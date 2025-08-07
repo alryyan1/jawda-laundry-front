@@ -412,4 +412,18 @@ export const updateOrderItemDimensions = async (
     return data;
 };
 
+/**
+ * Update order item quantity and recalculate totals
+ */
+export const updateOrderItemQuantity = async (
+    orderItemId: string | number,
+    quantity: number
+): Promise<{ order_item: OrderItem; order_total: number; message: string }> => {
+    const { data } = await apiClient.patch<{ order_item: OrderItem; order_total: number; message: string }>(
+        `/order-items/${orderItemId}/quantity`,
+        { quantity }
+    );
+    return data;
+};
+
 
