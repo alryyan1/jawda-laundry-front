@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -775,7 +775,7 @@ const POSPage: React.FC = () => {
     }
 
     // Prevent completing already completed orders
-    if (selectedOrder.status === 'completed') {
+    if (selectedOrder.order_complete) {
       toast.error(t("orderAlreadyCompleted", { ns: "orders", defaultValue: "This order is already completed" }));
       return;
     }
@@ -786,40 +786,17 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Complete the order with items details
+    // Calculate the total amount from cart items
+    const totalAmount = cartItems.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
+    
+    console.log('Completing order with total amount:', totalAmount);
+    
+    // Mark order as complete without changing status or generating sequences
     try {
       setIsProcessing(true);
       
-      // Convert cart items to order items format
-      const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
-        id: item.id,
-        service_offering_id: item.serviceOffering.id,
-        product_type_id: item.productType.id.toString(),
-        service_action_id: item.serviceOffering.service_action_id.toString(),
-        quantity: item.quantity,
-        notes: item.notes,
-        length_meters: item.length_meters,
-        width_meters: item.width_meters,
-        _derivedServiceOffering: item.serviceOffering,
-        _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
-        _quoted_price_per_unit_item: item.price,
-        _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
-      }));
-
-      // Prepare order data with items and completion details
-      const orderData: NewOrderFormData = {
-        customer_id: selectedOrder.customer.id.toString(),
-        items: orderItems,
-        notes: selectedOrder.notes || undefined,
-        due_date: selectedOrder.due_date || undefined,
-        order_type: selectedOrder.order_type,
-        dining_table_id: selectedOrder.dining_table_id,
-        status: 'completed', // Set status to completed
-        order_complete: true, // Explicitly set order_complete to true
-      };
-
-      // Update the order with items and completion details
-      const response = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
+      // Use the new markOrderComplete endpoint with total amount
+      const response = await markOrderComplete(selectedOrder.id, totalAmount);
       
       // Update the selected order with the completed status
       setSelectedOrder(response.order);

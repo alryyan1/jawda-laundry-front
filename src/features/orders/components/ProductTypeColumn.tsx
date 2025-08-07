@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, getImageUrl } from "@/lib/utils";
 import { Shirt, Package } from "lucide-react"; // Package is a good generic icon
 
 interface ProductTypeColumnProps {
@@ -77,7 +77,7 @@ export const ProductTypeColumn: React.FC<ProductTypeColumnProps> = ({
                   <CardContent className="p-2 flex flex-col items-center justify-center gap-2 aspect-square">
                     <Avatar className="h-12 w-12 rounded-md">
                       <AvatarImage
-                        src={product.image_url || undefined}
+                        src={getImageUrl(product.image_url)}
                         alt={product.name}
                       />
                       <AvatarFallback className="rounded-md bg-secondary">

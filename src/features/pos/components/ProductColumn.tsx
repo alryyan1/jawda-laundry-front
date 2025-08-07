@@ -11,8 +11,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useSearch } from "@/context/SearchContext";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { CheckCircle } from "lucide-react";
+import { cn, getImageUrl } from "@/lib/utils";
+import { CheckCircle, Shirt } from "lucide-react";
 
 // --- MUI Import ---
 import Badge from '@mui/material/Badge';
@@ -217,16 +217,24 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                           )}
                         <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
                           {product.image_url ? (
-                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <span className="text-2xl font-medium text-muted-foreground">
-                                {product.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          
-                        
+                            <img 
+                              src={getImageUrl(product.image_url)} 
+                              alt={product.name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`w-full h-full flex items-center justify-center bg-muted ${product.image_url ? 'hidden' : 'flex'}`}
+                            style={{ display: product.image_url ? 'none' : 'flex' }}
+                          >
+                            <Shirt className="h-8 w-8 text-muted-foreground" />
+                          </div>
                         </div>
                       </Badge>
                       <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">

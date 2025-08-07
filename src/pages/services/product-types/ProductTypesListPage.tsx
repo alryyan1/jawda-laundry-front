@@ -48,13 +48,14 @@ import {
   Trash2,
   MoreHorizontal,
   Loader2,
-  Utensils,
   Check,
   X,
   ChevronUp,
   ChevronDown,
   AlertTriangle,
+  Shirt,
 } from "lucide-react";
+import { getImageUrl } from "@/lib/utils";
 
 // Mobile Card Component for responsive display
 const MobileMemoizedCard = React.memo(
@@ -78,11 +79,11 @@ const MobileMemoizedCard = React.memo(
         <div className="flex items-start gap-3 mb-3">
           <Avatar className="h-12 w-12 rounded-md flex-shrink-0">
             <AvatarImage
-              src={productType.image_url || undefined}
+              src={getImageUrl(productType.image_url)}
               alt={productType.name}
             />
             <AvatarFallback className="rounded-md bg-muted">
-              <Utensils className="h-6 w-6 text-muted-foreground" />
+              <Shirt className="h-6 w-6 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -384,11 +385,11 @@ const ProductTypesListPage: React.FC = () => {
             <div className="flex items-center justify-center gap-2 w-full min-w-0">
               <Avatar className="h-8 w-8 rounded-md flex-shrink-0">
                 <AvatarImage
-                  src={productType.image_url || undefined}
+                  src={getImageUrl(productType.image_url)}
                   alt={productType.name}
                 />
                 <AvatarFallback className="rounded-md bg-muted">
-                  <Utensils className="h-4 w-4 text-muted-foreground" />
+                  <Shirt className="h-4 w-4 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">

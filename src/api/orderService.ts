@@ -389,8 +389,14 @@ export const deleteOrderItem = async (orderItemId: number | string): Promise<{ o
  * Cancel a completed order by setting order_complete to false.
  */
 export const cancelOrder = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
-  const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/cancel`);
-  return data;
+    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/cancel`);
+    return data;
+};
+
+export const markOrderComplete = async (orderId: string | number, totalAmount?: number): Promise<{ order: Order; message: string }> => {
+    const payload = totalAmount !== undefined ? { total_amount: totalAmount } : {};
+    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-complete`, payload);
+    return data;
 };
 
 

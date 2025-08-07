@@ -11,10 +11,15 @@ import {
   DollarSign, 
   Calendar,
   User,
-  FileText
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Download
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { Order, Payment } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface ActionsComponentProps {
   order: Order;
@@ -33,31 +38,103 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
 
+  // Calculate payment totals from actual payments array
   const totalAmount = order.total_amount || 0;
-  const paidAmount = order.paid_amount || 0;
+  const payments = order.payments || [];
+   console.log(order,'order')
+  // Calculate paid amount from payments array (more accurate)
+  const paidAmountFromPayments = payments
+    .filter(payment => payment.type === 'payment')
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  
+  // Use the higher value between order.paid_amount and calculated payments
+  const paidAmount = Math.max(order.paid_amount || 0, paidAmountFromPayments);
   const remainingAmount = totalAmount - paidAmount;
-  const isFullyPaid = paidAmount >= totalAmount;
+  
+  // More accurate payment status calculation
+  const isFullyPaid = totalAmount > 0 && paidAmount >= totalAmount;
+  const hasPartialPayment = paidAmount > 0 && paidAmount < totalAmount;
+  const hasNoPayment = paidAmount === 0;
+
+  // Get payment status for display
+  const getPaymentStatusDisplay = () => {
+    if (isFullyPaid) return { text: t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" }), variant: "success" as const };
+    if (hasPartialPayment) return { text: t("partiallyPaid", { ns: "orders", defaultValue: "Partially Paid" }), variant: "warning" as const };
+    return { text: t("unpaid", { ns: "orders", defaultValue: "Unpaid" }), variant: "destructive" as const };
+  };
+
+  const paymentStatus = getPaymentStatusDisplay();
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Top Section: Payment Actions */}
-      <Card className="mb-4">
+    <div className="flex flex-col h-full space-y-4">
+      {/* Payment Status Card */}
+      <Card className="border-l-4 border-l-blue-500">
         <CardContent className="p-4">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            {t("paymentActions", { ns: "orders", defaultValue: "Payment Actions" })}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-600" />
+              {t("paymentStatus", { ns: "orders", defaultValue: "Payment Status" })}
+            </h3>
+            <Badge 
+              variant={paymentStatus.variant}
+              className={cn(
+                "font-medium",
+                paymentStatus.variant === "success" && "bg-green-100 text-green-800 border-green-200",
+                paymentStatus.variant === "warning" && "bg-yellow-100 text-yellow-800 border-yellow-200",
+                paymentStatus.variant === "destructive" && "bg-red-100 text-red-800 border-red-200"
+              )}
+            >
+              {paymentStatus.text}
+            </Badge>
+          </div>
           
+          {/* Payment Summary */}
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">
+                {t("totalAmount", { ns: "orders", defaultValue: "Total" })}
+              </div>
+              <div className="text-lg font-bold text-gray-900">
+                {formatCurrency(totalAmount, "USD", i18n.language, 3)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">
+                {t("paidAmount", { ns: "orders", defaultValue: "Paid" })}
+              </div>
+              <div className="text-lg font-bold text-green-700">
+                {formatCurrency(paidAmount, "USD", i18n.language, 3)}
+              </div>
+            </div>
+            <div className="text-center p-3 bg-red-50 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">
+                {t("remainingAmount", { ns: "orders", defaultValue: "Due" })}
+              </div>
+              <div className="text-lg font-bold text-red-700">
+                {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Record Payment Button */}
             <Button
               onClick={onPaymentClick}
               disabled={isProcessing || isFullyPaid}
-              className="h-12 flex flex-col items-center justify-center gap-1"
-              variant={isFullyPaid ? "secondary" : "default"}
+              className={cn(
+                "h-11 flex items-center justify-center gap-2 font-medium",
+                isFullyPaid 
+                  ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-100" 
+                  : "bg-blue-600 hover:bg-blue-700"
+              )}
+              variant={isFullyPaid ? "outline" : "default"}
             >
-              <DollarSign className="h-4 w-4" />
-              <span className="text-xs">
+              {isFullyPaid ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <DollarSign className="h-4 w-4" />
+              )}
+              <span className="text-sm">
                 {isFullyPaid 
                   ? t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" })
                   : t("recordPayment", { ns: "orders", defaultValue: "Record Payment" })
@@ -65,92 +142,97 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               </span>
             </Button>
 
-            {/* Send Invoice Button */}
             <Button
               onClick={onInvoiceClick}
               disabled={isProcessing}
               variant="outline"
-              className="h-12 flex flex-col items-center justify-center gap-1"
+              className="h-11 flex items-center justify-center gap-2 font-medium border-gray-300 hover:bg-gray-50"
             >
               <Receipt className="h-4 w-4" />
-              <span className="text-xs">
+              <span className="text-sm">
                 {t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })}
               </span>
             </Button>
           </div>
-
-          {/* Payment Summary */}
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">
-                {t("totalAmount", { ns: "orders", defaultValue: "Total Amount" })}:
-              </span>
-              <span className="font-semibold">
-                {formatCurrency(totalAmount, "USD", i18n.language, 3)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">
-                {t("paidAmount", { ns: "orders", defaultValue: "Paid Amount" })}:
-              </span>
-              <span className="font-semibold text-green-600">
-                {formatCurrency(paidAmount, "USD", i18n.language, 3)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">
-                {t("remainingAmount", { ns: "orders", defaultValue: "Remaining" })}:
-              </span>
-              <span className={`font-semibold ${remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
-              </span>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Bottom Section: Payment History */}
+      {/* Payment History Card */}
       <Card className="flex-1">
         <CardContent className="p-4 h-full flex flex-col">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {t("paymentHistory", { ns: "orders", defaultValue: "Payment History" })}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-gray-600" />
+              {t("paymentHistory", { ns: "orders", defaultValue: "Payment History" })}
+            </h3>
+            <Badge variant="secondary" className="text-xs">
+              {payments.length} {t("payments", { ns: "orders", defaultValue: "payments" })}
+            </Badge>
+          </div>
 
           <ScrollArea className="flex-1">
-            {order.payments && order.payments.length > 0 ? (
+            {payments.length > 0 ? (
               <div className="space-y-3">
-                {order.payments.map((payment: Payment, index: number) => (
-                  <div key={payment.id || index} className="p-3 border rounded-lg">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">
-                          {formatCurrency(payment.amount_paid, "USD", i18n.language, 3)}
-                        </span>
+                {payments.map((payment: Payment, index: number) => (
+                  <div key={payment.id || index} className="p-4 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-2 rounded-full",
+                          payment.type === 'payment' ? "bg-green-100" : "bg-red-100"
+                        )}>
+                          {payment.type === 'payment' ? (
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            {formatCurrency(payment.amount, "USD", i18n.language, 3)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {payment.type === 'payment' 
+                              ? t("payment", { ns: "orders", defaultValue: "Payment" })
+                              : t("refund", { ns: "orders", defaultValue: "Refund" })
+                            }
+                          </div>
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {payment.payment_method}
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs font-medium border-gray-300"
+                      >
+                        {payment.method}
                       </Badge>
                     </div>
                     
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="space-y-2 text-sm text-muted-foreground">
                       {payment.payment_date && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3" />
-                          <span>{new Date(payment.payment_date).toLocaleDateString()}</span>
+                          <span>{new Date(payment.payment_date).toLocaleDateString(i18n.language, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
                         </div>
                       )}
                       
                       {payment.transaction_id && (
-                        <div className="text-xs">
-                          {t("transactionId", { ns: "orders", defaultValue: "Transaction ID" })}: {payment.transaction_id}
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-3 w-3" />
+                          <span className="font-mono text-xs">
+                            {t("transactionId", { ns: "orders", defaultValue: "Transaction" })}: {payment.transaction_id}
+                          </span>
                         </div>
                       )}
                       
                       {payment.notes && (
-                        <div className="text-xs italic">
-                          {payment.notes}
+                        <div className="text-xs italic bg-gray-50 p-2 rounded">
+                          "{payment.notes}"
                         </div>
                       )}
                     </div>
@@ -158,12 +240,14 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                <DollarSign className="h-12 w-12 mb-2 opacity-50" />
-                <p className="text-sm">
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <DollarSign className="h-8 w-8 text-gray-400" />
+                </div>
+                <h4 className="font-medium text-gray-900 mb-2">
                   {t("noPaymentsYet", { ns: "orders", defaultValue: "No payments recorded yet" })}
-                </p>
-                <p className="text-xs mt-1">
+                </h4>
+                <p className="text-sm text-gray-500 max-w-xs">
                   {t("recordFirstPayment", { ns: "orders", defaultValue: "Record the first payment using the button above" })}
                 </p>
               </div>
@@ -171,15 +255,15 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           </ScrollArea>
 
           {/* Quick Actions Footer */}
-          <div className="mt-4 pt-3 border-t">
+          <div className="mt-4 pt-4 border-t border-gray-200">
             <Button
               onClick={onPdfClick}
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full h-10 flex items-center justify-center gap-2 font-medium"
               disabled={isProcessing}
             >
-              <Receipt className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4" />
               {t("viewReceipt", { ns: "orders", defaultValue: "View Receipt" })}
             </Button>
           </div>
