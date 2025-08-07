@@ -30,6 +30,7 @@ import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
+import { pricingRuleService, type ServiceOfferingWithPricing } from "@/api/pricingRuleService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
@@ -107,40 +108,27 @@ const POSPage: React.FC = () => {
       if (!selectedCustomerId) return [];
       
       try {
-        // Get customer pricing rules with service offerings
-        const pricingRulesResponse = await apiClient.get(`/customers/${selectedCustomerId}/pricing-rules`);
-        const pricingRules = pricingRulesResponse.data.pricing_rules || [];
+        // Get all customer pricing rules using the dedicated endpoint
+        const pricingRulesResponse = await pricingRuleService.getAllCustomerPricingRules(parseInt(selectedCustomerId));
+        const pricingRules = pricingRulesResponse.pricing_rules || [];
         
-        // Convert pricing rules to ServiceOffering format
-        const customerOfferings: ServiceOffering[] = pricingRules.map((rule: {
-          service_offering: {
-            id: number;
-            product_type: { id: number };
-            service_action: { id: number };
-            name: string;
-            description?: string;
-            created_at: string;
-            updated_at: string;
-          };
-          price: number;
-          price_per_sq_meter?: number;
-          created_at: string;
-          updated_at: string;
-        }) => ({
-          id: rule.service_offering.id,
-          product_type_id: rule.service_offering.product_type.id,
-          service_action_id: rule.service_offering.service_action.id,
-          name: rule.service_offering.name,
-          display_name: rule.service_offering.name,
-          description: rule.service_offering.description,
-          default_price: rule.price,
-          default_price_per_sq_meter: rule.price_per_sq_meter,
-          is_active: true,
-          serviceAction: rule.service_offering.service_action,
-          productType: rule.service_offering.product_type,
-          created_at: rule.created_at,
-          updated_at: rule.updated_at,
-        } as unknown as ServiceOffering));
+        // Convert service offerings with pricing to ServiceOffering format
+        const customerOfferings: ServiceOffering[] = pricingRules
+          .map((rule: ServiceOfferingWithPricing) => ({
+            id: rule.id,
+            product_type_id: rule.product_type_id,
+            service_action_id: rule.service_action_id,
+            name: `${rule.productType.name} - ${rule.serviceAction.name}`,
+            display_name: `${rule.productType.name} - ${rule.serviceAction.name}`,
+            description: undefined,
+            default_price: parseFloat(rule.default_price),
+            default_price_per_sq_meter: parseFloat(rule.default_price_per_sq_meter),
+            is_active: rule.is_active,
+            serviceAction: rule.serviceAction,
+            productType: rule.productType,
+            created_at: rule.created_at,
+            updated_at: rule.updated_at,
+          } as unknown as ServiceOffering));
         
         return customerOfferings;
       } catch (error) {
@@ -149,7 +137,6 @@ const POSPage: React.FC = () => {
       }
     },
     enabled: !!selectedCustomerId,
-    staleTime: 5 * 60 * 1000,
   });
 
   // Fetch all service offerings for order creation (fallback)
@@ -897,7 +884,7 @@ const POSPage: React.FC = () => {
       setIsProcessing(true);
       
       // Call the backend API to send WhatsApp invoice
-      const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
+      await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
       
       toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }));
     } catch (error) {
@@ -1285,6 +1272,8 @@ const POSPage: React.FC = () => {
         dateFrom={today}
         dateTo={today}
       />
+
+
 
       {/* Service Offering Selection Dialog */}
       <Dialog open={isServiceOfferingDialogOpen} onOpenChange={setIsServiceOfferingDialogOpen}>

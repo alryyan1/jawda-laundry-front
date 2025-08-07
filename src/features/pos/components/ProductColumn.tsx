@@ -104,7 +104,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
     queryKey: ["customerProductsWithPricingRules", selectedCustomerId],
     queryFn: () => pricingRuleService.getCustomerProductsWithPricingRules(parseInt(selectedCustomerId!)),
     enabled: !!selectedCustomerId,
-    staleTime: 5 * 60 * 1000,
+    // staleTime: 5 * 60 * 1000,
   });
 
   // Fetch all product types (fallback when no customer or no customer-specific products)
