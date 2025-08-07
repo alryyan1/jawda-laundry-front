@@ -1,5 +1,5 @@
 import React from 'react';
-import Autocomplete, { AutocompleteProps } from '@mui/material/Autocomplete';
+import { Autocomplete, AutocompleteProps } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
 

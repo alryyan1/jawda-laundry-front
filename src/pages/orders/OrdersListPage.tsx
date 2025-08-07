@@ -21,13 +21,12 @@ import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { formatCurrency } from "@/lib/formatters";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { useSettings } from "@/context/SettingsContext";
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -44,10 +43,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Removed dropdown menu and dialog imports not used anymore here
-
-import { PlusCircle, Loader2, Filter, Calculator } from "lucide-react";
 import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
+
+import {
+  PlusCircle,
+  Loader2,
+  Search,
+  Filter,
+  Calculator,
+} from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
@@ -61,7 +65,7 @@ const OrdersListPage: React.FC = () => {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const { getSetting } = useSettings();
-  const currencySymbol = getSetting('currency_symbol', '$');
+  const currencySymbol = getSetting('currency_symbol', '$') || '$';
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -203,9 +207,6 @@ const OrdersListPage: React.FC = () => {
     }
   };
 
-  // Calculate total quantities for an order
-  // Removed local helpers (now computed in subcomponents)
-
   // Calculate payment breakdown for statistics
   const calculatePaymentBreakdown = () => {
     if (!statistics) {
@@ -216,12 +217,12 @@ const OrdersListPage: React.FC = () => {
     }
 
     const totalPaid: number = Number(statistics.totalAmountPaid) || 0;
-    const paymentBreakdownAny: any = (statistics as any).paymentBreakdown || {};
+    const paymentBreakdownAny = (statistics as { paymentBreakdown?: Record<string, { amount?: number; percentage?: number } | number> }).paymentBreakdown || {};
 
     const breakdown = PAYMENT_METHODS.map((method) => {
       const raw = paymentBreakdownAny[method];
-      const amount: number = typeof raw === "number" ? raw : Number(raw?.amount) || 0;
-      const percentage: number = typeof raw?.percentage === "number" ? raw.percentage : totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
+      const amount: number = typeof raw === "number" ? raw : Number((raw as { amount?: number })?.amount) || 0;
+      const percentage: number = typeof (raw as { percentage?: number })?.percentage === "number" ? (raw as { percentage?: number }).percentage! : totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
       return { method, amount, percentage };
     });
 
@@ -340,8 +341,19 @@ const OrdersListPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* Mobile Filter Toggle */}
-      <div className="flex flex-row gap-2 sm:gap-3">
+      {/* Mobile Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+          <Input
+            placeholder={t("searchOrdersPlaceholder")}
+            value={filters.search || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
+            className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
+          />
+        </div>
         <Button
           variant="outline"
           onClick={() => setShowFilters(!showFilters)}
@@ -379,23 +391,49 @@ const OrdersListPage: React.FC = () => {
             </Select>
             
             <DarkThemeAutocomplete
-              options={customers}
-              getOptionLabel={(c: Customer) => c?.name || ""}
-              value={customers.find((c) => c.id.toString() === (filters.customerId || "")) || null}
-              onChange={(_, value) => setFilters((prev) => ({ ...prev, customerId: value ? value.id.toString() : undefined }))}
-              renderInput={(params) => (<div ref={params.InputProps.ref} className="w-full h-8 sm:h-10">
-                <input {...params.inputProps as any} className="w-full h-full px-2 text-xs sm:text-sm border rounded" placeholder={t("filterByCustomer") as string} />
-              </div>)}
+              options={[{ id: "all", name: t("allCustomers", { ns: "customers" }) }, ...customers]}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              value={customers.find(c => c.id.toString() === filters.customerId) || { id: "all", name: t("allCustomers", { ns: "customers" }) }}
+              onChange={(_, newValue) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  customerId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                }))
+              }
+              renderInput={(params) => (
+                <div ref={params.InputProps.ref}>
+                  <Input
+                    {...params.inputProps}
+                    placeholder={t("filterByCustomer")}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
+                  />
+                </div>
+              )}
+              className="h-8 sm:h-10 text-xs sm:text-sm"
             />
             
             <DarkThemeAutocomplete
-              options={productTypes}
-              getOptionLabel={(p: ProductType) => p?.name || ""}
-              value={productTypes.find((p) => p.id.toString() === (filters.productTypeId || "")) || null}
-              onChange={(_, value) => setFilters((prev) => ({ ...prev, productTypeId: value ? value.id.toString() : undefined }))}
-              renderInput={(params) => (<div ref={params.InputProps.ref} className="w-full h-8 sm:h-10">
-                <input {...params.inputProps as any} className="w-full h-full px-2 text-xs sm:text-sm border rounded" placeholder={t("filterByProduct") as string} />
-              </div>)}
+              options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              value={productTypes.find(pt => pt.id.toString() === filters.productTypeId) || { id: "all", name: t("allProducts") }}
+              onChange={(_, newValue) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  productTypeId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                }))
+              }
+              renderInput={(params) => (
+                <div ref={params.InputProps.ref}>
+                  <Input
+                    {...params.inputProps}
+                    placeholder={t("filterByProduct")}
+                    className="h-8 sm:h-10 text-xs sm:text-sm"
+                  />
+                </div>
+              )}
+              className="h-8 sm:h-10 text-xs sm:text-sm"
             />
           </CardContent>
         </Card>
@@ -407,7 +445,13 @@ const OrdersListPage: React.FC = () => {
           <CardTitle className="text-lg">{t("filters")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search removed per request */}
+          <Input
+            placeholder={t("searchOrdersPlaceholder")}
+            value={filters.search || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, search: e.target.value }))
+            }
+          />
           <Select
             value={filters.status || ""}
             onValueChange={(value) =>
@@ -430,22 +474,44 @@ const OrdersListPage: React.FC = () => {
             </SelectContent>
           </Select>
           <DarkThemeAutocomplete
-            options={customers}
-            getOptionLabel={(c: Customer) => c?.name || ""}
-            value={customers.find((c) => c.id.toString() === (filters.customerId || "")) || null}
-            onChange={(_, value) => setFilters((prev) => ({ ...prev, customerId: value ? value.id.toString() : undefined }))}
-            renderInput={(params) => (<div ref={params.InputProps.ref}>
-              <input {...params.inputProps as any} className="w-full px-2 py-2 border rounded" placeholder={t("filterByCustomer") as string} />
-            </div>)}
+            options={[{ id: "all", name: t("allCustomers", { ns: "customers" }) }, ...customers]}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            value={customers.find(c => c.id.toString() === filters.customerId) || { id: "all", name: t("allCustomers", { ns: "customers" }) }}
+            onChange={(_, newValue) =>
+              setFilters((prev) => ({
+                ...prev,
+                customerId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+              }))
+            }
+            renderInput={(params) => (
+              <div ref={params.InputProps.ref}>
+                <Input
+                  {...params.inputProps}
+                  placeholder={t("filterByCustomer")}
+                />
+              </div>
+            )}
           />
           <DarkThemeAutocomplete
-            options={productTypes}
-            getOptionLabel={(p: ProductType) => p?.name || ""}
-            value={productTypes.find((p) => p.id.toString() === (filters.productTypeId || "")) || null}
-            onChange={(_, value) => setFilters((prev) => ({ ...prev, productTypeId: value ? value.id.toString() : undefined }))}
-            renderInput={(params) => (<div ref={params.InputProps.ref}>
-              <input {...params.inputProps as any} className="w-full px-2 py-2 border rounded" placeholder={t("filterByProduct") as string} />
-            </div>)}
+            options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            value={productTypes.find(pt => pt.id.toString() === filters.productTypeId) || { id: "all", name: t("allProducts") }}
+            onChange={(_, newValue) =>
+              setFilters((prev) => ({
+                ...prev,
+                productTypeId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+              }))
+            }
+            renderInput={(params) => (
+              <div ref={params.InputProps.ref}>
+                <Input
+                  {...params.inputProps}
+                  placeholder={t("filterByProduct")}
+                />
+              </div>
+            )}
           />
         </CardContent>
       </Card>
@@ -560,7 +626,7 @@ const OrdersListPage: React.FC = () => {
         totalPages={totalPages}
         isFetching={isFetching}
         setCurrentPage={setCurrentPage}
-        t={t as any}
+        t={t}
         showingText={t("showingItems", {
           first: paginatedData?.meta.from || 0,
           last: paginatedData?.meta.to || 0,
@@ -592,7 +658,7 @@ const OrdersListPage: React.FC = () => {
         totalPaid={calculatePaymentBreakdown().totalPaid}
         breakdown={calculatePaymentBreakdown().breakdown as PaymentBreakdownItem[]}
         currencySymbol={currencySymbol}
-        t={t as any}
+        t={t}
         language={i18n.language}
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}
