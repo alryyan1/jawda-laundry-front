@@ -398,4 +398,18 @@ export const markOrderComplete = async (orderId: string | number): Promise<{ ord
     return data;
 };
 
+/**
+ * Update order item dimensions and recalculate totals
+ */
+export const updateOrderItemDimensions = async (
+    orderItemId: string | number,
+    dimensions: { length_meters?: number | null; width_meters?: number | null }
+): Promise<{ order_item: OrderItem; order_total: number; message: string }> => {
+    const { data } = await apiClient.patch<{ order_item: OrderItem; order_total: number; message: string }>(
+        `/order-items/${orderItemId}/dimensions`,
+        dimensions
+    );
+    return data;
+};
+
 

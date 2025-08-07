@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete, updateOrderItemDimensions } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -258,6 +258,44 @@ const POSPage: React.FC = () => {
     },
   });
 
+  // Function to update order item dimensions in database
+  const updateOrderItemDimensionsInDB = async (orderItemId: string | number, dimensions: { length_meters?: number | null; width_meters?: number | null }) => {
+    try {
+      const data = await updateOrderItemDimensions(orderItemId, dimensions);
+      
+      // Update the selected order with the new total
+      if (selectedOrder) {
+        setSelectedOrder(prev => prev ? { ...prev, total_amount: data.order_total } : null);
+      }
+      
+      // Update the cart item with the new dimensions and subtotal
+      setCartItems(prev => prev.map(item => {
+        if (item._isExistingOrderItem && selectedOrder) {
+          // Find the corresponding order item in the selected order
+          const orderItem = selectedOrder.items?.find(oi => 
+            oi.serviceOffering?.id === item.serviceOffering.id &&
+            oi.quantity === item.quantity
+          );
+          
+          if (orderItem && orderItem.id.toString() === orderItemId.toString()) {
+            return {
+              ...item,
+              length_meters: data.order_item.length_meters || undefined,
+              width_meters: data.order_item.width_meters || undefined,
+              _quotedSubTotal: data.order_item.sub_total,
+              price: data.order_item.calculated_price_per_unit_item,
+            };
+          }
+        }
+        return item;
+      }));
+      
+      toast.success(t("dimensionsUpdatedSuccessfully", { ns: "orders", defaultValue: "Dimensions updated successfully" }));
+    } catch {
+      toast.error(t("failedToUpdateDimensions", { ns: "orders", defaultValue: "Failed to update dimensions" }));
+    }
+  };
+
   const handleSelectCategory = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     setSelectedProductType(null);
@@ -425,11 +463,31 @@ const POSPage: React.FC = () => {
         : item
     ));
 
-    // Trigger immediate quote for dimension-based items
+    // Find the cart item
     const item = cartItems.find(cartItem => cartItem.id === id);
+    if (!item) return;
+
+    // If this is an existing order item, save dimensions to database
+    if (item._isExistingOrderItem && selectedOrder) {
+      // Find the corresponding order item in the selected order
+      const orderItem = selectedOrder.items?.find(oi => 
+        oi.serviceOffering?.id === item.serviceOffering.id &&
+        oi.quantity === item.quantity
+      );
+      
+      if (orderItem) {
+        // Save dimensions to database
+        updateOrderItemDimensionsInDB(orderItem.id, {
+          length_meters: dimensions.length || null,
+          width_meters: dimensions.width || null,
+        });
+      }
+    }
+
+    // Trigger immediate quote for dimension-based items
     // Use selectedCustomerId or customer from selected order
     const customerId = selectedCustomerId || selectedOrder?.customer?.id?.toString();
-    if (item && item.productType.is_dimension_based && customerId && item.quantity > 0) {
+    if (item.productType.is_dimension_based && customerId && item.quantity > 0) {
       const lengthNum = dimensions.length || 0;
       const widthNum = dimensions.width || 0;
       
