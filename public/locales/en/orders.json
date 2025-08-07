@@ -14,6 +14,7 @@
   "items": "Items",
   "editOrder": "Edit Order",
   "cancelOrder": "Cancel Order",
+  "cannotCancelPaidOrder": "Cannot cancel a fully paid order",
   "searchOrdersPlaceholder": "Search Order #, Customer...",
   "loadingOrders": "Loading orders...",
   "backToOrders": "Back to Orders",

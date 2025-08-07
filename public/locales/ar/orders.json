@@ -14,6 +14,7 @@
   "items": "العناصر",
   "editOrder": "تعديل الطلب",
   "cancelOrder": "إلغاء الطلب",
+  "cannotCancelPaidOrder": "لا يمكن إلغاء طلب مدفوع بالكامل",
   "searchOrdersPlaceholder": "بحث برقم الطلب، العميل...",
   "loadingOrders": "جارٍ تحميل الطلبات...",
   "backToOrders": "العودة إلى الطلبات",

@@ -181,7 +181,7 @@ const EditCustomerPage: React.FC = () => {
                                                     <SelectValue placeholder={isLoadingTypes ? t('loading') : t('selectCustomerType', { ns: 'customers' })} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="">{t('noneUnit', {ns:'services'})}</SelectItem>
+                                                    <SelectItem value=" ">{t('noneUnit', {ns:'services'})}</SelectItem>
                                                     {customerTypes.map(type => (
                                                         <SelectItem key={type.id} value={type.id.toString()}>{type.name}</SelectItem>
                                                     ))}

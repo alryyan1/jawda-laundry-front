@@ -1094,6 +1094,7 @@ const POSPage: React.FC = () => {
                             orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                             isReadOnly={selectedOrder?.status === 'completed'}
                             isCompleted={selectedOrder?.order_complete === true}
+                            paymentStatus={selectedOrder?.payment_status}
                           />
                           </CardContent>
                         </Card>
@@ -1187,6 +1188,7 @@ const POSPage: React.FC = () => {
                                orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
                                isReadOnly={selectedOrder?.status === 'completed'}
                                isCompleted={selectedOrder?.order_complete === true}
+                               paymentStatus={selectedOrder?.payment_status}
                                                           />
                                  </CardContent>
                              </Card>

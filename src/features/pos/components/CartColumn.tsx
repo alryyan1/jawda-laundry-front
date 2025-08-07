@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, Users, X } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { CartItemComponent, type CartItem } from "./CartItem";
@@ -22,6 +23,7 @@ interface CartColumnProps {
   orderNumber?: string;
   isReadOnly?: boolean;
   isCompleted?: boolean;
+  paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | string | null;
 }
 
 export const CartColumn: React.FC<CartColumnProps> = ({
@@ -37,6 +39,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   orderNumber,
   isReadOnly = false,
   isCompleted = false,
+  paymentStatus,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const { getSetting } = useSettings();
@@ -217,15 +220,28 @@ export const CartColumn: React.FC<CartColumnProps> = ({
             
             {/* Show Cancel Order button when order IS completed */}
             {isCompleted && onCancelOrder && (
-              <Button
-                variant="destructive"
-                className="w-full h-12 text-base font-semibold"
-                onClick={onCancelOrder}
-                disabled={isProcessing}
-              >
-                <X className="mr-2 h-4 w-4" />
-                {t("cancelOrder", { ns: "orders", defaultValue: "Cancel Order" })}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        variant="destructive"
+                        className="w-full h-12 text-base font-semibold"
+                        onClick={onCancelOrder}
+                        disabled={isProcessing || paymentStatus === 'paid'}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        {t("cancelOrder", { ns: "orders", defaultValue: "Cancel Order" })}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {paymentStatus === 'paid' && (
+                    <TooltipContent>
+                      <p>{t("cannotCancelPaidOrder", { ns: "orders", defaultValue: "Cannot cancel a fully paid order" })}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>

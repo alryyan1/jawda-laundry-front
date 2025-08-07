@@ -179,6 +179,11 @@ const CustomersListPage: React.FC = () => {
             <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 gap-3">
                     <div className="flex items-center gap-2 text-sm">
+                        <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                            ID: {customer.id}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span className="truncate">{customer.email || t('notAvailable')}</span>
                     </div>
@@ -292,6 +297,7 @@ const CustomersListPage: React.FC = () => {
                                         aria-label={t('selectAll')}
                                     />
                                 </TableHead>
+                                <TableHead className="w-[80px] text-center">ID</TableHead>
                                 <TableHead className="min-w-[200px] text-center">{t('name', { ns: 'common' })}</TableHead>
                                 <TableHead className="min-w-[200px] text-center">{t('email', { ns: 'common' })}</TableHead>
                                 <TableHead className="text-center">{t('phone', { ns: 'customers' })}</TableHead>
@@ -304,7 +310,7 @@ const CustomersListPage: React.FC = () => {
                         <TableBody>
                             {(isLoading || isFetching) && customers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
+                                    <TableCell colSpan={9} className="h-24 text-center">
                                         <div className="flex justify-center items-center">
                                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                         </div>
@@ -319,6 +325,11 @@ const CustomersListPage: React.FC = () => {
                                                 onCheckedChange={(checked) => handleSelectRow(customer.id, !!checked)}
                                                 aria-label={t('selectRow')}
                                             />
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                                {customer.id}
+                                            </span>
                                         </TableCell>
                                         <TableCell className="font-medium text-center">{customer.name}</TableCell>
                                         <TableCell className="text-center">{customer.email || t('notAvailable')}</TableCell>
@@ -369,7 +380,7 @@ const CustomersListPage: React.FC = () => {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
+                                    <TableCell colSpan={9} className="h-24 text-center">
                                         {t('noResults')}
                                     </TableCell>
                                 </TableRow>
