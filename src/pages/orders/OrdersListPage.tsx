@@ -16,7 +16,7 @@ import {
   type ProductType,
   type OrderStatistics,
 } from "@/types";
-import { getOrders, getOrderStatistics } from "@/api/orderService";
+import { getOrders, getOrderStatistics, downloadOrdersListPdf } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -51,6 +51,7 @@ import {
   Search,
   Filter,
   Calculator,
+  FileText,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
@@ -317,6 +318,17 @@ const OrdersListPage: React.FC = () => {
             {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
           </Button>
         )}
+        
+        {/* PDF Export Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => downloadOrdersListPdf(filters)}
+          className="flex items-center gap-2"
+        >
+          <FileText className="h-4 w-4" />
+          {t("exportPdf", { defaultValue: "Export PDF" })}
+        </Button>
         
         {/* Mobile Date Range Picker */}
         {/* Mobile Date Range Picker */}

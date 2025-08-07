@@ -428,4 +428,37 @@ export const updateOrderItemQuantity = async (
     return data;
 };
 
+/**
+ * Download order invoice PDF
+ */
+export const downloadOrderInvoice = async (orderId: string | number): Promise<void> => {
+    // Open the PDF in a new window/tab
+    window.open(`${apiClient.defaults.baseURL}/orders/${orderId}/invoice/download`, '_blank');
+};
+
+/**
+ * Download orders list PDF
+ */
+export const downloadOrdersListPdf = async (filters: {
+    status?: string;
+    search?: string;
+    orderId?: string;
+    customerId?: string;
+    productTypeId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+}): Promise<void> => {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.orderId) params.append('order_id', filters.orderId);
+    if (filters.customerId) params.append('customer_id', filters.customerId);
+    if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+    if (filters.dateFrom) params.append('date_from', filters.dateFrom);
+    if (filters.dateTo) params.append('date_to', filters.dateTo);
+    
+    // Open the PDF in a new window/tab
+    window.open(`${apiClient.defaults.baseURL}/orders/pdf/download?${params.toString()}`, '_blank');
+};
+
 

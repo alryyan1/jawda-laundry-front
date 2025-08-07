@@ -2,10 +2,11 @@ import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal } from "lucide-react";
-import { Order } from "@/types";
+import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal, FileText } from "lucide-react";
+import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
+import { downloadOrderInvoice } from "@/api/orderService";
 
 type OrdersTableRowProps = {
   order: Order;
@@ -88,6 +89,11 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
                 </DropdownMenuItem>
               </>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => downloadOrderInvoice(order.id)}>
+              <FileText className="mr-2 h-4 w-4" />
+              {t("downloadPdf", { defaultValue: "Download PDF" })}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
