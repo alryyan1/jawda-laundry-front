@@ -75,7 +75,11 @@ import {
   Calculator,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
-import  OrderItemsDialog  from "@/features/orders/components/OrderItemsDialog";
+import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
+import MobileOrderCard from "./components/MobileOrderCard";
+import OrdersTableRow from "./components/OrdersTableRow";
+import OrdersPagination from "./components/OrdersPagination";
+import PaymentBreakdownDialog, { type PaymentBreakdownItem } from "./components/PaymentBreakdownDialog";
 
 const OrdersListPage: React.FC = () => {
   const { t, i18n } = useTranslation("orders");
@@ -240,24 +244,18 @@ const OrdersListPage: React.FC = () => {
     if (!statistics) {
       return {
         totalPaid: 0,
-        breakdown: PAYMENT_METHODS.map(method => ({
-          method,
-          amount: 0,
-          percentage: 0
-        }))
+        breakdown: PAYMENT_METHODS.map((method) => ({ method, amount: 0, percentage: 0 })),
       };
     }
 
-    const totalPaid = statistics.totalAmountPaid;
-    const breakdown = PAYMENT_METHODS.map(method => {
-      const amount = statistics.paymentBreakdown[method as keyof typeof statistics.paymentBreakdown] || 0;
-      const percentage = totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
-      
-      return {
-        method,
-        amount,
-        percentage
-      };
+    const totalPaid: number = Number(statistics.totalAmountPaid) || 0;
+    const paymentBreakdownAny: any = (statistics as any).paymentBreakdown || {};
+
+    const breakdown = PAYMENT_METHODS.map((method) => {
+      const raw = paymentBreakdownAny[method];
+      const amount: number = typeof raw === "number" ? raw : Number(raw?.amount) || 0;
+      const percentage: number = typeof raw?.percentage === "number" ? raw.percentage : totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
+      return { method, amount, percentage };
     });
 
     return { totalPaid, breakdown };
@@ -318,225 +316,7 @@ const OrdersListPage: React.FC = () => {
   const totalPages = paginatedData?.meta?.last_page || 1;
 
   // Mobile Order Card Component
-  const MobileOrderCard = ({ order }: { order: Order }) => {
-    const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
-    
-    return (
-      <Card 
-        className={`mb-2 sm:mb-4 p-1 sm:p-2 cursor-pointer transition-all hover:shadow-md ${
-          orderItemsDialogOrder?.id === order.id ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950/20' : ''
-        } ${
-          isFullyPaid ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/10' : ''
-        }`}
-        onClick={() => navigate(`/orders/${order.id}`)}
-      >
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                <span className="text-xs sm:text-sm font-mono text-muted-foreground">#{order.id}</span>
-                <OrderStatusBadge status={order.status} />
-              </div>
-              <h3 className="font-semibold text-sm sm:text-base mb-1">
-                {order.customer?.name || t("notAvailable")}
-              </h3>
-              <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>{format(new Date(order.order_date), "PP", { locale: currentLocale })}</span>
-                </div>
-                {order.pickup_date && (
-                  <div className="flex items-center gap-1">
-                    <Package className="h-3 w-3" />
-                    <span>{format(new Date(order.pickup_date), "PP", { locale: currentLocale })}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => navigate(`/orders/${order.id}`)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  {t("viewDetails")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOrderItemsDialogOrder(order);
-                  }}
-                >
-                  <Package className="mr-2 h-4 w-4" />
-                  {t("viewItems", { defaultValue: "View Items" })}
-                </DropdownMenuItem>
-                {can("order:record-payment") && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedOrderForPayments(order);
-                    }}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    {t("viewPayments")}
-                  </DropdownMenuItem>
-                )}
-                {can("order:update") && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => navigate(`/orders/${order.id}/edit`)}
-                    >
-                      <Edit3 className="mr-2 h-4 w-4" />
-                      {t("editOrder")}
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-1.5 sm:gap-4 mb-2 sm:mb-3">
-            <div className="text-center p-1.5 sm:p-2 bg-muted rounded-lg min-w-0">
-              <div className="text-xs text-muted-foreground mb-0.5 sm:mb-1 truncate">
-                {t("totalItems", { defaultValue: "Total Items" })}
-              </div>
-              <div className="font-semibold text-sm sm:text-base truncate">
-                {calculateTotalQuantities(order)} / {calculateTotalPickedUpQuantities(order)}
-              </div>
-            </div>
-            <div className="text-center p-1.5 sm:p-2 bg-muted rounded-lg min-w-0">
-              <div className="text-xs text-muted-foreground mb-0.5 sm:mb-1 truncate">
-                {t("totalAmount", { ns: "orders" })}
-              </div>
-              <div className="font-semibold text-sm sm:text-base truncate">
-                {formatCurrency(order.total_amount, currencySymbol, i18n.language, 3)}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between p-1.5 sm:p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-            <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-300">
-              {t("amountPaid")}
-            </span>
-            <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm sm:text-base text-green-600 dark:text-green-400">
-                {formatCurrency(order.paid_amount, currencySymbol, i18n.language, 3)}
-              </span>
-              {isFullyPaid && (
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-500" />
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const MemoizedTableRow = React.memo(({ order }: { order: Order }) => {
-    // Check if order is fully paid
-    const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
-    
-    return (
-      <TableRow 
-        key={order.id} 
-        className={`cursor-pointer hover:bg-muted/50 ${
-          orderItemsDialogOrder?.id === order.id ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500' : ''
-        } ${
-          isFullyPaid ? 'bg-green-50/50 dark:bg-green-950/10 border-l-2 border-l-green-400' : ''
-        }`}
-        onClick={() => navigate(`/orders/${order.id}`)}
-      >
-      <TableCell className="font-mono text-xs text-muted-foreground text-center">
-        {order.id}
-      </TableCell>
-      <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
-      <TableCell className="text-center">
-        {format(new Date(order.order_date), "PP", { locale: currentLocale })}
-      </TableCell>
-      <TableCell className="text-center">
-        {order.pickup_date
-          ? format(new Date(order.pickup_date), "PP", { locale: currentLocale })
-          : "-"}
-      </TableCell>
-      <TableCell className="text-center">
-        <OrderStatusBadge status={order.status} />
-      </TableCell>
-      <TableCell className="text-center font-semibold">
-        {calculateTotalQuantities(order)} / {calculateTotalPickedUpQuantities(order)}
-      </TableCell>
-      <TableCell className="text-center font-semibold">
-        {formatCurrency(order.total_amount, currencySymbol, i18n.language, 3)}
-      </TableCell>
-      <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
-        <div className="flex items-center justify-center gap-1">
-          {formatCurrency(order.paid_amount, currencySymbol, i18n.language, 3)}
-          {isFullyPaid && (
-            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
-          )}
-        </div>
-      </TableCell>
-      <TableCell className="text-center w-12">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={e => {
-            e.stopPropagation();
-            setOrderItemsDialogOrder(order);
-          }}
-          aria-label={t("viewItems", { defaultValue: "View Items" })}
-        >
-          <Eye className="h-5 w-5" />
-        </Button>
-      </TableCell>
-      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">{t("openMenu")}</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigate(`/orders/${order.id}`)}>
-              <Eye className="mr-2 h-4 w-4" />
-              {t("viewDetails")}
-            </DropdownMenuItem>
-            {can("order:record-payment") && (
-              <DropdownMenuItem
-                onClick={() => setSelectedOrderForPayments(order)}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                {t("viewPayments")}
-              </DropdownMenuItem>
-            )}
-            {can("order:update") && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => navigate(`/orders/${order.id}/edit`)}
-                >
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {t("editOrder")}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
-    );
-  });
+  
 
   return (
     <div className="space-y-2 sm:space-y-4 p-0 sm:p-2 max-w-full overflow-hidden">
@@ -795,9 +575,25 @@ const OrdersListPage: React.FC = () => {
           </div>
         ) : orders.length > 0 ? (
           <div className="space-y-1 sm:space-y-2">
-            {orders.map((order) => (
-              <MobileOrderCard key={order.id} order={order} />
-            ))}
+            {orders.map((order) => {
+              const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+              return (
+                <MobileOrderCard
+                  key={order.id}
+                  order={order}
+                  isSelected={orderItemsDialogOrder?.id === order.id}
+                  isFullyPaid={isFullyPaid}
+                  onNavigate={(path) => navigate(path)}
+                  onOpenItems={(o) => setOrderItemsDialogOrder(o)}
+                  onOpenPayments={(o) => setSelectedOrderForPayments(o)}
+                  onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
+                  can={can}
+                  t={t}
+                  currentLocale={currentLocale}
+                  currencySymbol={currencySymbol}
+                />
+              );
+            })}
           </div>
         ) : (
           <Card>
@@ -842,7 +638,19 @@ const OrdersListPage: React.FC = () => {
                 </TableRow>
               ) : orders.length > 0 ? (
                 orders.map((order) => (
-                  <MemoizedTableRow key={order.id} order={order} />
+                  <OrdersTableRow
+                    key={order.id}
+                    order={order}
+                    selectedOrderId={orderItemsDialogOrder?.id ?? null}
+                    onNavigate={(path) => navigate(path)}
+                    onOpenItems={(o) => setOrderItemsDialogOrder(o)}
+                    onOpenPayments={(o) => setSelectedOrderForPayments(o)}
+                    onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
+                    can={can}
+                    t={t}
+                    currencySymbol={currencySymbol}
+                    language={i18n.language}
+                  />
                 ))
               ) : (
                 <TableRow>
@@ -856,65 +664,19 @@ const OrdersListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Pagination */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-4">
-          <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left px-2 sm:px-0">
-            {t("showingItems", {
-              first: paginatedData?.meta.from || 0,
-              last: paginatedData?.meta.to || 0,
-              total: totalItems,
-            })}
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1 || isFetching}
-              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
-            >
-              <span className="hidden sm:inline">{t("firstPage")}</span>
-              <span className="sm:hidden">1</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1 || isFetching}
-              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
-            >
-              <span className="hidden sm:inline">{t("previous")}</span>
-              <span className="sm:hidden">‹</span>
-            </Button>
-            <span className="text-xs sm:text-sm font-medium px-1 sm:px-2 min-w-0">
-              {t("pageWithTotal", { currentPage, totalPages })}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages || isFetching}
-              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
-            >
-              <span className="hidden sm:inline">{t("next")}</span>
-              <span className="sm:hidden">›</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || isFetching}
-              className="h-7 sm:h-9 text-xs sm:text-sm px-1.5 sm:px-3 min-w-0"
-            >
-              <span className="hidden sm:inline">{t("lastPage")}</span>
-              <span className="sm:hidden">{totalPages}</span>
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Pagination */}
+      <OrdersPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        isFetching={isFetching}
+        setCurrentPage={setCurrentPage}
+        t={t as any}
+        showingText={t("showingItems", {
+          first: paginatedData?.meta.from || 0,
+          last: paginatedData?.meta.to || 0,
+          total: totalItems,
+        })}
+      />
       
       {selectedOrderForPayments && (
         <PaymentsListDialog
@@ -934,89 +696,17 @@ const OrdersListPage: React.FC = () => {
         />
       )}
 
-      {/* Calculator Dialog */}
-      <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Total Paid Summary */}
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                      {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
-                    </p>
-                    <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                      {formatCurrency(calculatePaymentBreakdown().totalPaid, currencySymbol, i18n.language, 3)}
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Payment Methods Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  {t("paymentMethods", { defaultValue: "Payment Methods" })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {calculatePaymentBreakdown().breakdown.map((item) => (
-                  <div key={item.method} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
-                        {t(`paymentMethod_${item.method}`, { defaultValue: item.method })}
-                      </span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {formatCurrency(item.amount, currencySymbol, i18n.language, 3)}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${item.percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {item.percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Date Range Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  {t("dateRange", { defaultValue: "Date Range" })}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("from", { defaultValue: "From" })}: {filters.dateFrom && format(new Date(filters.dateFrom), "PP", { locale: currentLocale })}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("to", { defaultValue: "To" })}: {filters.dateTo && format(new Date(filters.dateTo), "PP", { locale: currentLocale })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PaymentBreakdownDialog
+        isOpen={isCalculatorOpen}
+        onOpenChange={setIsCalculatorOpen}
+        totalPaid={calculatePaymentBreakdown().totalPaid}
+        breakdown={calculatePaymentBreakdown().breakdown as PaymentBreakdownItem[]}
+        currencySymbol={currencySymbol}
+        t={t as any}
+        language={i18n.language}
+        dateFrom={filters.dateFrom}
+        dateTo={filters.dateTo}
+      />
     </div>
   );
 };

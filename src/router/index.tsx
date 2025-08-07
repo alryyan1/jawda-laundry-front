@@ -26,8 +26,8 @@ import POSPage from '@/pages/pos/POSPage';
 import DiningManagementPage from '@/pages/dining/DiningManagementPage';
 
 
-// Test Error Page for demonstrating ErrorBoundary
-const TestErrorPage = React.lazy(() => import("@/pages/TestErrorPage"));
+// Test Error Page for demonstrating ErrorBoundary - commented out as file doesn't exist
+// const TestErrorPage = React.lazy(() => import("@/pages/TestErrorPage"));
 
 // --- Page Imports (Lazy Loaded) ---
 
@@ -428,16 +428,17 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "test-error",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <ErrorBoundary componentName="TestErrorPage">
-                  <TestErrorPage />
-                </ErrorBoundary>
-              </React.Suspense>
-            ),
-          },
+          // Test error route commented out as TestErrorPage doesn't exist
+          // {
+          //   path: "test-error",
+          //   element: (
+          //     <React.Suspense fallback={<RouteSuspenseFallback />}>
+          //       <ErrorBoundary componentName="TestErrorPage">
+          //         <TestErrorPage />
+          //       </ErrorBoundary>
+          //     </React.Suspense>
+          //   ),
+          // },
           // ... (other admin service management routes: product-categories, etc.)
 
           // Service Offerings (User-facing list of services)
