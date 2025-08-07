@@ -28,7 +28,6 @@ import { useSettings } from "@/context/SettingsContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -45,35 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+// Removed dropdown menu and dialog imports not used anymore here
 
-import {
-  PlusCircle,
-  MoreHorizontal,
-  Eye,
-  Edit3,
-  CreditCard,
-  Loader2,
-  CheckCircle,
-  Calendar,
-  Package,
-  Search,
-  Filter,
-  Calculator,
-} from "lucide-react";
+import { PlusCircle, Loader2, Filter, Calculator } from "lucide-react";
+import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
@@ -230,14 +204,7 @@ const OrdersListPage: React.FC = () => {
   };
 
   // Calculate total quantities for an order
-  const calculateTotalQuantities = (order: Order): number => {
-    return order.items.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  // Calculate total picked up quantities for an order
-  const calculateTotalPickedUpQuantities = (order: Order): number => {
-    return order.items.reduce((total, item) => total + (item.picked_up_quantity || 0), 0);
-  };
+  // Removed local helpers (now computed in subcomponents)
 
   // Calculate payment breakdown for statistics
   const calculatePaymentBreakdown = () => {
@@ -373,19 +340,8 @@ const OrdersListPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      {/* Mobile Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
-          />
-        </div>
+      {/* Mobile Filter Toggle */}
+      <div className="flex flex-row gap-2 sm:gap-3">
         <Button
           variant="outline"
           onClick={() => setShowFilters(!showFilters)}
@@ -422,53 +378,25 @@ const OrdersListPage: React.FC = () => {
               </SelectContent>
             </Select>
             
-            <Select
-              value={filters.customerId || ""}
-              onValueChange={(value) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  customerId: value === "all" ? undefined : value,
-                }))
-              }
-            >
-              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
-                <SelectValue placeholder={t("filterByCustomer")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t("allCustomers", { ns: "customers" })}
-                </SelectItem>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DarkThemeAutocomplete
+              options={customers}
+              getOptionLabel={(c: Customer) => c?.name || ""}
+              value={customers.find((c) => c.id.toString() === (filters.customerId || "")) || null}
+              onChange={(_, value) => setFilters((prev) => ({ ...prev, customerId: value ? value.id.toString() : undefined }))}
+              renderInput={(params) => (<div ref={params.InputProps.ref} className="w-full h-8 sm:h-10">
+                <input {...params.inputProps as any} className="w-full h-full px-2 text-xs sm:text-sm border rounded" placeholder={t("filterByCustomer") as string} />
+              </div>)}
+            />
             
-            <Select
-              value={filters.productTypeId || ""}
-              onValueChange={(value) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  productTypeId: value === "all" ? undefined : value,
-                }))
-              }
-            >
-              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
-                <SelectValue placeholder={t("filterByProduct")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t("allProducts")}
-                </SelectItem>
-                {productTypes.map((pt) => (
-                  <SelectItem key={pt.id} value={pt.id.toString()}>
-                    {pt.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DarkThemeAutocomplete
+              options={productTypes}
+              getOptionLabel={(p: ProductType) => p?.name || ""}
+              value={productTypes.find((p) => p.id.toString() === (filters.productTypeId || "")) || null}
+              onChange={(_, value) => setFilters((prev) => ({ ...prev, productTypeId: value ? value.id.toString() : undefined }))}
+              renderInput={(params) => (<div ref={params.InputProps.ref} className="w-full h-8 sm:h-10">
+                <input {...params.inputProps as any} className="w-full h-full px-2 text-xs sm:text-sm border rounded" placeholder={t("filterByProduct") as string} />
+              </div>)}
+            />
           </CardContent>
         </Card>
       )}
@@ -479,13 +407,7 @@ const OrdersListPage: React.FC = () => {
           <CardTitle className="text-lg">{t("filters")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-          />
+          {/* Search removed per request */}
           <Select
             value={filters.status || ""}
             onValueChange={(value) =>
@@ -507,56 +429,24 @@ const OrdersListPage: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select
-            value={filters.customerId || ""}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                customerId: value === "all" ? undefined : value,
-              }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={t("filterByCustomer")}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("allCustomers", { ns: "customers" })}
-              </SelectItem>
-              {customers.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={filters.productTypeId || ""}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                productTypeId: value === "all" ? undefined : value,
-              }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={t("filterByProduct")}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("allProducts")}
-              </SelectItem>
-              {productTypes.map((pt) => (
-                <SelectItem key={pt.id} value={pt.id.toString()}>
-                  {pt.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DarkThemeAutocomplete
+            options={customers}
+            getOptionLabel={(c: Customer) => c?.name || ""}
+            value={customers.find((c) => c.id.toString() === (filters.customerId || "")) || null}
+            onChange={(_, value) => setFilters((prev) => ({ ...prev, customerId: value ? value.id.toString() : undefined }))}
+            renderInput={(params) => (<div ref={params.InputProps.ref}>
+              <input {...params.inputProps as any} className="w-full px-2 py-2 border rounded" placeholder={t("filterByCustomer") as string} />
+            </div>)}
+          />
+          <DarkThemeAutocomplete
+            options={productTypes}
+            getOptionLabel={(p: ProductType) => p?.name || ""}
+            value={productTypes.find((p) => p.id.toString() === (filters.productTypeId || "")) || null}
+            onChange={(_, value) => setFilters((prev) => ({ ...prev, productTypeId: value ? value.id.toString() : undefined }))}
+            renderInput={(params) => (<div ref={params.InputProps.ref}>
+              <input {...params.inputProps as any} className="w-full px-2 py-2 border rounded" placeholder={t("filterByProduct") as string} />
+            </div>)}
+          />
         </CardContent>
       </Card>
 
