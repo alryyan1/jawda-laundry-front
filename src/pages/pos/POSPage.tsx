@@ -786,17 +786,14 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Calculate the total amount from cart items
-    const totalAmount = cartItems.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
+    console.log('Completing order - backend will recalculate total from order items');
     
-    console.log('Completing order with total amount:', totalAmount);
-    
-    // Mark order as complete without changing status or generating sequences
+    // Mark order as complete - backend will recalculate total from order items
     try {
       setIsProcessing(true);
       
-      // Use the new markOrderComplete endpoint with total amount
-      const response = await markOrderComplete(selectedOrder.id, totalAmount);
+      // Use the markOrderComplete endpoint - backend will recalculate total from order items
+      const response = await markOrderComplete(selectedOrder.id);
       
       // Update the selected order with the completed status
       setSelectedOrder(response.order);

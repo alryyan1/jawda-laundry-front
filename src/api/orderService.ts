@@ -393,9 +393,8 @@ export const cancelOrder = async (orderId: string | number): Promise<{ order: Or
     return data;
 };
 
-export const markOrderComplete = async (orderId: string | number, totalAmount?: number): Promise<{ order: Order; message: string }> => {
-    const payload = totalAmount !== undefined ? { total_amount: totalAmount } : {};
-    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-complete`, payload);
+export const markOrderComplete = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
+    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-complete`);
     return data;
 };
 
