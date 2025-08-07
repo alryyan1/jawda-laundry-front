@@ -1,5 +1,6 @@
 import React from 'react';
-import { Autocomplete, AutocompleteProps } from '@mui/material';
+import { Autocomplete } from '@mui/material';
+import type { AutocompleteProps } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useTheme } from 'next-themes';
 
@@ -68,10 +69,17 @@ const createAutocompleteTheme = (isDark: boolean) => createTheme({
           color: isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))',
           border: `1px solid ${isDark ? 'hsl(var(--border))' : 'hsl(var(--border))'}`,
           boxShadow: isDark 
-            ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+            ? '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)'
             : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          backdropFilter: 'blur(8px)',
+          '& .MuiAutocomplete-listbox': {
+            backgroundColor: isDark ? 'hsl(var(--card))' : 'hsl(var(--card))',
+            padding: '8px 0',
+          },
         },
         option: {
+          backgroundColor: isDark ? 'hsl(var(--card))' : 'hsl(var(--card))',
+          color: isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))',
           '&:hover': {
             backgroundColor: isDark ? 'hsl(var(--accent))' : 'hsl(var(--accent))',
           },
@@ -81,36 +89,42 @@ const createAutocompleteTheme = (isDark: boolean) => createTheme({
           '&[aria-selected="true"]': {
             backgroundColor: isDark ? 'hsl(var(--primary))' : 'hsl(var(--primary))',
             color: isDark ? 'hsl(var(--primary-foreground))' : 'hsl(var(--primary-foreground))',
+            '&:hover': {
+              backgroundColor: isDark ? 'hsl(var(--primary))' : 'hsl(var(--primary))',
+            },
           },
         },
         clearIndicator: {
           color: isDark ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
           '&:hover': {
             color: isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))',
+            backgroundColor: isDark ? 'hsl(var(--accent))' : 'hsl(var(--accent))',
           },
         },
         popupIndicator: {
           color: isDark ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
           '&:hover': {
             color: isDark ? 'hsl(var(--foreground))' : 'hsl(var(--foreground))',
+            backgroundColor: isDark ? 'hsl(var(--accent))' : 'hsl(var(--accent))',
           },
+        },
+        endAdornment: {
+          backgroundColor: 'transparent',
+        },
+        input: {
+          backgroundColor: isDark ? 'hsl(var(--background))' : 'hsl(var(--background))',
         },
       },
     },
   },
 });
 
-interface DarkThemeAutocompleteProps<
+type DarkThemeAutocompleteProps<
   T,
   Multiple extends boolean | undefined = undefined,
   DisableClearable extends boolean | undefined = undefined,
   FreeSolo extends boolean | undefined = undefined
-> extends Omit<
-  AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
-  'variant'
-> {
-  variant?: 'outlined' | 'filled' | 'standard';
-}
+> = AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>;
 
 export const DarkThemeAutocomplete = <
   T,
@@ -118,7 +132,6 @@ export const DarkThemeAutocomplete = <
   DisableClearable extends boolean | undefined = undefined,
   FreeSolo extends boolean | undefined = undefined
 >({
-  variant = 'outlined',
   ...props
 }: DarkThemeAutocompleteProps<T, Multiple, DisableClearable, FreeSolo>) => {
   const { theme } = useTheme();
@@ -128,7 +141,6 @@ export const DarkThemeAutocomplete = <
   return (
     <ThemeProvider theme={muiTheme}>
       <Autocomplete
-        variant={variant}
         {...props}
       />
     </ThemeProvider>
