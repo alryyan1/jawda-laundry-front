@@ -205,43 +205,31 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
 };
 
 /**
- * Fetches orders for a specific date.
+ * Fetches orders for a specific date using the dedicated endpoint.
  */
 export const getTodayOrders = async (date?: string): Promise<Order[]> => {
-    const params: any = { 
-        per_page: 100 // Get more orders
-    };
+    const params: any = {};
     
     if (date) {
         // Use specific date
-        params.created_date = date;
+        params.date = date;
         console.log('getTodayOrders - using date:', date);
     } else {
-        // Use today's date
-        params.today = true;
         console.log('getTodayOrders - using today parameter');
     }
     
     console.log('getTodayOrders - params:', params);
-    const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
-    console.log('getTodayOrders - response data length:', data.data?.length || 0);
+    const { data } = await apiClient.get<Order[]>('/orders/today', { params });
+    console.log('getTodayOrders - response data length:', data.length || 0);
     console.log('getTodayOrders - full response:', data);
-    console.log('getTodayOrders - data.data type:', typeof data.data);
-    console.log('getTodayOrders - data.data isArray:', Array.isArray(data.data));
+    console.log('getTodayOrders - data type:', typeof data);
+    console.log('getTodayOrders - data isArray:', Array.isArray(data));
     
-    // Handle different response structures
-    if (Array.isArray(data.data)) {
-        // Normal case: data.data is an array
-        return data.data;
-    } else if (data.data && typeof data.data === 'object' && Array.isArray(data.data.data)) {
-        // Case where the response is wrapped in another object: {data: {data: [...], links: {...}, meta: {...}}}
-        console.log('getTodayOrders - found nested data structure, extracting data.data.data');
-        return data.data.data;
-    } else if (data.data && typeof data.data === 'object') {
-        console.error('getTodayOrders - unexpected response structure:', data.data);
-        return [];
+    // The new endpoint returns a direct array, no pagination
+    if (Array.isArray(data)) {
+        return data;
     } else {
-        console.error('getTodayOrders - no data found in response');
+        console.error('getTodayOrders - unexpected response structure:', data);
         return [];
     }
 };
