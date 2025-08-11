@@ -77,11 +77,6 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
     queryFn: () => getTodayOrders(selectedDate),
   });
 
-  // Debug logging to see what's being returned
-  console.log('TodayOrdersColumn - orders data:', orders);
-  console.log('TodayOrdersColumn - orders type:', typeof orders);
-  console.log('TodayOrdersColumn - isArray:', Array.isArray(orders));
-
   // Ensure orders is always an array to prevent map errors
   const safeOrders = Array.isArray(orders) ? orders : [];
 

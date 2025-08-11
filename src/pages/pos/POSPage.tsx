@@ -164,6 +164,10 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
+      // Also invalidate the specific todayOrders query with selectedDate
+      const today = getTodayDate();
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      
       // Update table status to occupied if order has a dining table
       if (createdOrder.table_id) {
         try {
@@ -408,6 +412,10 @@ const POSPage: React.FC = () => {
           // Invalidate queries to refresh data
           queryClient.invalidateQueries({ queryKey: ["orders"] });
           queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+          
+          // Also invalidate the specific todayOrders query with selectedDate
+          const today = getTodayDate();
+          queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
           
           toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
         } else {
@@ -656,6 +664,11 @@ const POSPage: React.FC = () => {
           setSelectedOrder(updatedOrder);
           queryClient.invalidateQueries({ queryKey: ["orders"] });
           queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+          
+          // Also invalidate the specific todayOrders query with selectedDate
+          const today = getTodayDate();
+          queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+          
           toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
         })
         .catch((error) => {
@@ -781,6 +794,10 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
+      // Also invalidate the specific todayOrders query with selectedDate
+      const today = getTodayDate();
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      
       toast.success(t("itemAddedToOrder", { ns: "orders", defaultValue: "Item added to order successfully" }));
     } catch (error) {
       console.error('Failed to add item to order:', error);
@@ -875,6 +892,10 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
+      // Also invalidate the specific todayOrders query with selectedDate
+      const today = getTodayDate();
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      
       toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
       
       // Show success component instead of PDF
@@ -911,6 +932,10 @@ const POSPage: React.FC = () => {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      
+      // Also invalidate the specific todayOrders query with selectedDate
+      const today = getTodayDate();
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
       
       toast.success(t("orderCancelledSuccessfully", { ns: "orders", defaultValue: "Order cancelled successfully" }));
     } catch (error) {
@@ -1300,6 +1325,11 @@ const POSPage: React.FC = () => {
                 setSelectedOrder(updatedOrder);
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
                 queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+                
+                // Also invalidate the specific todayOrders query with selectedDate
+                const today = getTodayDate();
+                queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+                
                 toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
               })
               .catch((error) => {
