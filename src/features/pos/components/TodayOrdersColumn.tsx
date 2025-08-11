@@ -72,10 +72,18 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   const { t } = useTranslation(["common", "orders"]);
   const { selectedDate } = useDate();
 
-  const { data: orders = [], isLoading } = useQuery<Order[], Error>({
+  const { data: orders = [], isLoading, error } = useQuery<Order[], Error>({
     queryKey: ["todayOrders", selectedDate],
     queryFn: () => getTodayOrders(selectedDate),
   });
+
+  // Debug logging to see what's being returned
+  console.log('TodayOrdersColumn - orders data:', orders);
+  console.log('TodayOrdersColumn - orders type:', typeof orders);
+  console.log('TodayOrdersColumn - isArray:', Array.isArray(orders));
+
+  // Ensure orders is always an array to prevent map errors
+  const safeOrders = Array.isArray(orders) ? orders : [];
 
   if (isLoading) {
     return (
@@ -107,6 +115,19 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-[120px] bg-background rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
+        <div className="flex flex-col items-center justify-center h-32 text-center p-2">
+          <div className="text-red-500 text-xs">
+            {t("errorLoadingOrders", { ns: "orders", defaultValue: "Error loading orders" })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <MuiThemeProvider theme={muiTheme}>
       <div className="w-[120px] bg-background rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
@@ -115,7 +136,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
         {/* Orders List */}
         <ScrollArea className="flex-1 min-h-0 p-3" >
           <div className="p-1 space-y-1">
-            {orders.length === 0 ? (
+            {safeOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">
@@ -124,7 +145,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-1">
-                {orders.map((order, index) => (
+                {safeOrders.map((order, index) => (
                   <React.Fragment key={order.id}>
                     <MuiBadge
                       badgeContent={order.items?.length || 0}
@@ -158,7 +179,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                         )}
                       </div>
                     </MuiBadge>
-                    {index < orders.length - 1 && (
+                    {index < safeOrders.length - 1 && (
                       <div className="w-8 h-px bg-border" />
                     )}
                   </React.Fragment>
@@ -169,12 +190,12 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
         </ScrollArea>
 
         {/* Footer with total count */}
-        {orders.length > 0 && (
+        {safeOrders.length > 0 && (
           <div className="p-1 border-t flex-shrink-0" style={{ borderColor: materialColors.divider }}>
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">{t("total", { ns: "common" })}:</span>
               <Badge variant="secondary" className="text-xs">
-                {orders.length} {t("orders", { ns: "orders" })}
+                {safeOrders.length} {t("orders", { ns: "orders" })}
               </Badge>
             </div>
           </div>
