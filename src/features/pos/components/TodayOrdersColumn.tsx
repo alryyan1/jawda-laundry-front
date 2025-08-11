@@ -85,6 +85,8 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
     selectedDate,
     ordersLength: orders?.length || 0,
     orders: orders,
+    ordersType: typeof orders,
+    isArray: Array.isArray(orders),
     isLoading,
     error: error?.message
   });

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
+import { useDate } from "@/context/DateContext";
 
 import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, PricingStrategy } from '@/types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
@@ -32,7 +33,6 @@ import { pricingRuleService, type ServiceOfferingWithPricing } from "@/api/prici
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
-import { getTodayDate } from "@/lib/dateUtils";
 
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ const POSPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const { newlyCreatedOrder, clearNewlyCreatedOrder } = useNewOrder();
+  const { selectedDate } = useDate();
   
   // Initialize real-time updates
   useRealtimeUpdates();
@@ -95,7 +96,7 @@ const POSPage: React.FC = () => {
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Get today's date for statistics (using local timezone)
-  const today = getTodayDate(); // YYYY-MM-DD format
+  const today = selectedDate; // YYYY-MM-DD format
 
   // Fetch customer service offerings with pricing rules if customer is selected
   const { data: customerServiceOfferings = [] } = useQuery({
@@ -165,8 +166,7 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
       // Also invalidate the specific todayOrders query with selectedDate
-      const today = getTodayDate();
-      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
       
       // Update table status to occupied if order has a dining table
       if (createdOrder.table_id) {
@@ -414,8 +414,7 @@ const POSPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
           
           // Also invalidate the specific todayOrders query with selectedDate
-          const today = getTodayDate();
-          queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+          queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
           
           toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
         } else {
@@ -666,8 +665,7 @@ const POSPage: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
           
           // Also invalidate the specific todayOrders query with selectedDate
-          const today = getTodayDate();
-          queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+          queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
           
           toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
         })
@@ -795,8 +793,7 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
       // Also invalidate the specific todayOrders query with selectedDate
-      const today = getTodayDate();
-      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
       
       toast.success(t("itemAddedToOrder", { ns: "orders", defaultValue: "Item added to order successfully" }));
     } catch (error) {
@@ -893,8 +890,7 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
       // Also invalidate the specific todayOrders query with selectedDate
-      const today = getTodayDate();
-      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
       
       toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
       
@@ -934,8 +930,7 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
       // Also invalidate the specific todayOrders query with selectedDate
-      const today = getTodayDate();
-      queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
       
       toast.success(t("orderCancelledSuccessfully", { ns: "orders", defaultValue: "Order cancelled successfully" }));
     } catch (error) {
@@ -1327,8 +1322,7 @@ const POSPage: React.FC = () => {
                 queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
                 
                 // Also invalidate the specific todayOrders query with selectedDate
-                const today = getTodayDate();
-                queryClient.invalidateQueries({ queryKey: ["todayOrders", today] });
+                queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
                 
                 toast.success(t("customerAssignedToOrder", { ns: "orders", defaultValue: "Customer assigned to order successfully" }));
               })
