@@ -33,6 +33,7 @@ import { Loader2, CalendarIcon, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { useCurrency } from '@/hooks/useCurrency';
+import { getTodayDate } from "@/lib/dateUtils";
 
 
 import type { Order, Payment, RecordPaymentFormData, PaymentMethod } from '@/types';
@@ -122,7 +123,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
             toast.success(t('paymentRecordedSuccess', {ns:'orders'}));
             queryClient.invalidateQueries({ queryKey: ['order', String(order!.id)] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
-            queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
+            queryClient.invalidateQueries({ queryKey: ['todayOrders', getTodayDate()] });
             
             // Fetch the updated order and call the callback
             try {

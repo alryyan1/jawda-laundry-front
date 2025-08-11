@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import apiClient from "@/api/apiClient";
 import { useNewOrder } from "@/context/NewOrderContext";
+import { getTodayDate } from "@/lib/dateUtils";
 
 interface CreateEmptyOrderResponse {
   order: {
@@ -40,7 +41,7 @@ export const POSNewOrderButton: React.FC = () => {
       // Invalidate and refetch orders to update the TodayOrdersColumn
       queryClient.invalidateQueries({ queryKey: ['orders', 'today'] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['todayOrders', getTodayDate()] });
       
       // Set the newly created order in context so it can be selected
       setNewlyCreatedOrder(data.order);
