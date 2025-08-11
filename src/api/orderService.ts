@@ -223,9 +223,10 @@ export const getTodayOrders = async (date?: string): Promise<Order[]> => {
     }
     
     console.log('getTodayOrders - params:', params);
-    const { data } = await apiClient.get<{data: Order[]}>('/orders', { params });
+    const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     console.log('getTodayOrders - response data length:', data.data?.length || 0);
-    return data.data;
+    console.log('getTodayOrders - full response:', data);
+    return data.data || [];
 };
 
 /**
