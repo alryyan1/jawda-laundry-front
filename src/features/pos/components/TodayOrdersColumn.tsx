@@ -75,6 +75,18 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   const { data: orders = [], isLoading, error } = useQuery<Order[], Error>({
     queryKey: ["todayOrders", selectedDate],
     queryFn: () => getTodayOrders(selectedDate),
+    staleTime: 0, // Always consider data stale
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnMount: true, // Refetch when component mounts
+  });
+
+  // Debug logging to see what's happening
+  console.log('TodayOrdersColumn Debug:', {
+    selectedDate,
+    ordersLength: orders?.length || 0,
+    orders: orders,
+    isLoading,
+    error: error?.message
   });
 
   // Ensure orders is always an array to prevent map errors

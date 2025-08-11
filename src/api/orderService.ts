@@ -215,12 +215,16 @@ export const getTodayOrders = async (date?: string): Promise<Order[]> => {
     if (date) {
         // Use specific date
         params.created_date = date;
+        console.log('getTodayOrders - using date:', date);
     } else {
         // Use today's date
         params.today = true;
+        console.log('getTodayOrders - using today parameter');
     }
     
+    console.log('getTodayOrders - params:', params);
     const { data } = await apiClient.get<{data: Order[]}>('/orders', { params });
+    console.log('getTodayOrders - response data length:', data.data?.length || 0);
     return data.data;
 };
 
