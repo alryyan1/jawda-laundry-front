@@ -226,7 +226,19 @@ export const getTodayOrders = async (date?: string): Promise<Order[]> => {
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     console.log('getTodayOrders - response data length:', data.data?.length || 0);
     console.log('getTodayOrders - full response:', data);
-    return data.data || [];
+    console.log('getTodayOrders - data.data type:', typeof data.data);
+    console.log('getTodayOrders - data.data isArray:', Array.isArray(data.data));
+    
+    // Handle different response structures
+    if (Array.isArray(data.data)) {
+        return data.data;
+    } else if (data.data && typeof data.data === 'object') {
+        console.error('getTodayOrders - unexpected response structure:', data.data);
+        return [];
+    } else {
+        console.error('getTodayOrders - no data found in response');
+        return [];
+    }
 };
 
 /**
