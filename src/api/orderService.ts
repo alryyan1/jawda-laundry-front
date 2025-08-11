@@ -69,6 +69,7 @@ export const getOrders = async (
         dateFrom?: string; // YYYY-MM-DD
         dateTo?: string;   // YYYY-MM-DD
         createdDate?: string; // YYYY-MM-DD
+        categorySequenceSearch?: string; // New parameter for category sequence search
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -80,6 +81,7 @@ export const getOrders = async (
     if (filters?.dateFrom) params.date_from = filters.dateFrom;
     if (filters?.dateTo) params.date_to = filters.dateTo;
     if (filters?.createdDate) params.created_date = filters.createdDate;
+    if (filters?.categorySequenceSearch) params.category_sequence_search = filters.categorySequenceSearch;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;
@@ -432,24 +434,8 @@ export const updateOrderItemQuantity = async (
  * Download order invoice PDF
  */
 export const downloadOrderInvoice = async (orderId: string | number): Promise<void> => {
-    try {
-        const response = await apiClient.get(`/orders/${orderId}/invoice/download`, {
-            responseType: 'blob',
-        });
-        
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `invoice-${orderId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Error downloading PDF:', error);
-        throw error;
-    }
+    // Open the PDF in a new window/tab
+    window.open(`${apiClient.defaults.baseURL}/orders/${orderId}/invoice/download`, '_blank');
 };
 
 /**
@@ -463,34 +449,49 @@ export const downloadOrdersListPdf = async (filters: {
     productTypeId?: string;
     dateFrom?: string;
     dateTo?: string;
+    categorySequenceSearch?: string;
 }): Promise<void> => {
-    try {
-        const params = new URLSearchParams();
-        if (filters.status) params.append('status', filters.status);
-        if (filters.search) params.append('search', filters.search);
-        if (filters.orderId) params.append('order_id', filters.orderId);
-        if (filters.customerId) params.append('customer_id', filters.customerId);
-        if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.orderId) params.append('order_id', filters.orderId);
+    if (filters.customerId) params.append('customer_id', filters.customerId);
+    if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+    if (filters.dateFrom) params.append('date_from', filters.dateFrom);
+    if (filters.dateTo) params.append('date_to', filters.dateTo);
+    if (filters.categorySequenceSearch) params.append('category_sequence_search', filters.categorySequenceSearch);
+    
+    // Open the PDF in a new window/tab using web route
+    const baseUrl = apiClient.defaults.baseURL?.replace('/api', '') || '';
+    window.open(`${baseUrl}/orders/pdf/download?${params.toString()}`, '_blank');
+};
+
+/**
+ * Download orders list as Excel (CSV)
+ */
+export const downloadOrdersListExcel = async (filters: {
+    status?: string;
+    search?: string;
+    orderId?: string;
+    customerId?: string;
+    productTypeId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    categorySequenceSearch?: string;
+}): Promise<void> => {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.search) params.append('search', filters.search);
+    if (filters.orderId) params.append('order_id', filters.orderId);
+    if (filters.customerId) params.append('customer_id', filters.customerId);
+    if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
         if (filters.dateFrom) params.append('date_from', filters.dateFrom);
-        if (filters.dateTo) params.append('date_to', filters.dateTo);
-        
-        const response = await apiClient.get(`/orders/pdf/download?${params.toString()}`, {
-            responseType: 'blob',
-        });
-        
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `orders-list-${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Error downloading PDF:', error);
-        throw error;
-    }
+    if (filters.dateTo) params.append('date_to', filters.dateTo);
+    if (filters.categorySequenceSearch) params.append('category_sequence_search', filters.categorySequenceSearch);
+
+    // Download the CSV file using web route
+    const baseUrl = apiClient.defaults.baseURL?.replace('/api', '') || '';
+    window.open(`${baseUrl}/orders/excel/download?${params.toString()}`, '_blank');
 };
 
 

@@ -53,7 +53,7 @@ export interface RegisterCredentials extends LoginCredentials {
 
 // The loginUser function now sends a username
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-const { data } = await apiClient.post<AuthResponse>('/login', credentials);
-return data;
+  const response = await apiClient.post<AuthResponse>('/login', credentials);
+  return response.data; // Return the data directly since backend doesn't wrap it
 };
 // ... (registerUser remains compatible as it already sends more fields)

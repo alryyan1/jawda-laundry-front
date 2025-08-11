@@ -7,15 +7,14 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
-import { useDate } from "@/context/DateContext";
 
 import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, QuoteItemPayload, QuoteItemResponse, Order, PricingStrategy } from '@/types';
-import type { DiningTable } from '@/types/dining.types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
 import { ProductListColumn } from '@/features/pos/components/ProductListColumn';
 import { CartColumn } from '@/features/pos/components/CartColumn';
 import { ActionsComponent } from '@/features/pos/components/ActionsComponent';
+import { OrderSuccessComponent } from '@/features/pos/components/OrderSuccessComponent';
 import { type CartItem } from '@/features/pos/components/CartItem';
 import { CustomerFormModal } from '@/features/pos/components/CustomerFormModal';
 import { TodayOrders } from '@/features/pos/components/TodayOrders';
@@ -24,12 +23,11 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete, updateOrderItemDimensions, updateOrderItemQuantity } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete, updateOrderItemDimensions, updateOrderItemQuantity } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
-import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
 import { pricingRuleService, type ServiceOfferingWithPricing } from "@/api/pricingRuleService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
@@ -58,7 +56,6 @@ const POSPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const { newlyCreatedOrder, clearNewlyCreatedOrder } = useNewOrder();
-  const { selectedDate } = useDate();
   
   // Initialize real-time updates
   useRealtimeUpdates();
@@ -79,9 +76,7 @@ const POSPage: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
-  const [selectedTableId, setSelectedTableId] = useState<string>(' ');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [orderType, setOrderType] = useState<'in_house' | 'take_away' | 'delivery'>('in_house');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastQuotedInputs, setLastQuotedInputs] = useState<Record<string, string>>({});
@@ -96,6 +91,7 @@ const POSPage: React.FC = () => {
   const [isIpadView, setIsIpadView] = useState(false);
   const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
   const [isNewOrderMode, setIsNewOrderMode] = useState(false);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Get today's date for statistics (using local timezone)
@@ -151,12 +147,6 @@ const POSPage: React.FC = () => {
     ? customerServiceOfferings 
     : allServiceOfferings;
 
-  // Fetch dining tables for in-house orders
-  const { data: diningTables = [] } = useQuery<DiningTable[], Error>({
-    queryKey: ["diningTables"],
-    queryFn: getDiningTables,
-  });
-
   // Fetch settings to determine POS display options
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -164,13 +154,7 @@ const POSPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch orders for the selected date
-  const { data: todayOrders = [] } = useQuery<Order[], Error>({
-    queryKey: ["todayOrders", selectedDate],
-    queryFn: () => getTodayOrders(selectedDate),
-    staleTime: 5 * 60 * 1000,
-  });
-
+  // Remove unused todayOrders query since it's not being used in the component
 
 
   const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
@@ -183,7 +167,7 @@ const POSPage: React.FC = () => {
       // Update table status to occupied if order has a dining table
       if (createdOrder.table_id) {
         try {
-          await updateDiningTableStatus(createdOrder.table_id, 'occupied');
+          // await updateDiningTableStatus(createdOrder.table_id, 'occupied'); // This line was removed
           queryClient.invalidateQueries({ queryKey: ["diningTables"] });
         } catch (error) {
           console.error('Failed to update table status:', error);
@@ -199,8 +183,6 @@ const POSPage: React.FC = () => {
       
       setSelectedCategoryId(null);
       setSelectedProductType(null);
-      setSelectedTableId(createdOrder.dining_table_id?.toString() || ' ');
-      setOrderType(createdOrder.order_type);
       setIsProcessing(false);
       
       // Clear dialog state
@@ -581,6 +563,7 @@ const POSPage: React.FC = () => {
   const handleOrderSelect = (order: Order) => {
     setSelectedOrder(order);
     setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
+    setShowOrderSuccess(false); // Reset success state when selecting a different order
     
     // Clear current cart items
     setCartItems([]);
@@ -590,16 +573,6 @@ const POSPage: React.FC = () => {
       setSelectedCustomerId(order.customer.id.toString());
     } else {
       setSelectedCustomerId(null);
-    }
-    
-    // Set order type
-    setOrderType(order.order_type);
-    
-    // Set table if order has one
-    if (order.dining_table_id) {
-      setSelectedTableId(order.dining_table_id.toString());
-    } else {
-      setSelectedTableId(' ');
     }
     
     // Convert order items to cart items and populate cart only if order has items
@@ -630,13 +603,13 @@ const POSPage: React.FC = () => {
     
     // Update dining table status to occupied if the order has a table
     if (order.table_id) {
-      updateDiningTableStatus(order.table_id, 'occupied')
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ["diningTables"] });
-        })
-        .catch((error) => {
-          console.error('Failed to update table status:', error);
-        });
+      // updateDiningTableStatus(order.table_id, 'occupied') // This line was removed
+      //   .then(() => { // This line was removed
+      //     queryClient.invalidateQueries({ queryKey: ["diningTables"] }); // This line was removed
+      //   }) // This line was removed
+      //   .catch((error) => { // This line was removed
+      //     console.error('Failed to update table status:', error); // This line was removed
+      //   }); // This line was removed
     }
   };
 
@@ -694,8 +667,6 @@ const POSPage: React.FC = () => {
       const newOrderData = {
         customer_id: customerId,
         items: [], // Empty items array for new order
-        order_type: orderType,
-        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
       };
       createOrderMutation.mutate(newOrderData);
     }
@@ -764,8 +735,6 @@ const POSPage: React.FC = () => {
         items: [...existingItems, newItem],
         notes: selectedOrder.notes || undefined,
         due_date: selectedOrder.due_date || undefined,
-        order_type: selectedOrder.order_type,
-        dining_table_id: selectedOrder.dining_table_id,
       };
 
       // Call the updateOrder API to add item to the existing order
@@ -844,12 +813,6 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Validate table selection for in-house orders
-    if (orderType === 'in_house' && !selectedTableId) {
-      toast.error(t("pleaseSelectTable", { ns: "dining", defaultValue: "Please select a table for in-house orders" }));
-      return;
-    }
-
     setIsProcessing(true);
 
     const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
@@ -872,11 +835,9 @@ const POSPage: React.FC = () => {
       items: orderItems,
       notes: undefined, // TODO: Add UI for order notes
       due_date: undefined, // TODO: Add UI for due date
-      order_type: orderType,
-      dining_table_id: selectedTableId ? parseInt(selectedTableId) : null, // Use dining_table_id for dining tables
     };
 
-    console.log('Creating order with dining table ID:', orderData.dining_table_id);
+    console.log('Creating order');
     createOrderMutation.mutate(orderData);
   };
 
@@ -916,8 +877,8 @@ const POSPage: React.FC = () => {
       
       toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
       
-      // Auto-show PDF when order is completed
-      setIsPdfDialogOpen(true);
+      // Show success component instead of PDF
+      setShowOrderSuccess(true);
     } catch (error) {
       console.error('Failed to complete order:', error);
       toast.error(t("failedToCompleteOrder", { ns: "orders", defaultValue: "Failed to complete order" }));
@@ -958,6 +919,26 @@ const POSPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleCreateNewOrder = () => {
+    // Reset all state for new order
+    setSelectedOrder(null);
+    setSelectedCustomerId(null);
+    setSelectedCategoryId(null);
+    setSelectedProductType(null);
+    setCartItems([]);
+    setShowOrderSuccess(false);
+    setIsNewOrderMode(true);
+    
+    // Clear any dialogs
+    setSelectedProductForDialog(null);
+    setIsServiceOfferingDialogOpen(false);
+  };
+
+  const handleCancelSuccess = () => {
+    // Hide the success component and revert back to product selection
+    setShowOrderSuccess(false);
   };
 
   const handleSendInvoice = async () => {
@@ -1046,13 +1027,6 @@ const POSPage: React.FC = () => {
           onCustomerSelected={handleCustomerSelected}
           onNewCustomerClick={() => setIsCustomerModalOpen(true)}
           selectedOrder={selectedOrder}
-          orderType={orderType}
-          onOrderTypeChange={setOrderType}
-          selectedTableId={selectedTableId}
-          onTableIdChange={setSelectedTableId}
-          diningTables={diningTables}
-          todayOrders={todayOrders}
-          isProcessing={isProcessing}
           onCalculatorClick={() => setIsCalculatorOpen(true)}
           onPdfClick={() => setIsPdfDialogOpen(true)}
           onPaymentClick={() => setIsPaymentModalOpen(true)}
@@ -1116,8 +1090,15 @@ const POSPage: React.FC = () => {
                                              {/* Products */}
                        <Card className="flex-1 flex flex-col">
                          <CardContent className="flex-1 min-h-0 p-0">
-                           {selectedOrder?.order_complete ? (
-                             // Show ActionsComponent when order is completed
+                           {showOrderSuccess && selectedOrder ? (
+                             // Show OrderSuccessComponent when order is completed and success is shown
+                             <OrderSuccessComponent
+                               order={selectedOrder}
+                               onCreateNewOrder={handleCreateNewOrder}
+                               onCancel={handleCancelSuccess}
+                             />
+                           ) : selectedOrder?.order_complete ? (
+                             // Show ActionsComponent when order is completed but success not shown
                              <ActionsComponent
                                order={selectedOrder}
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
@@ -1196,8 +1177,15 @@ const POSPage: React.FC = () => {
                      <Card className="flex-1 flex flex-col">
                        <CardContent className="flex-1 min-h-0 p-1">
                          <div className="flex-1 min-h-0">
-                           {selectedOrder?.order_complete ? (
-                             // Show ActionsComponent when order is completed
+                           {showOrderSuccess && selectedOrder ? (
+                             // Show OrderSuccessComponent when order is completed and success is shown
+                             <OrderSuccessComponent
+                               order={selectedOrder}
+                               onCreateNewOrder={handleCreateNewOrder}
+                               onCancel={handleCancelSuccess}
+                             />
+                           ) : selectedOrder?.order_complete ? (
+                             // Show ActionsComponent when order is completed but success not shown
                              <ActionsComponent
                                order={selectedOrder}
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
@@ -1304,8 +1292,8 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsCustomerModalOpen}
         onSuccess={(customer) => {
           setSelectedCustomerId(customer.id.toString());
-          // If we have a selected order without a customer, update it
-          if (selectedOrder && !selectedOrder.customer) {
+          // If we have a selected order without a customer and a customer is selected, update it
+          if (selectedOrder && !selectedOrder.customer && customer.id) {
             // Update the existing order with the newly created customer
             updateOrderDetails(selectedOrder.id, { customer_id: customer.id })
               .then((updatedOrder) => {
@@ -1363,32 +1351,26 @@ const POSPage: React.FC = () => {
 
       {/* Service Offering Selection Dialog */}
       <Dialog open={isServiceOfferingDialogOpen} onOpenChange={setIsServiceOfferingDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-lg border-2 border-sky-400 bg-white">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-2xl font-bold text-sky-700 text-center">
               {selectedProductForDialog && t("selectServiceOffering", { 
                 ns: "common", 
                 defaultValue: "Select Service Offering" 
               })}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {selectedProductForDialog && serviceOfferingsToUse
               .filter(offering => offering.product_type_id === selectedProductForDialog.id)
               .map((offering) => (
                 <Button
                   key={offering.id}
-                  className="w-full justify-start text-left h-auto p-4"
+                  className="w-full justify-start text-left h-auto p-5 cursor-pointer border-2 border-sky-200 border-sky-400 bg-sky-50 transition-all duration-200 rounded-lg"
                   onClick={() => handleServiceOfferingSelect(offering)}
                 >
                   <div className="flex flex-col items-start">
-                    <div className="font-medium">{offering.display_name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedProductForDialog.is_dimension_based 
-                        ? `${offering.default_price_per_sq_meter || 0} ${t("perSqMeter", { ns: "common", defaultValue: "per sq meter" })}`
-                        : `${offering.default_price || 0} ${t("perItem", { ns: "common", defaultValue: "per item" })}`
-                      }
-                    </div>
+                    <div className="text-lg font-semibold text-sky-800 cursor-pointer">{offering.display_name}</div>
                   </div>
                 </Button>
               ))}

@@ -3,44 +3,173 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { 
-  PlusCircle,
-  Edit3,
-  Trash2,
-  MoreHorizontal,
-  GripVertical,
-  Eye,
-  EyeOff,
-  Loader2
+  Loader2,
+  GripVertical
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { PageHeader } from '@/components/shared/PageHeader';
-import { DataTable } from '@/components/shared/DataTable';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
-import { Button } from '@/components/ui/button';
+import { PermissionWrapper, PermissionButton } from '@/components/ui/permission-wrapper';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
-import { getNavigationItems, deleteNavigationItem, updateNavigationItem } from '@/api/navigationService';
-import type { NavigationItem } from '@/types/navigation.types';
-import type { ColumnDef } from '@tanstack/react-table';
+import { getNavigationItems, deleteNavigationItem, updateNavigationItem, updateNavigationOrder } from '@/api/navigationService';
+import type { NavigationItem, NavigationItemDisplay } from '@/types/navigation.types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+
+// Sortable Table Row Component
+interface SortableTableRowProps {
+  item: NavigationItemDisplay;
+  onToggleActive: (id: number, is_active: boolean) => void;
+  onDelete: (item: NavigationItemDisplay) => void;
+  can: (permission: string) => boolean;
+  t: (key: string) => string;
+  toggleActiveMutation: any;
+}
+
+const SortableTableRow: React.FC<SortableTableRowProps> = ({ 
+  item, 
+  onToggleActive, 
+  onDelete, 
+  can, 
+  t, 
+  toggleActiveMutation 
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="text-center">
+        {/* Drag handle */}
+        <PermissionWrapper 
+          permission="navigation:update" 
+          tooltipText={t('noPermissionToReorderNavigation')}
+        >
+          <div className="flex items-center justify-center">
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </PermissionWrapper>
+      </TableCell>
+      <TableCell className="text-center">
+        {/* Indentation for sub-items */}
+        <div  className="flex items-center justify-center gap-2">
+        
+          
+          <div>
+            <div className="font-medium">{item.title}</div>
+            <div className="text-xs text-muted-foreground">
+              Key: {item.key}
+              {item.route && ` • Route: ${item.route}`}
+            </div>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
+        <div className="flex flex-wrap justify-center gap-1">
+          {item.permissions?.map((permission, index) => (
+            <Badge key={index} variant="outline" className="text-xs">
+              {permission}
+            </Badge>
+          )) || <span className="text-muted-foreground text-sm">{t('noPermissions')}</span>}
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
+        <Badge variant="secondary">
+          {item.sort_order}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-center">
+        <PermissionWrapper 
+          permission="navigation:update" 
+          tooltipText={t('noPermissionToUpdateNavigation')}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Checkbox
+              checked={item.is_active}
+              onCheckedChange={(checked: boolean) => {
+                console.log('Toggling navigation item:', item.id, 'to:', checked);
+                onToggleActive(item.id, checked);
+              }}
+              disabled={toggleActiveMutation.isPending}
+            />
+            <span className="text-sm">
+              {item.is_active ? t('active') : t('inactive')}
+            </span>
+          </div>
+        </PermissionWrapper>
+      </TableCell>
+      <TableCell className="text-center">
+        <Badge variant={item.is_default ? "default" : "secondary"}>
+          {item.is_default ? t('system') : t('custom')}
+        </Badge>
+      </TableCell>
+      
+    </TableRow>
+  );
+};
 
 const NavigationManagementPage: React.FC = () => {
   const { t, i18n } = useTranslation(['admin', 'common']);
-  const { can } = useAuth();
+  const { can, user, isAuthenticated } = useAuth();
 
   const [itemToDelete, setItemToDelete] = useState<NavigationItem | null>(null);
 
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Fetch navigation items
-  const { data: navigationItems = [], isLoading, refetch, isFetching } = useQuery({
+  const { data: navigationItems = [], isLoading, refetch, isFetching, error } = useQuery({
     queryKey: ['navigation-items'],
     queryFn: getNavigationItems,
   });
@@ -54,6 +183,7 @@ const NavigationManagementPage: React.FC = () => {
       setItemToDelete(null);
     },
     onError: (error: Error) => {
+      console.error('Delete mutation error:', error);
       toast.error(error.message || t('navigationItemDeleteFailed'));
       setItemToDelete(null);
     }
@@ -61,23 +191,131 @@ const NavigationManagementPage: React.FC = () => {
 
   // Toggle active status mutation
   const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => 
-      updateNavigationItem(id, { is_active }),
-    onSuccess: () => {
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) => {
+      console.log('Making API call to update navigation item:', id, 'is_active:', is_active);
+      console.log('API URL:', import.meta.env.VITE_API_BASE_URL);
+      return updateNavigationItem(id, { is_active });
+    },
+    onSuccess: (data) => {
+      console.log('Navigation item updated successfully:', data);
       toast.success(t('navigationItemUpdated'));
+      // Force refetch to get the latest data
       refetch();
     },
     onError: (error: Error) => {
+      console.error('Failed to update navigation item:', error);
+      console.error('Error response:', (error as any).response);
       toast.error(error.message || t('navigationItemUpdateFailed'));
     }
   });
 
+  // Update order mutation
+  const updateOrderMutation = useMutation({
+    mutationFn: updateNavigationOrder,
+    onSuccess: () => {
+      toast.success(t('navigationOrderUpdated'));
+      refetch();
+    },
+    onError: (error: Error) => {
+      console.error('Update order mutation error:', error);
+      toast.error(error.message || t('navigationOrderUpdateFailed'));
+    }
+  });
+
+  // Debug authentication
+  console.log('Current user:', user);
+  console.log('Is authenticated:', isAuthenticated);
+  console.log('Can navigation:update:', can('navigation:update'));
+  console.log('Can navigation:delete:', can('navigation:delete'));
+  console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
+  console.log('All env vars:', import.meta.env);
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+          <p className="text-muted-foreground mb-4">Please log in to access this page.</p>
+          <div className="space-y-2">
+            <a href="/login" className="text-primary hover:underline block">
+              Go to Login
+            </a>
+            <button 
+              onClick={async () => {
+                try {
+                  const response = await fetch('http://localhost/laundry/jawda-laundry-backend/public/api/login', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      username: 'admin',
+                      password: '12345678'
+                    })
+                  });
+                  const data = await response.json();
+                  console.log('Login test response:', data);
+                  if (data.token) {
+                    // Store the token
+                    localStorage.setItem('auth-storage', JSON.stringify({
+                      state: {
+                        token: data.token,
+                        isAuthenticated: true
+                      }
+                    }));
+                    // Reload the page
+                    window.location.reload();
+                  }
+                } catch (error) {
+                  console.error('Login test failed:', error);
+                }
+              }}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Test Login (Admin)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = flattenedItems.findIndex(item => item.id === active.id);
+      const newIndex = flattenedItems.findIndex(item => item.id === over?.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newItems = arrayMove(flattenedItems, oldIndex, newIndex);
+        
+        // Update sort_order for all items
+        const orderUpdates = newItems.map((item, index) => ({
+          id: item.id,
+          sort_order: index + 1
+        }));
+
+        updateOrderMutation.mutate(orderUpdates);
+      }
+    }
+  };
+
   // Flatten navigation items for table display
   const flattenedItems = useMemo(() => {
-    const result: (NavigationItem & { level: number })[] = [];
+    const result: NavigationItemDisplay[] = [];
     
     const processItem = (item: NavigationItem, level: number) => {
-        result.push({ ...item, level });
+        // Convert to display format with English title
+        const displayItem: NavigationItemDisplay = {
+          ...item,
+          title: item.title.en || item.title.ar || item.key, // Use English title as primary
+          level
+        };
+        result.push(displayItem);
       
       // Process children if they exist
       if (item.children && item.children.length > 0) {
@@ -95,154 +333,6 @@ const NavigationManagementPage: React.FC = () => {
     return result;
   }, [navigationItems]);
 
-  // Table columns
-  const columns: ColumnDef<NavigationItem & { level: number }>[] = useMemo(() => [
-    {
-      accessorKey: "title",
-      header: t('navigationItem'),
-      cell: ({ row }) => {
-        const item = row.original;
-        const title = item.title[i18n.language as keyof typeof item.title] || item.title.en;
-        
-        return (
-          <div className="flex items-center justify-center gap-2">
-            {/* Indentation for sub-items */}
-            <div style={{ marginLeft: `${item.level * 20}px` }} className="flex items-center gap-2">
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-              
-              {/* Icon placeholder */}
-              {item.icon && (
-                <div className="w-5 h-5 bg-muted rounded flex items-center justify-center">
-                  <span className="text-xs">{item.icon.slice(0, 2)}</span>
-                </div>
-              )}
-              
-              <div>
-                <div className="font-medium">{title}</div>
-                <div className="text-xs text-muted-foreground">
-                  Key: {item.key}
-                  {item.route && ` • Route: ${item.route}`}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
-    },
-    {
-      accessorKey: "permissions",
-      header: t('permissions'),
-      cell: ({ row }) => (
-        <div className="flex flex-wrap justify-center gap-1">
-          {row.original.permissions?.map((permission, index) => (
-            <Badge key={index} variant="outline" className="text-xs">
-              {permission}
-            </Badge>
-          )) || <span className="text-muted-foreground text-sm">{t('noPermissions')}</span>}
-        </div>
-      )
-    },
-    {
-      accessorKey: "sort_order",
-      header: t('order'),
-      cell: ({ row }) => (
-        <Badge variant="secondary">
-          {row.original.sort_order}
-        </Badge>
-      )
-    },
-    {
-      accessorKey: "is_active",
-      header: t('status'),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-2">
-          <Switch
-            checked={row.original.is_active}
-            onCheckedChange={(checked) => 
-              toggleActiveMutation.mutate({ 
-                id: row.original.id, 
-                is_active: checked 
-              })
-            }
-            disabled={toggleActiveMutation.isPending}
-          />
-          <span className="text-sm">
-            {row.original.is_active ? t('active') : t('inactive')}
-          </span>
-        </div>
-      )
-    },
-    {
-      accessorKey: "is_default",
-      header: t('type'),
-      cell: ({ row }) => (
-        <Badge variant={row.original.is_default ? "default" : "secondary"}>
-          {row.original.is_default ? t('system') : t('custom')}
-        </Badge>
-      )
-    },
-    {
-      id: "actions",
-      header: t('actions'),
-      cell: ({ row }) => (
-        <div className="text-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">{t("openMenu")}</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
-              
-              {can('navigation:update') && (
-                <DropdownMenuItem>
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {t("edit")}
-                </DropdownMenuItem>
-              )}
-              
-              <DropdownMenuItem
-                onClick={() => 
-                  toggleActiveMutation.mutate({ 
-                    id: row.original.id, 
-                    is_active: !row.original.is_active 
-                  })
-                }
-              >
-                {row.original.is_active ? (
-                  <>
-                    <EyeOff className="mr-2 h-4 w-4" />
-                    {t("disable")}
-                  </>
-                ) : (
-                  <>
-                    <Eye className="mr-2 h-4 w-4" />
-                    {t("enable")}
-                  </>
-                )}
-              </DropdownMenuItem>
-              
-              {can('navigation:delete') && !row.original.is_default && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setItemToDelete(row.original)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("delete")}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
-  ], [t, i18n.language, can, toggleActiveMutation]);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -253,18 +343,10 @@ const NavigationManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <PageHeader
         title={t('navigationManagement')}
         description={t('navigationManagementDescription')}
-        actionButton={can('navigation:create') ? {
-          label: t('addNavigationItem'),
-          icon: PlusCircle,
-          onClick: () => {
-            // TODO: Open navigation item form modal
-            toast.info(t('featureComingSoon'));
-          }
-        } : undefined}
         showRefreshButton
         onRefresh={refetch}
         isRefreshing={isFetching}
@@ -279,14 +361,50 @@ const NavigationManagementPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      <DataTable
-        columns={columns}
-        data={flattenedItems}
-        isLoading={isFetching}
-      />
+             <div className="p-6 bg-white rounded-lg border">
+         <DndContext
+           sensors={sensors}
+           collisionDetection={closestCenter}
+           onDragEnd={handleDragEnd}
+         >
+           <SortableContext
+             items={flattenedItems.map(item => item.id)}
+             strategy={verticalListSortingStrategy}
+           >
+             <Table>
+                               <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-center">{t('select')}</TableHead>
+                    <TableHead className="text-center">{t('navigationItem')}</TableHead>
+                    <TableHead className="text-center">{t('permissionsLabel')}</TableHead>
+                    <TableHead className="text-center">{t('order')}</TableHead>
+                    <TableHead className="text-center">{t('status')}</TableHead>
+                    <TableHead className="text-center">{t('type')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+               <TableBody>
+                 {flattenedItems.map((item) => (
+                   <SortableTableRow
+                     key={item.id}
+                     item={item}
+                     onToggleActive={(id, is_active) => toggleActiveMutation.mutate({ id, is_active })}
+                     onDelete={(item) => setItemToDelete(item as NavigationItem)}
+                     can={can}
+                     t={t}
+                     toggleActiveMutation={toggleActiveMutation}
+                   />
+                 ))}
+               </TableBody>
+             </Table>
+           </SortableContext>
+         </DndContext>
+       </div>
 
       {/* Delete Confirmation Dialog */}
-      {can('navigation:delete') && (
+      <PermissionWrapper 
+        permission="navigation:delete" 
+        tooltipText={t('noPermissionToDeleteNavigation')}
+      >
         <DeleteConfirmDialog
           isOpen={!!itemToDelete}
           onOpenChange={(open) => !open && setItemToDelete(null)}
@@ -295,11 +413,11 @@ const NavigationManagementPage: React.FC = () => {
               deleteMutation.mutate(itemToDelete.id);
             }
           }}
-          itemName={itemToDelete?.title[i18n.language as keyof typeof itemToDelete.title] || itemToDelete?.title.en}
+          itemName={itemToDelete?.title.en || itemToDelete?.title.ar || itemToDelete?.key}
           itemType="navigationItem"
           isPending={deleteMutation.isPending}
         />
-      )}
+      </PermissionWrapper>
     </div>
   );
 };

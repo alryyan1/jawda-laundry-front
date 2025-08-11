@@ -43,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   currentPage?: number
   onPageChange?: (page: number) => void
   isLoading?: boolean
+  enableRowSelection?: boolean // New prop to control row selection
 }
 
 export function DataTable<TData, TValue>({
@@ -54,6 +55,7 @@ export function DataTable<TData, TValue>({
   currentPage,
   onPageChange,
   isLoading,
+  enableRowSelection = true, // Default to true for backward compatibility
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation('common');
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -71,15 +73,16 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: enableRowSelection ? setRowSelection : undefined,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
+      rowSelection: enableRowSelection ? rowSelection : {},
     },
     pageCount: pageCount,
     manualPagination: !!pageCount,
+    enableRowSelection: enableRowSelection,
   })
 
   return (
@@ -181,9 +184,11 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {t('selectedRows', { count: table.getFilteredSelectedRowModel().rows.length, total: table.getFilteredRowModel().rows.length})}
-        </div>
+        {enableRowSelection && (
+          <div className="flex-1 text-sm text-muted-foreground">
+            {t('selectedRows', { count: table.getFilteredSelectedRowModel().rows.length, total: table.getFilteredRowModel().rows.length})}
+          </div>
+        )}
         {pageCount && onPageChange && (
           <div className="flex items-center space-x-2">
             <Button

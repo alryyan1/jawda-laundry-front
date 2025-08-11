@@ -16,7 +16,7 @@ import {
   type ProductType,
   type OrderStatistics,
 } from "@/types";
-import { getOrders, getOrderStatistics, downloadOrdersListPdf } from "@/api/orderService";
+import { getOrders, getOrderStatistics, downloadOrdersListPdf, downloadOrdersListExcel } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -52,6 +52,7 @@ import {
   Filter,
   Calculator,
   FileText,
+  Download,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
@@ -78,6 +79,7 @@ const OrdersListPage: React.FC = () => {
     productTypeId?: string;
     dateFrom?: string;
     dateTo?: string;
+    categorySequenceSearch?: string;
   }>({
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: format(new Date(), "yyyy-MM-dd"),
@@ -104,6 +106,7 @@ const OrdersListPage: React.FC = () => {
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
+      filters.categorySequenceSearch,
     ],
     [
       currentPage,
@@ -115,6 +118,7 @@ const OrdersListPage: React.FC = () => {
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
+      filters.categorySequenceSearch,
     ]
   );
 
@@ -259,6 +263,7 @@ const OrdersListPage: React.FC = () => {
         productTypeId: filters.productTypeId,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
+        categorySequenceSearch: filters.categorySequenceSearch,
       }),
     placeholderData: keepPreviousData,
   });
@@ -283,6 +288,7 @@ const OrdersListPage: React.FC = () => {
     filters.productTypeId,
     filters.dateFrom,
     filters.dateTo,
+    filters.categorySequenceSearch,
   ]);
 
   const orders = paginatedData?.data || [];
@@ -294,31 +300,9 @@ const OrdersListPage: React.FC = () => {
 
   return (
     <div className="space-y-2 sm:space-y-4 p-0 sm:p-2 max-w-full overflow-hidden">
-      <PageHeader
-        title={t("title")}
-        description={t("orderListDescription")}
-        actionButton={
-          can("order:create")
-            ? { label: t("newOrder"), icon: PlusCircle, to: "/pos" }
-            : undefined
-        }
-        showRefreshButton
-        onRefresh={refetch}
-        isRefreshing={isFetching && !isLoading}
-      >
-        {/* Calculator Button */}
-        {statistics && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCalculatorOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
-          </Button>
-        )}
-        
+  
+  
+   <div className="flex items-center gap-2">
         {/* PDF Export Button */}
         <Button
           variant="outline"
@@ -330,73 +314,36 @@ const OrdersListPage: React.FC = () => {
           {t("exportPdf", { defaultValue: "Export PDF" })}
         </Button>
         
-        {/* Mobile Date Range Picker */}
-        {/* Mobile Date Range Picker */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full">
-          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-none">
-              <Input
-                type="date"
-                value={filters.dateFrom || ""}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
-                }
-                className="w-full sm:w-40 text-xs sm:text-sm"
-              />
-            </div>
-            <div className="flex-1 sm:flex-none">
-              <Input
-                type="date"
-                value={filters.dateTo || ""}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-                }
-                className="w-full sm:w-40 text-xs sm:text-sm"
-              />
-            </div>
-          </div>
-        </div>
-      </PageHeader>
+        {/* Excel Export Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => downloadOrdersListExcel(filters)}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          {t("exportExcel", { defaultValue: "Export Excel (Professional)" })}
+        </Button>
+      </div>        
+      
+    
 
       
 
-      {/* Mobile Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
-          />
-        </div>
-        <div className="relative w-20 sm:w-24">
-          <Input
-            placeholder="ID"
-            value={filters.orderId || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, orderId: e.target.value }))
-            }
-            className="text-xs sm:text-sm h-8 sm:h-10 text-center"
-          />
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 text-xs sm:text-sm"
-        >
-          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">{t("filters")}</span>
-        </Button>
-      </div>
+     
 
       {/* Mobile Filters Panel */}
       {showFilters && (
         <Card className="sm:hidden">
           <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <Input
+              placeholder={t("searchCategorySequence", { defaultValue: "Search Category Sequence..." })}
+              value={filters.categorySequenceSearch || ""}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
+              }
+              className="h-8 sm:h-10 text-xs sm:text-sm"
+            />
             <Select
               value={filters.status || ""}
               onValueChange={(value) =>
@@ -475,10 +422,10 @@ const OrdersListPage: React.FC = () => {
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
+            placeholder={t("searchCategorySequence", { defaultValue: "Search Category Sequence..." })}
+            value={filters.categorySequenceSearch || ""}
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
+              setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
             }
           />
           <Input
@@ -525,8 +472,8 @@ const OrdersListPage: React.FC = () => {
               <div ref={params.InputProps.ref}>
                 <Input
                   {...params.inputProps}
-                  placeholder={t("filterByCustomer")}
-                />
+                placeholder={t("filterByCustomer")}
+              />
               </div>
             )}
           />
@@ -545,8 +492,8 @@ const OrdersListPage: React.FC = () => {
               <div ref={params.InputProps.ref}>
                 <Input
                   {...params.inputProps}
-                  placeholder={t("filterByProduct")}
-                />
+                placeholder={t("filterByProduct")}
+              />
               </div>
             )}
           />
@@ -604,6 +551,7 @@ const OrdersListPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[60px] text-center">ID</TableHead>
+                <TableHead className="text-center">{t("categorySequence", { defaultValue: "Category Sequence" })}</TableHead>
                 <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("pickupDate", { defaultValue: "Pickup Date" })}</TableHead>
@@ -625,7 +573,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
               {isLoading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -647,7 +595,7 @@ const OrdersListPage: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     {t("noResults")}
                   </TableCell>
                 </TableRow>
@@ -665,10 +613,10 @@ const OrdersListPage: React.FC = () => {
         setCurrentPage={setCurrentPage}
         t={t}
         showingText={t("showingItems", {
-          first: paginatedData?.meta.from || 0,
-          last: paginatedData?.meta.to || 0,
-          total: totalItems,
-        })}
+              first: paginatedData?.meta.from || 0,
+              last: paginatedData?.meta.to || 0,
+              total: totalItems,
+            })}
       />
       
       {selectedOrderForPayments && (

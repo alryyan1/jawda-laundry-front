@@ -735,7 +735,7 @@
     "resetPassword": "Reset Password",
     "sendWelcomeEmail": "Send Welcome Email",
     "roleName": "Role Name",
-    "permissions": "Permissions",
+    "permissionsLabel": "Permissions",
     "manageRoles": "Manage Roles",
     "newRole": "New Role",
     "searchRolesPlaceholder": "Search by role name...",

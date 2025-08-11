@@ -78,7 +78,7 @@ const RolesListPage: React.FC = () => {
         },
         {
             accessorKey: "permissions",
-            header: t('permissions', { ns: 'admin' }),
+            header: t('permissionsLabel', { ns: 'admin' }),
             cell: ({ row }) => (
                 <div className="flex flex-wrap gap-1 max-w-md">
                     {row.original.permissions?.slice(0, 5).map((perm: Permission) => ( // Show first 5 permissions

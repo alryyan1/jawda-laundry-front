@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 // MUI imports for order ID display
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, Typography } from '@mui/material';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
 import { ORDER_STATUSES } from "@/lib/constants";
@@ -13,12 +13,10 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
 import type { Order, OrderStatus } from '@/types';
-import type { DiningTable } from '@/types/dining.types';
 import { CustomerSelection } from './CustomerSelection';
 import { OrderStatusBadgeComponent } from './OrderStatusBadge';
 import { updateOrderStatus, sendOrderWhatsAppInvoice } from "@/api/orderService";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -39,13 +37,6 @@ interface POSHeaderProps {
   onCustomerSelected: (customerId: string | null) => void;
   onNewCustomerClick: () => void;
   selectedOrder: Order | null;
-  orderType: 'in_house' | 'take_away' | 'delivery';
-  onOrderTypeChange: (orderType: 'in_house' | 'take_away' | 'delivery') => void;
-  selectedTableId: string;
-  onTableIdChange: (tableId: string) => void;
-  diningTables: DiningTable[];
-  todayOrders: Order[];
-  isProcessing: boolean;
   onCalculatorClick: () => void;
   onPdfClick: () => void;
   onPaymentClick: () => void;
@@ -61,13 +52,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   onCustomerSelected,
   onNewCustomerClick,
   selectedOrder,
-  orderType,
-  onOrderTypeChange,
-  selectedTableId,
-  onTableIdChange,
-  diningTables,
-  todayOrders,
-  isProcessing,
   onCalculatorClick,
   onPdfClick,
   onPaymentClick,
@@ -211,76 +195,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             selectedOrder={selectedOrder}
             onOrderUpdate={onOrderUpdate}
           />}
-          
-          {/* Order Type Selection - Only show when not viewing an existing order */}
-          {!selectedOrder && (
-            <div className="flex items-center gap-1">
-              <Label className="text-xs text-white whitespace-nowrap">
-                {t("orderType", { ns: "orders", defaultValue: "Order Type" })}:
-              </Label>
-              <Select
-                value={orderType}
-                onValueChange={(newOrderType: 'in_house' | 'take_away' | 'delivery') => {
-                  onOrderTypeChange(newOrderType);
-                  onTableIdChange(' '); // Reset table selection when order type changes
-                }}
-                disabled={isProcessing}
-              >
-                <SelectTrigger 
-                  className="w-28 h-7"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="in_house">{t('inHouse', { ns: 'orders', defaultValue: 'In House' })}</SelectItem>
-                  <SelectItem value="take_away">{t('takeAway', { ns: 'orders', defaultValue: 'Take Away' })}</SelectItem>
-                  <SelectItem value="delivery">{t('delivery', { ns: 'orders', defaultValue: 'Delivery' })}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Table Selection - Only show for in-house orders when not viewing an existing order */}
-          {!selectedOrder && orderType === 'in_house' && (
-            <div className="flex items-center gap-1">
-              <Label className="text-xs text-white whitespace-nowrap">
-                {t("section", { ns: "dining", defaultValue: "Section" })}:
-              </Label>
-              <Select
-                value={selectedTableId || ''}
-                onValueChange={(tableId) => onTableIdChange(tableId || ' ')}
-                disabled={isProcessing}
-              >
-                <SelectTrigger 
-                  className="w-28 h-7"
-                >
-                  <SelectValue placeholder={t("selectSection", { ns: "dining", defaultValue: "Select Section" })} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value=" ">{t("noSection", { ns: "dining", defaultValue: "No Section" })}</SelectItem>
-                  {diningTables
-                    .filter(table => {
-                      // Only show tables that are available or reserved
-                      const isStatusAvailable = table.status === 'available' || table.status === 'reserved';
-                      
-                      // Check if this table has any incomplete orders
-                      const hasIncompleteOrders = todayOrders.some((order: Order) => 
-                        order.table_id === table.id && 
-                        order.status !== 'completed' && 
-                        order.status !== 'cancelled'
-                      );
-                      
-                      return isStatusAvailable && !hasIncompleteOrders;
-                    })
-                    .map((table) => (
-                      <SelectItem key={table.id} value={table.id.toString()}>
-                        {table.name} ({table.capacity} {t("seats", { ns: "dining", defaultValue: "seats" })})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
         
         {/* Calculator Button - Always visible */}
@@ -309,30 +223,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
               className="text-xs px-1.5 py-0.5"
             />
             
-            {/* Table Display - Show when order has a dining table */}
-            {(selectedOrder.dining_table || selectedOrder.dining_table_id) && (
-              <div className="flex items-center gap-1">
-                <Label className="text-xs text-white whitespace-nowrap">
-                  {t("section", { ns: "dining", defaultValue: "Section" })}:
-                </Label>
-                <Badge 
-                  variant="outline" 
-                  className="text-xs px-1.5 py-0.5"
-                  style={{
-                    backgroundColor: getSecondaryColor(50),
-                    borderColor: getSecondaryColor(300),
-                    color: getSecondaryColor(700)
-                  }}
-                >
-                  {selectedOrder.dining_table ? (
-                    `${selectedOrder.dining_table.name} (${selectedOrder.dining_table.capacity} ${t("seats", { ns: "dining", defaultValue: "seats" })})`
-                  ) : (
-                    `Section ${selectedOrder.dining_table_id}`
-                  )}
-                </Badge>
-              </div>
-            )}
-            
             {/* Status Change Select */}
             {can("order:update-status") && (
               <div className="flex items-center gap-1">
@@ -357,7 +247,7 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                   <SelectContent>
                     {ORDER_STATUSES.map((status) => (
                       <SelectItem key={status} value={status}>
-                        {t(`status.${status}`, { ns: "services" })}
+                        {t(`status_${status}`, { ns: "orders" })}
                       </SelectItem>
                     ))}
                   </SelectContent>
