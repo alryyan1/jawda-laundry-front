@@ -231,7 +231,12 @@ export const getTodayOrders = async (date?: string): Promise<Order[]> => {
     
     // Handle different response structures
     if (Array.isArray(data.data)) {
+        // Normal case: data.data is an array
         return data.data;
+    } else if (data.data && typeof data.data === 'object' && Array.isArray(data.data.data)) {
+        // Case where the response is wrapped in another object: {data: {data: [...], links: {...}, meta: {...}}}
+        console.log('getTodayOrders - found nested data structure, extracting data.data.data');
+        return data.data.data;
     } else if (data.data && typeof data.data === 'object') {
         console.error('getTodayOrders - unexpected response structure:', data.data);
         return [];
