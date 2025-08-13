@@ -1,8 +1,19 @@
-# Environment Variables Template for Disabled Real-time Updates
+# Environment Variables Template for Jawda Laundry Application
 # Copy this to .env file in your frontend root directory
 
 # API Configuration
 VITE_API_BASE_URL=https://shai-khadri.com/api
+
+# API URL Components (auto-parsed from VITE_API_BASE_URL)
+# These are automatically extracted from VITE_API_BASE_URL but can be overridden
+VITE_API_SCHEMA=https
+VITE_API_HOST=shai-khadri.com
+VITE_API_PORT=443
+
+# Project Configuration
+VITE_APP_NAME="Jawda Laundry"
+VITE_APP_VERSION=1.0.0
+VITE_PROJECT_FOLDER=/laundry
 
 # Real-time Updates - DISABLED
 # Leave these empty to disable real-time updates
@@ -12,12 +23,33 @@ VITE_PUSHER_HOST=
 VITE_PUSHER_PORT=
 VITE_PUSHER_SCHEME=
 
-# Other Configuration
-VITE_APP_NAME="Jawda Laundry"
-VITE_APP_VERSION=1.0.0
+# Development Configuration
+VITE_DEBUG_MODE=false
+VITE_LOG_LEVEL=info
 
 # Instructions:
 # 1. Create a file named ".env" in your frontend root directory
 # 2. Copy the contents above into the .env file
-# 3. Upload both the .env file and the updated source files to Hostinger
-# 4. Your POS will load quickly without real-time updates 
+# 3. Modify the values according to your environment:
+#    - VITE_API_BASE_URL: Your API server URL
+#    - VITE_API_SCHEMA: Protocol (http or https)
+#    - VITE_API_HOST: Your domain or IP address
+#    - VITE_API_PORT: Port number (443 for https, 80 for http, or custom)
+#    - VITE_PROJECT_FOLDER: Subfolder path if not in root
+# 4. Upload both the .env file and the updated source files to your hosting provider
+# 5. Your application will load with the configured settings
+
+# Example configurations:
+# Local Development:
+# VITE_API_BASE_URL=http://localhost:8000/api
+# VITE_API_SCHEMA=http
+# VITE_API_HOST=localhost
+# VITE_API_PORT=8000
+# VITE_PROJECT_FOLDER=
+
+# Production:
+# VITE_API_BASE_URL=https://yourdomain.com/api
+# VITE_API_SCHEMA=https
+# VITE_API_HOST=yourdomain.com
+# VITE_API_PORT=443
+# VITE_PROJECT_FOLDER=/laundry 
