@@ -13,11 +13,12 @@ type OrdersTableRowProps = {
   order: Order;
   selectedOrderId?: number | null;
   onNavigate: (path: string) => void;
-  onOpenItems: (order: Order) => void;
   onOpenPayments: (order: Order) => void;
+  onRecordPayment: (order: Order) => void;
+  onMarkDelivered: (order: Order) => void;
   onEdit: (order: Order) => void;
   can: (permission: string) => boolean;
-  t: (key: string, options?: any) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
   currencySymbol: string;
   language: string;
 };
@@ -26,8 +27,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   order,
   selectedOrderId,
   onNavigate,
-  onOpenItems,
   onOpenPayments,
+  onRecordPayment,
+  onMarkDelivered,
   onEdit,
   can,
   t,
@@ -35,8 +37,6 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   language,
 }) => {
   const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
-  const totalQty = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
-  const pickedQty = (order.items || []).reduce((sum, i) => sum + (i.picked_up_quantity || 0), 0);
 
   return (
     <TableRow
@@ -58,7 +58,30 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
       <TableCell className="text-center">
         <OrderStatusBadge status={order.status} />
       </TableCell>
-      <TableCell className="text-center font-semibold">{totalQty} / {pickedQty}</TableCell>
+      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col gap-1">
+          {order.status !== 'delivered' && can("order:update") && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onMarkDelivered(order)}
+              className="h-7 text-xs"
+            >
+              {t("markDelivered", { defaultValue: "Mark Delivered" })}
+            </Button>
+          )}
+          {can("order:record-payment") && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRecordPayment(order)}
+              className="h-7 text-xs"
+            >
+              {t("recordPayment", { defaultValue: "Record Payment" })}
+            </Button>
+          )}
+        </div>
+      </TableCell>
       <TableCell className="text-center font-semibold">{formatCurrency(order.total_amount, currencySymbol, language, 3)}</TableCell>
       <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
         <div className="flex items-center justify-center gap-1">

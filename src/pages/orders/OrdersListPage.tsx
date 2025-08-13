@@ -15,7 +15,7 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, updateOrderStatus } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -49,6 +49,7 @@ import {
   FileText,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
+import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
 import OrdersTableRow from "./components/OrdersTableRow";
@@ -81,6 +82,7 @@ const OrdersListPage: React.FC = () => {
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
   const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -204,6 +206,28 @@ const OrdersListPage: React.FC = () => {
       // Refresh the orders list to get the latest data from server
       queryClient.invalidateQueries({ queryKey });
       setOrderItemsDialogOrder(null);
+    }
+  };
+
+  // Handler to mark order as delivered
+  const handleMarkDelivered = async (order: Order) => {
+    try {
+      await updateOrderStatus(order.id, 'delivered');
+      // Update the cache
+      queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((o) => {
+            if (o.id === order.id) {
+              return { ...o, status: 'delivered' as OrderStatus };
+            }
+            return o;
+          }),
+        };
+      });
+    } catch (error) {
+      console.error('Error updating order status:', error);
     }
   };
 
@@ -477,7 +501,7 @@ const OrdersListPage: React.FC = () => {
                 <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">
-                  {t("totalItems", { defaultValue: "Total Items (Total/Picked Up)" })}
+                  {t("actions", { defaultValue: "Actions" })}
                 </TableHead>
                 <TableHead className="text-center">
                   {t("totalAmount", { ns: "orders" })}
@@ -493,7 +517,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
               {isLoading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -506,6 +530,8 @@ const OrdersListPage: React.FC = () => {
                     onNavigate={(path) => navigate(path)}
                     onOpenItems={(o) => setOrderItemsDialogOrder(o)}
                     onOpenPayments={(o) => setSelectedOrderForPayments(o)}
+                    onRecordPayment={(o) => setSelectedOrderForPayment(o)}
+                    onMarkDelivered={handleMarkDelivered}
                     onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
                     can={can}
                     t={t}
@@ -515,7 +541,7 @@ const OrdersListPage: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center">
+                  <TableCell colSpan={9} className="h-32 text-center">
                     {t("noResults")}
                   </TableCell>
                 </TableRow>
@@ -554,6 +580,29 @@ const OrdersListPage: React.FC = () => {
           onOrderItemStatusChange={handleOrderItemStatusChange}
           onOrderItemPickedUpQuantityChange={handleOrderItemPickedUpQuantityChange}
           onOrderStatusChange={handleOrderStatusChange}
+        />
+      )}
+
+      {selectedOrderForPayment && (
+        <RecordPaymentModal
+          order={selectedOrderForPayment}
+          isOpen={!!selectedOrderForPayment}
+          onOpenChange={(open) => !open && setSelectedOrderForPayment(null)}
+          onOrderUpdate={(updatedOrder) => {
+            // Update the order in the cache
+            queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
+              if (!oldData) return oldData;
+              return {
+                ...oldData,
+                data: oldData.data.map((order) => {
+                  if (order.id === updatedOrder.id) {
+                    return updatedOrder;
+                  }
+                  return order;
+                }),
+              };
+            });
+          }}
         />
       )}
 
