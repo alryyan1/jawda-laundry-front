@@ -2,26 +2,14 @@
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 
-// Fallback API URL for local development
-const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl) {
-    return envUrl;
-  }
-  // Fallback for local development
-  return 'http://localhost/laundry/jawda-laundry-backend/public/api';
-};
-
 const apiClient = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
   withCredentials: true,
 });
-
-console.log('API Client initialized with base URL:', getApiBaseUrl());
 
 apiClient.interceptors.response.use(
   response => response,

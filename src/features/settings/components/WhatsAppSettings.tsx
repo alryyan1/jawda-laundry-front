@@ -99,15 +99,15 @@ export const WhatsAppSettings: React.FC = () => {
             <div className="space-y-4 pt-4 border-t">
               <FormField
                 control={control}
-                name="whatsapp_instance_id"
+                name="whatsapp_api_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("instanceId")}</FormLabel>
+                    <FormLabel>{t("apiUrl")}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="68968AFE5FF3D"
+                        placeholder="https://waapi.app/api/v1/instances/YOUR_INSTANCE_ID"
                       />
                     </FormControl>
                     <FormMessage />

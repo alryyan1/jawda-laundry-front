@@ -17,7 +17,7 @@ export interface AppSettings {
     purchase_order_prefix: string;
     // WhatsApp settings
     whatsapp_enabled: boolean;
-    whatsapp_instance_id: string;
+    whatsapp_api_url: string;
     whatsapp_api_token: string;
     whatsapp_notification_number: string;
     whatsapp_country_code: string;

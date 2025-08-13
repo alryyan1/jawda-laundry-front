@@ -305,10 +305,10 @@ const MainLayout: React.FC = () => {
               {user?.name || t("user", { ns: "common", defaultValue: "User" })}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.username ||
-                t("userUsernamePlaceholder", {
+              {user?.email ||
+                t("userEmailPlaceholder", {
                   ns: "auth",
-                  defaultValue: "username",
+                  defaultValue: "user@example.com",
                 })}
             </p>
           </div>
@@ -593,7 +593,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex flex-1 flex-col gap-4 md:gap-6 p-4 md:p-6 bg-muted/20 dark:bg-background overflow-y-auto">
+        <main className="flex flex-1 flex-col gap-4 md:gap-6   bg-muted/20 dark:bg-background overflow-y-auto">
           <Outlet />
         </main>
       </div>

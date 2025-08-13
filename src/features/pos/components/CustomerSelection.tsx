@@ -13,8 +13,6 @@ import { UserPlus, AlertCircle } from "lucide-react";
 import type { Customer, PaginatedResponse, Order } from "@/types";
 import { getCustomers } from "@/api/customerService";
 import { updateOrderDetails } from "@/api/orderService";
-import { getTodayDate } from "@/lib/dateUtils";
-import { useDate } from "@/context/DateContext";
 
 interface CustomerSelectionProps {
   selectedCustomerId: string | null;
@@ -39,7 +37,6 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showAnimation, setShowAnimation] = useState(false);
-  const { selectedDate } = useDate();
 
   const { data: customersResponse, isLoading: isLoadingCustomers } = useQuery<
     PaginatedResponse<Customer>,
@@ -64,7 +61,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
       }));
       onOrderUpdate?.(updatedOrder);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders", selectedDate] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
     },
     onError: (error) => {
       console.error('Failed to update order customer:', error);

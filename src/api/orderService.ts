@@ -205,33 +205,23 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
 };
 
 /**
- * Fetches orders for a specific date using the dedicated endpoint.
+ * Fetches orders for a specific date.
  */
 export const getTodayOrders = async (date?: string): Promise<Order[]> => {
-    const params: any = {};
+    const params: any = { 
+        per_page: 100 // Get more orders
+    };
     
     if (date) {
         // Use specific date
-        params.date = date;
-        console.log('getTodayOrders - using date:', date);
+        params.created_date = date;
     } else {
-        console.log('getTodayOrders - using today parameter');
+        // Use today's date
+        params.today = true;
     }
     
-    console.log('getTodayOrders - params:', params);
-    const { data } = await apiClient.get<Order[]>('/orders/today', { params });
-    console.log('getTodayOrders - response data length:', data.length || 0);
-    console.log('getTodayOrders - full response:', data);
-    console.log('getTodayOrders - data type:', typeof data);
-    console.log('getTodayOrders - data isArray:', Array.isArray(data));
-    
-    // The new endpoint returns a direct array, no pagination
-    if (Array.isArray(data)) {
-        return data;
-    } else {
-        console.error('getTodayOrders - unexpected response structure:', data);
-        return [];
-    }
+    const { data } = await apiClient.get<{data: Order[]}>('/orders', { params });
+    return data.data;
 };
 
 /**
@@ -444,8 +434,24 @@ export const updateOrderItemQuantity = async (
  * Download order invoice PDF
  */
 export const downloadOrderInvoice = async (orderId: string | number): Promise<void> => {
-    // Open the PDF in a new window/tab
-    window.open(`${apiClient.defaults.baseURL}/orders/${orderId}/invoice/download`, '_blank');
+    try {
+        const response = await apiClient.get(`/orders/${orderId}/invoice/download`, {
+            responseType: 'blob',
+        });
+        
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `invoice-${orderId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        throw error;
+    }
 };
 
 /**
@@ -461,17 +467,17 @@ export const downloadOrdersListExcel = async (filters: {
     dateTo?: string;
     category_sequence_search?: string;
 }): Promise<void> => {
-    const params = new URLSearchParams();
-    if (filters.status) params.append('status', filters.status);
-    if (filters.search) params.append('search', filters.search);
-    if (filters.orderId) params.append('order_id', filters.orderId);
-    if (filters.customerId) params.append('customer_id', filters.customerId);
-    if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
-    if (filters.dateFrom) params.append('date_from', filters.dateFrom);
-    if (filters.dateTo) params.append('date_to', filters.dateTo);
-    if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
-    
     try {
+        const params = new URLSearchParams();
+        if (filters.status) params.append('status', filters.status);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.orderId) params.append('order_id', filters.orderId);
+        if (filters.customerId) params.append('customer_id', filters.customerId);
+        if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+        if (filters.dateFrom) params.append('date_from', filters.dateFrom);
+        if (filters.dateTo) params.append('date_to', filters.dateTo);
+        if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
+        
         const response = await apiClient.get(`/reports/orders/export-csv?${params.toString()}`, {
             responseType: 'blob',
         });

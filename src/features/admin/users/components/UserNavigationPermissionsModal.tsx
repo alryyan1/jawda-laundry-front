@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, Navigation } from 'lucide-react';
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
@@ -124,19 +126,20 @@ export const UserNavigationPermissionsModal: React.FC<UserNavigationPermissionsM
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="pb-4">
-          <h2 className="text-lg font-semibold">
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Navigation className="h-5 w-5" />
             {t('manageNavigationPermissions')} - {user.name}
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </DialogTitle>
+          <DialogDescription>
             {t('manageNavigationPermissionsDescription')}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="space-y-4">
           {/* Action Buttons */}
-          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="outline">
                 {t('totalNavigationItems')}: {permissions.length}
@@ -158,118 +161,103 @@ export const UserNavigationPermissionsModal: React.FC<UserNavigationPermissionsM
             </div>
           </div>
 
-          {/* Permissions Table - Scrollable Area */}
-          <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
+          {/* Permissions Table */}
+          <ScrollArea className="h-[400px] border rounded-md">
             {isLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center h-32">
                 <Loader2 className="h-6 w-6 animate-spin" />
                 <span className="ml-2">{t('loading')}</span>
               </div>
             ) : (
-              <ScrollArea className="h-[calc(100vh-200px)] w-full">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-1/3">{t('navigationItem')}</TableHead>
-                      <TableHead className="w-1/6">{t('roleBasedAccess')}</TableHead>
-                      <TableHead className="w-1/4">{t('explicitPermission')}</TableHead>
-                      <TableHead className="w-1/6">{t('finalAccess')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {permissions.map((permission) => {
-                      const finalAccess = permission.is_granted !== null 
-                        ? permission.is_granted 
-                        : permission.can_access_by_role;
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('navigationItem')}</TableHead>
+                    <TableHead>{t('roleBasedAccess')}</TableHead>
+                    <TableHead>{t('explicitPermission')}</TableHead>
+                    <TableHead>{t('finalAccess')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {permissions.map((permission) => {
+                    const finalAccess = permission.is_granted !== null 
+                      ? permission.is_granted 
+                      : permission.can_access_by_role;
 
-                      return (
-                        <TableRow key={permission.navigation_item_id}>
-                          <TableCell className="w-1/3">
-                            <div className="flex items-center gap-2">
-                              {permission.navigation_item.icon && (
-                                <span className="text-muted-foreground">
-                                  {/* Icon placeholder */}
-                                </span>
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <div className="font-medium truncate">
-                                  {permission.navigation_item.title[i18n.language as keyof typeof permission.navigation_item.title] || permission.navigation_item.title.en}
-                                </div>
-                                {permission.navigation_item.route && (
-                                  <div className="text-xs text-muted-foreground truncate">
-                                    {permission.navigation_item.route}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell className="w-1/6">
-                            <div className="flex items-center gap-2">
-                              {permission.can_access_by_role ? (
-                                <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                              ) : (
-                                <X className="h-4 w-4 text-red-600 flex-shrink-0" />
-                              )}
-                              <span className="text-sm font-medium">
-                                {permission.can_access_by_role ? t('allowed') : t('denied')}
+                    return (
+                      <TableRow key={permission.navigation_item_id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {permission.navigation_item.icon && (
+                              <span className="text-muted-foreground">
+                                {/* Icon placeholder */}
                               </span>
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell className="w-1/4">
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                checked={permission.is_granted === true}
-                                onCheckedChange={(checked) => 
-                                  handlePermissionToggle(permission.navigation_item_id, checked === true)
-                                }
-                                disabled={updatePermissionsMutation.isPending}
-                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary flex-shrink-0"
-                              />
-                              <div className="flex flex-col min-w-0">
-                                {permission.is_granted === null ? (
-                                  <span className="text-xs text-muted-foreground">
-                                    {t('useRoleBased')}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-medium">
-                                    {permission.is_granted ? t('granted') : t('denied')}
-                                  </span>
-                                )}
+                            )}
+                            <div>
+                              <div className="font-medium">
+                                {permission.navigation_item.title[i18n.language as keyof typeof permission.navigation_item.title] || permission.navigation_item.title.en}
                               </div>
-                            </div>
-                          </TableCell>
-                          
-                          <TableCell className="w-1/6">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={finalAccess ? 'default' : 'secondary'} className="flex-shrink-0">
-                                {finalAccess ? t('allowed') : t('denied')}
-                              </Badge>
-                              {permission.is_granted !== null && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({t('explicitIndicator')})
-                                </span>
+                              {permission.navigation_item.route && (
+                                <div className="text-xs text-muted-foreground">
+                                  {permission.navigation_item.route}
+                                </div>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {permission.can_access_by_role ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-600" />
+                            )}
+                            <span className="text-sm">
+                              {permission.can_access_by_role ? t('allowed') : t('denied')}
+                            </span>
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={permission.is_granted === true}
+                              onCheckedChange={(checked) => 
+                                handlePermissionToggle(permission.navigation_item_id, checked)
+                              }
+                              disabled={updatePermissionsMutation.isPending}
+                            />
+                            {permission.is_granted === null ? (
+                              <span className="text-xs text-muted-foreground">
+                                {t('useRoleBased')}
+                              </span>
+                            ) : (
+                              <span className="text-xs">
+                                {permission.is_granted ? t('granted') : t('denied')}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <Badge variant={finalAccess ? 'default' : 'secondary'}>
+                            {finalAccess ? t('allowed') : t('denied')}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             )}
-          </div>
+          </ScrollArea>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-between pt-4 mt-4 border-t flex-shrink-0">
+          <div className="flex items-center justify-between pt-4 border-t">
             <div className="text-sm text-muted-foreground">
               {hasChanges && (
-                <div className="flex items-center gap-2 text-orange-600">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                  <span className="font-medium">{t('unsavedChanges')}</span>
-                </div>
+                <span className="text-orange-600">{t('unsavedChanges')}</span>
               )}
             </div>
             

@@ -71,7 +71,7 @@ const settingsFormSchema = z.object({
   purchase_order_prefix: z.string().optional(),
   // WhatsApp settings
   whatsapp_enabled: z.boolean().optional(),
-  whatsapp_instance_id: z.string().optional(),
+  whatsapp_api_url: z.string().optional(),
   whatsapp_api_token: z.string().optional(),
   whatsapp_notification_number: z.string().optional(),
   whatsapp_country_code: z.string().optional(),
@@ -113,7 +113,7 @@ const SettingsPage: React.FC = () => {
       purchase_order_prefix: "PO-",
       // WhatsApp settings
       whatsapp_enabled: false,
-      whatsapp_instance_id: "",
+      whatsapp_api_url: "",
       whatsapp_api_token: "",
       whatsapp_notification_number: "",
       whatsapp_country_code: "968",
@@ -151,7 +151,7 @@ const SettingsPage: React.FC = () => {
         purchase_order_prefix: settings.purchase_order_prefix || "PO-",
         // WhatsApp settings
         whatsapp_enabled: settings.whatsapp_enabled || false,
-        whatsapp_instance_id: settings.whatsapp_instance_id || "",
+        whatsapp_api_url: settings.whatsapp_api_url || "",
         whatsapp_api_token: settings.whatsapp_api_token || "",
         whatsapp_notification_number: settings.whatsapp_notification_number || "",
         whatsapp_country_code: settings.whatsapp_country_code || "968",

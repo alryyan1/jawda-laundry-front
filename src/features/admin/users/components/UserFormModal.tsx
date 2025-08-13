@@ -1,10 +1,11 @@
 // src/features/admin/users/components/UserFormModal.tsx
 import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { handleApiErrorWithForm } from '@/utils/errorHandler';
 
 import type { User, Role, UserFormData } from '@/types';
 import { getRoles, createUser, updateUser } from '@/api/adminService';
@@ -18,13 +19,17 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 
-interface UserFormValues {
-  name: string;
-  username: string;
-  role_ids: number[];
-  password?: string;
-  password_confirmation?: string;
-}
+// Zod schema for validation
+const userFormSchema = z.object({
+  name: z.string().nonempty({ message: "validation.nameRequired" }),
+  username: z.string().nonempty({ message: "validation.usernameRequired" }).regex(/^[a-zA-Z0-9_-]+$/, { message: "validation.usernameInvalid" }),
+  email: z.string().email({ message: "validation.emailInvalid" }),
+  role_ids: z.array(z.number()).min(1, { message: "validation.roleRequired" }),
+  password: z.string().optional(),
+  password_confirmation: z.string().optional(),
+})
+
+type UserFormValues = z.infer<typeof userFormSchema>;
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -41,8 +46,9 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
         queryFn: getRoles,
     });
 
-    const { control, handleSubmit, reset, setError, formState: { errors, isDirty } } = useForm<UserFormValues>({
-        defaultValues: { name: '', username: '', password: '', password_confirmation: '', role_ids: [] }
+    const { control, handleSubmit, reset, formState: { errors, isDirty } } = useForm<UserFormValues>({
+        resolver: zodResolver(userFormSchema),
+        defaultValues: { name: '', username: '', email: '', password: '', password_confirmation: '', role_ids: [] }
     });
     
     // Debug logging to see what's happening with role_ids
@@ -75,10 +81,11 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                 reset({
                     name: editingUser.name,
                     username: editingUser.username,
+                    email: editingUser.email,
                     role_ids: roleIds,
                 });
             } else {
-                reset({ name: '', username: '', role_ids: [] });
+                reset({ name: '', username: '', email: '', role_ids: [] });
             }
         }
     }, [editingUser, isOpen, reset, roles]);
@@ -90,11 +97,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
             queryClient.invalidateQueries({ queryKey: ['users'] });
             onOpenChange(false);
         },
-        onError: (error: unknown) => { 
-            // Type assertion for error handling
-            const apiError = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } }; message?: string };
-            handleApiErrorWithForm(apiError, setError as any, t('userActionFailed'));
-        }
+        onError: (error) => { toast.error(error.message || t('userActionFailed')); }
     });
 
     const onSubmit = (data: UserFormValues) => {
@@ -103,12 +106,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
         
         // Ensure role_ids is an array of numbers
         const roleIds = Array.isArray(data.role_ids) 
-            ? data.role_ids.map((id: number) => Number(id)).filter((id: number) => !isNaN(id))
+            ? data.role_ids.map(id => Number(id)).filter(id => !isNaN(id))
             : [];
         
         const payload: Partial<UserFormData> = { 
             name: data.name, 
             username: data.username, 
+            email: data.email, 
             role_ids: roleIds
         };
         
@@ -162,7 +166,24 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                             {errors.username && <p className="text-sm text-destructive">{t(errors.username.message as string)}</p>}
                         </div>
                     </div>
-                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="user-email">{t('email')}<span className="text-destructive">*</span></Label>
+                            <Controller
+                                name="email"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input 
+                                        id="user-email" 
+                                        type="email" 
+                                        {...field}
+                                        placeholder={t('enterEmail', { ns: 'common', defaultValue: 'Enter email...' })}
+                                    />
+                                )}
+                            />
+                            {errors.email && <p className="text-sm text-destructive">{t(errors.email.message as string)}</p>}
+                        </div>
+                    </div>
                     {!editingUser && (
                         <>
                             <Separator/>

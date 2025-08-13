@@ -40,8 +40,5 @@
     "required": "This field is required.",
     "phoneNumber": "Please enter a valid phone number (numbers only).",
     "countryCode": "Please enter a valid country code (numbers only).",
-    "atLeastOneRoleRequired": "At least one role must be selected.",
-    "roleNameMin": "Role name must be at least 3 characters.",
-    "roleNameMax": "Role name cannot exceed 50 characters.",
-    "fixErrorsServer": "Please fix the errors above and try again."
+    "atLeastOneRoleRequired": "At least one role must be selected."
   }

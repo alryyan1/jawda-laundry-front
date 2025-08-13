@@ -10,10 +10,9 @@ i18n
   .init({
     supportedLngs: ['en', 'ar'],
     fallbackLng: 'en',
-    debug: false, // Disable debug mode to reduce console noise
-    ns: ['common', 'admin', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports','dining'],
+    debug: process.env.NODE_ENV === 'development',
+    ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports','dining'],
     defaultNS: 'common',
-    keySeparator: false, // Disable key separator for flat JSON format
     interpolation: {
       escapeValue: false, // React already safes from xss
     },
@@ -23,9 +22,6 @@ i18n
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
-    },
-    react: {
-      useSuspense: false, // Disable suspense to prevent loading issues
     },
   });
 

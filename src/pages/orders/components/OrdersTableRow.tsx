@@ -1,7 +1,6 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PermissionWrapper } from "@/components/ui/permission-wrapper";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal, FileText } from "lucide-react";
 import type { Order } from "@/types";
@@ -48,7 +47,6 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
       onClick={() => onNavigate(`/orders/${order.id}`)}
     >
       <TableCell className="font-mono text-xs text-muted-foreground text-center">{order.id}</TableCell>
-      <TableCell className="text-center font-mono text-xs text-muted-foreground">{order.category_sequences_string || "-"}</TableCell>
       <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
       <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
       <TableCell className="text-center font-mono text-xs">
@@ -82,13 +80,13 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               <Eye className="mr-2 h-4 w-4" />
               {t("viewDetails")}
             </DropdownMenuItem>
-            <PermissionWrapper permission="order:record-payment" fallback={null}>
+            {can("order:record-payment") && (
               <DropdownMenuItem onClick={() => onOpenPayments(order)}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 {t("viewPayments")}
               </DropdownMenuItem>
-            </PermissionWrapper>
-            <PermissionWrapper permission="order:update" fallback={null}>
+            )}
+            {can("order:update") && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onEdit(order)}>
@@ -96,7 +94,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
                   {t("editOrder")}
                 </DropdownMenuItem>
               </>
-            </PermissionWrapper>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => downloadOrderInvoice(order.id)}>
               <FileText className="mr-2 h-4 w-4" />
