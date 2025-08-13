@@ -153,7 +153,7 @@ const OrdersPage = () => {
         enableHiding: false,
       },
       {
-        accessorKey: "order_number",
+        accessorKey: "id",
         header: ({ column }) => (
           <Button
             variant="ghost"
@@ -164,7 +164,7 @@ const OrdersPage = () => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium">#{row.getValue("order_number")}</div>
+          <div className="font-medium">#{row.getValue("id")}</div>
         ),
       },
       {

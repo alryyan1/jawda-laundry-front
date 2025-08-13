@@ -10,7 +10,6 @@ import { useNewOrder } from "@/context/NewOrderContext";
 interface CreateEmptyOrderResponse {
   order: {
     id: number;
-    order_number: string;
     status: string;
     created_at: string;
     updated_at: string;

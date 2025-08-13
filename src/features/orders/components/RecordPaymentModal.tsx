@@ -162,7 +162,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Wallet className="h-5 w-5 text-primary" />
-                        {t('recordPaymentForOrder', {ns:'orders', orderNumber: order.order_number})}
+                        {t('recordPaymentForOrder', {ns:'orders', orderNumber: order.id})}
                     </DialogTitle>
                     <DialogDescription>
                         {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, currencyCode, i18n.language)}</span>
@@ -204,7 +204,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                             <Label htmlFor="payment_date">{t('paymentDate', {ns:'orders'})}</Label>
                             <Controller name="payment_date" control={control} render={({ field }) => (
                                 <Popover>
-                                    <PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(parse(field.value, 'yyyy-MM-dd', new Date()), 'PPP') : <span>{t('pickADate')}</span>}</Button></PopoverTrigger>
+                                    <PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(parse(field.value, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy') : <span>{t('pickADate')}</span>}</Button></PopoverTrigger>
                                     <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} initialFocus /></PopoverContent>
                                 </Popover>
                             )} />

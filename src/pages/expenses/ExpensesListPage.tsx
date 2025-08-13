@@ -193,7 +193,7 @@ const ExpensesListPage: React.FC = () => {
           </span>
         </div>
       </TableCell>
-      <TableCell className="text-center">{format(new Date(expense.expense_date), "PPP")}</TableCell>
+                  <TableCell className="text-center">{format(new Date(expense.expense_date), "dd/MM/yyyy")}</TableCell>
       <TableCell className="text-center font-semibold">
         {formatCurrency(expense.amount, currency, i18n.language)}
       </TableCell>

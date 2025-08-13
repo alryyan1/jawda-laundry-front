@@ -154,7 +154,7 @@ const DetailedOrdersReport: React.FC = () => {
                             <TableRow key={order.id}>
                                 <TableCell><Link to={`/orders/${order.id}`} className="font-mono text-xs hover:underline text-primary">{order.id}</Link></TableCell>
                                 <TableCell className="font-medium">{order.customer?.name}</TableCell>
-                                <TableCell>{formatDate(order.order_date, 'PP', i18n.language)}</TableCell>
+                                <TableCell>{formatDate(order.order_date, 'dd/MM/yyyy', i18n.language)}</TableCell>
                                 <TableCell><OrderStatusBadge status={order.status} /></TableCell>
                                 <TableCell className="text-right font-mono">{formatCurrency(order.total_amount, 'USD', i18n.language, 3)}</TableCell>
                                 <TableCell className="text-right font-mono text-green-600">{formatCurrency(order.paid_amount, 'USD', i18n.language, 3)}</TableCell>

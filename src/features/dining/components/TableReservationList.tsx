@@ -165,7 +165,7 @@ export const TableReservationList: React.FC<TableReservationListProps> = ({
                   {reservation.order ? (
                     <div className="text-sm">
                       <div className="font-medium">
-                        #{reservation.order.daily_order_number || reservation.order.order_number}
+                        #{reservation.order.daily_order_number || reservation.order.id}
                       </div>
                       <div className="text-muted-foreground">
                         ${reservation.order.total_amount.toFixed(2)}

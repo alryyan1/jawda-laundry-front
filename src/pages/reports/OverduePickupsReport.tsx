@@ -42,7 +42,7 @@ const OverduePickupsReport: React.FC = () => {
     const sendReminderMutation = useMutation<void, Error, Order>({
         mutationFn: async (order) => { 
             /* TODO: call sendOverdueReminder(order.id) */ 
-            toast.info(`Sending reminder for #${order.order_number}...`);
+            toast.info(`Sending reminder for #${order.id}...`);
         },
         onSuccess: () => { toast.success(t('reminderSentSuccess', {ns:'reports'})) },
         onError: (error) => { toast.error(error.message || t('reminderSentFailed', {ns:'reports'})) }
@@ -136,7 +136,7 @@ const OverduePickupsReport: React.FC = () => {
                             orders.map(order => (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-mono text-sm">{order.id}</TableCell>
-                                    <TableCell><Link to={`/orders/${order.id}`} className="font-medium hover:underline text-primary">{order.order_number}</Link></TableCell>
+                                    <TableCell><Link to={`/orders/${order.id}`} className="font-medium hover:underline text-primary">#{order.id}</Link></TableCell>
                                     <TableCell>{order.customer.name}</TableCell>
                                     <TableCell className="text-muted-foreground">{order.customer.phone || '-'}</TableCell>
                                     <TableCell>
@@ -149,7 +149,7 @@ const OverduePickupsReport: React.FC = () => {
                                             {t(`status_${order.status}`, { ns: 'orders' })}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>{format(new Date(order.pickup_date!), 'PP')}</TableCell>
+                                    <TableCell>{format(new Date(order.pickup_date!), 'dd/MM/yyyy')}</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="destructive">{order.overdue_days}</Badge>
                                     </TableCell>
@@ -191,7 +191,7 @@ const OverduePickupsReport: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <span className="text-muted-foreground">{t('orderNumber', {ns:'orders'})}:</span>
-                                        <span className="ml-2 font-medium">{selectedOrder.order_number}</span>
+                                        <span className="ml-2 font-medium">#{selectedOrder.id}</span>
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">{t('customerName')}:</span>
@@ -199,7 +199,7 @@ const OverduePickupsReport: React.FC = () => {
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">{t('pickupDate')}:</span>
-                                        <span className="ml-2 font-medium">{format(new Date(selectedOrder.pickup_date!), 'PP')}</span>
+                                        <span className="ml-2 font-medium">{format(new Date(selectedOrder.pickup_date!), 'dd/MM/yyyy')}</span>
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">{t('daysOverduePickup', {ns:'reports'})}:</span>

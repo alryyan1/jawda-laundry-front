@@ -1164,7 +1164,7 @@ const POSPage: React.FC = () => {
                             onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
                             isProcessing={isProcessing}
                             mode={selectedOrder ? 'order_edit' : 'cart'}
-                            orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                            orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
                             isReadOnly={selectedOrder?.status === 'completed'}
                             isCompleted={selectedOrder?.order_complete === true}
                             paymentStatus={selectedOrder?.payment_status}
@@ -1258,7 +1258,7 @@ const POSPage: React.FC = () => {
                                onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
                                isProcessing={isProcessing}
                                mode={selectedOrder ? 'order_edit' : 'cart'}
-                               orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.order_number}
+                               orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
                                isReadOnly={selectedOrder?.status === 'completed'}
                                isCompleted={selectedOrder?.order_complete === true}
                                paymentStatus={selectedOrder?.payment_status}
@@ -1363,9 +1363,9 @@ const POSPage: React.FC = () => {
 
       {/* Service Offering Selection Dialog */}
       <Dialog open={isServiceOfferingDialogOpen} onOpenChange={setIsServiceOfferingDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md border-2 border-sky-400">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg">
               {selectedProductForDialog && t("selectServiceOffering", { 
                 ns: "common", 
                 defaultValue: "Select Service Offering" 
@@ -1378,17 +1378,11 @@ const POSPage: React.FC = () => {
               .map((offering) => (
                 <Button
                   key={offering.id}
-                  className="w-full justify-start text-left h-auto p-4"
+                  className="w-full justify-start text-left h-auto p-4 border-2 border-sky-300 text-base"
                   onClick={() => handleServiceOfferingSelect(offering)}
                 >
                   <div className="flex flex-col items-start">
-                    <div className="font-medium">{offering.display_name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedProductForDialog.is_dimension_based 
-                        ? `${offering.default_price_per_sq_meter || 0} ${t("perSqMeter", { ns: "common", defaultValue: "per sq meter" })}`
-                        : `${offering.default_price || 0} ${t("perItem", { ns: "common", defaultValue: "per item" })}`
-                      }
-                    </div>
+                    <div className="font-medium text-base">{offering.display_name}</div>
                   </div>
                 </Button>
               ))}

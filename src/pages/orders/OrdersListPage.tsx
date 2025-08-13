@@ -14,20 +14,18 @@ import {
   orderStatusOptions,
   type Customer,
   type ProductType,
-  type OrderStatistics,
 } from "@/types";
-import { getOrders, getOrderStatistics, downloadOrdersListPdf } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { PAYMENT_METHODS } from "@/lib/constants";
 import { useSettings } from "@/context/SettingsContext";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -48,9 +46,6 @@ import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 import {
   PlusCircle,
   Loader2,
-  Search,
-  Filter,
-  Calculator,
   FileText,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
@@ -58,7 +53,7 @@ import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
 import OrdersTableRow from "./components/OrdersTableRow";
 import OrdersPagination from "./components/OrdersPagination";
-import PaymentBreakdownDialog, { type PaymentBreakdownItem } from "./components/PaymentBreakdownDialog";
+
 
 const OrdersListPage: React.FC = () => {
   const { t, i18n } = useTranslation("orders");
@@ -78,6 +73,7 @@ const OrdersListPage: React.FC = () => {
     productTypeId?: string;
     dateFrom?: string;
     dateTo?: string;
+    categorySequenceSearch?: string;
   }>({
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: format(new Date(), "yyyy-MM-dd"),
@@ -85,8 +81,6 @@ const OrdersListPage: React.FC = () => {
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
   const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -104,6 +98,7 @@ const OrdersListPage: React.FC = () => {
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
+      filters.categorySequenceSearch,
     ],
     [
       currentPage,
@@ -115,6 +110,7 @@ const OrdersListPage: React.FC = () => {
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
+      filters.categorySequenceSearch,
     ]
   );
 
@@ -211,27 +207,7 @@ const OrdersListPage: React.FC = () => {
     }
   };
 
-  // Calculate payment breakdown for statistics
-  const calculatePaymentBreakdown = () => {
-    if (!statistics) {
-      return {
-        totalPaid: 0,
-        breakdown: PAYMENT_METHODS.map((method) => ({ method, amount: 0, percentage: 0 })),
-      };
-    }
 
-    const totalPaid: number = Number(statistics.totalAmountPaid) || 0;
-    const paymentBreakdownAny = (statistics as { paymentBreakdown?: Record<string, { amount?: number; percentage?: number } | number> }).paymentBreakdown || {};
-
-    const breakdown = PAYMENT_METHODS.map((method) => {
-      const raw = paymentBreakdownAny[method];
-      const amount: number = typeof raw === "number" ? raw : Number((raw as { amount?: number })?.amount) || 0;
-      const percentage: number = typeof (raw as { percentage?: number })?.percentage === "number" ? (raw as { percentage?: number }).percentage! : totalPaid > 0 ? (amount / totalPaid) * 100 : 0;
-      return { method, amount, percentage };
-    });
-
-    return { totalPaid, breakdown };
-  };
 
   // --- Data Fetching ---
   const { data: customers = [] } = useQuery<Customer[], Error>({
@@ -259,19 +235,12 @@ const OrdersListPage: React.FC = () => {
         productTypeId: filters.productTypeId,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
+        category_sequence_search: filters.categorySequenceSearch,
       }),
     placeholderData: keepPreviousData,
   });
 
-  // Statistics query
-  const {
-    data: statistics,
-    isLoading: isLoadingStats,
-  } = useQuery<OrderStatistics, Error>({
-    queryKey: ["orderStatistics", filters.dateFrom, filters.dateTo],
-    queryFn: () => getOrderStatistics(filters.dateFrom, filters.dateTo),
-    enabled: !!(filters.dateFrom && filters.dateTo),
-  });
+
 
   useEffect(() => {
     if (currentPage !== 1) setCurrentPage(1);
@@ -283,6 +252,7 @@ const OrdersListPage: React.FC = () => {
     filters.productTypeId,
     filters.dateFrom,
     filters.dateTo,
+    filters.categorySequenceSearch,
   ]);
 
   const orders = paginatedData?.data || [];
@@ -306,28 +276,17 @@ const OrdersListPage: React.FC = () => {
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
       >
-        {/* Calculator Button */}
-        {statistics && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCalculatorOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            {t("paymentBreakdown", { defaultValue: "Payment Breakdown" })}
-          </Button>
-        )}
+
         
-        {/* PDF Export Button */}
+        {/* Excel Export Button */}
         <Button
           variant="outline"
           size="sm"
-          onClick={() => downloadOrdersListPdf(filters)}
+          onClick={() => downloadOrdersListExcel(filters)}
           className="flex items-center gap-2"
         >
           <FileText className="h-4 w-4" />
-          {t("exportPdf", { defaultValue: "Export PDF" })}
+          {t("exportExcel", { defaultValue: "Export Excel" })}
         </Button>
         
         {/* Mobile Date Range Picker */}
@@ -360,120 +319,13 @@ const OrdersListPage: React.FC = () => {
 
       
 
-      {/* Mobile Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10"
-          />
-        </div>
-        <div className="relative w-20 sm:w-24">
-          <Input
-            placeholder="ID"
-            value={filters.orderId || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, orderId: e.target.value }))
-            }
-            className="text-xs sm:text-sm h-8 sm:h-10 text-center"
-          />
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 text-xs sm:text-sm"
-        >
-          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">{t("filters")}</span>
-        </Button>
-      </div>
+      
 
-      {/* Mobile Filters Panel */}
-      {showFilters && (
-        <Card className="sm:hidden">
-          <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-            <Select
-              value={filters.status || ""}
-              onValueChange={(value) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  status: value === "all" ? undefined : (value as OrderStatus),
-                }))
-              }
-            >
-              <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
-                <SelectValue placeholder={t("filterByStatus")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allStatuses")}</SelectItem>
-                {orderStatusOptions.map((opt) => (
-                  <SelectItem key={opt} value={opt}>
-                    {t(`status_${opt}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <DarkThemeAutocomplete
-              options={[{ id: "all", name: t("allCustomers", { ns: "customers" }) }, ...customers]}
-              getOptionLabel={(option) => option.name}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              value={customers.find(c => c.id.toString() === filters.customerId) || { id: "all", name: t("allCustomers", { ns: "customers" }) }}
-              onChange={(_, newValue) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  customerId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
-                }))
-              }
-              renderInput={(params) => (
-                <div ref={params.InputProps.ref}>
-                  <Input
-                    {...params.inputProps}
-                    placeholder={t("filterByCustomer")}
-                    className="h-8 sm:h-10 text-xs sm:text-sm"
-                  />
-                </div>
-              )}
-              className="h-8 sm:h-10 text-xs sm:text-sm"
-            />
-            
-            <DarkThemeAutocomplete
-              options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
-              getOptionLabel={(option) => option.name}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              value={productTypes.find(pt => pt.id.toString() === filters.productTypeId) || { id: "all", name: t("allProducts") }}
-              onChange={(_, newValue) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  productTypeId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
-                }))
-              }
-              renderInput={(params) => (
-                <div ref={params.InputProps.ref}>
-                  <Input
-                    {...params.inputProps}
-                    placeholder={t("filterByProduct")}
-                    className="h-8 sm:h-10 text-xs sm:text-sm"
-                  />
-                </div>
-              )}
-              className="h-8 sm:h-10 text-xs sm:text-sm"
-            />
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Desktop Filters */}
-      <Card className="hidden sm:block mb-4">
-        <CardHeader>
-          <CardTitle className="text-lg">{t("filters")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+
+             {/* Desktop Filters */}
+       <div className="hidden sm:block mb-4">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
           <Input
             placeholder={t("searchOrdersPlaceholder")}
             value={filters.search || ""}
@@ -550,15 +402,17 @@ const OrdersListPage: React.FC = () => {
               </div>
             )}
           />
-        </CardContent>
-      </Card>
-
-      {/* Loading state for statistics */}
-      {isLoadingStats && (
-        <div className="flex items-center justify-center h-24">
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Input
+            placeholder={t("searchCategorySequences", { defaultValue: "Search Category Sequences" })}
+            value={filters.categorySequenceSearch || ""}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
+            }
+          />
         </div>
-      )}
+      </div>
+
+
 
       {/* Mobile Orders List */}
       <div className="sm:hidden px-1 sm:px-0">
@@ -606,7 +460,7 @@ const OrdersListPage: React.FC = () => {
                 <TableHead className="w-[60px] text-center">ID</TableHead>
                 <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center">{t("pickupDate", { defaultValue: "Pickup Date" })}</TableHead>
+                <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">
                   {t("totalItems", { defaultValue: "Total Items (Total/Picked Up)" })}
@@ -689,17 +543,7 @@ const OrdersListPage: React.FC = () => {
         />
       )}
 
-      <PaymentBreakdownDialog
-        isOpen={isCalculatorOpen}
-        onOpenChange={setIsCalculatorOpen}
-        totalPaid={calculatePaymentBreakdown().totalPaid}
-        breakdown={calculatePaymentBreakdown().breakdown as PaymentBreakdownItem[]}
-        currencySymbol={currencySymbol}
-        t={t}
-        language={i18n.language}
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-      />
+
     </div>
   );
 };

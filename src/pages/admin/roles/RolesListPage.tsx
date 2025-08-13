@@ -98,7 +98,7 @@ const RolesListPage: React.FC = () => {
         {
             accessorKey: "created_at",
             header: t('createdDate', { ns: 'admin'}),
-            cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(i18n.language)
+            cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' })
         },
         {
             id: "actions",

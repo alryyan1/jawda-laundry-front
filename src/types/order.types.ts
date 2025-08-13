@@ -44,8 +44,8 @@ export interface QuoteItemResponse {
     applied_unit: string;
 }
 
-export type OrderStatus = "pending" | "processing" | "ready_for_pickup" | "completed" | "cancelled";
-export const orderStatusOptions: OrderStatus[] = ["pending", "processing", "ready_for_pickup", "completed", "cancelled"];
+export type OrderStatus = "pending" | "processing" | "delivered" | "completed" | "cancelled";
+export const orderStatusOptions: OrderStatus[] = ["pending", "processing", "delivered", "completed", "cancelled"];
 
 export interface OrderItem {
     id: number;
@@ -73,7 +73,6 @@ export interface Order {
     id: number;
     overdue_days?: number; // <-- أضف هذا الحقل الاختياري
 
-    order_number: string;
     order_type: 'in_house' | 'take_away' | 'delivery';
     daily_order_number?: number;
     customer: Customer | null;

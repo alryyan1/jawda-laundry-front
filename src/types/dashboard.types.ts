@@ -32,7 +32,7 @@ export interface RevenueBreakdownItem {
 export interface TodayStatusCounts {
     pending: number;
     processing: number;
-    ready_for_pickup: number;
+    delivered: number;
     completed: number;
     cancelled: number;
 }

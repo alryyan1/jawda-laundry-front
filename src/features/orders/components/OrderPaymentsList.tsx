@@ -40,7 +40,7 @@ export const OrderPaymentsList: React.FC<OrderPaymentsListProps> = ({ payments }
                     <TableBody>
                         {payments.map(p => (
                             <TableRow key={p.id}>
-                                <TableCell className="text-sm">{formatDateTime(p.payment_date, 'PP p', i18n.language)}</TableCell>
+                                <TableCell className="text-sm">{formatDateTime(p.payment_date, 'dd/MM/yyyy HH:mm', i18n.language)}</TableCell>
                                 <TableCell className={cn("capitalize font-medium", p.type === 'refund' && 'text-destructive')}>
                                     {t(`payment_type_${p.type}`, {ns:'orders', defaultValue: p.type})}
                                 </TableCell>

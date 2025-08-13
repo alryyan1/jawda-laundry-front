@@ -38,7 +38,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
             >
                 <CardHeader className="p-3 flex flex-row items-start justify-between space-y-0">
                     <div className="space-y-1">
-                        <p className="font-semibold text-sm hover:underline">#{order.order_number}</p>
+                        <p className="font-semibold text-sm hover:underline">#{order.id}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <UserIcon className="h-3 w-3"/>
                             {order.customer.name}
@@ -58,7 +58,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 </CardContent>
                 <CardFooter className="p-3 pt-0 flex justify-between text-xs font-semibold text-muted-foreground">
                     <span>
-                        {t('due', {ns:'orders', defaultValue:'Due'})}: {formatDate(order.due_date, 'PP', i18n.language)}
+                        {t('due', {ns:'orders', defaultValue:'Due'})}: {formatDate(order.due_date, 'dd/MM/yyyy', i18n.language)}
                     </span>
                     <span className="font-bold text-foreground">
                         {formatCurrency(order.total_amount, 'USD', i18n.language)}

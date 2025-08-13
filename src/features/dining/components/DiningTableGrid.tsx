@@ -191,7 +191,7 @@ export const DiningTableGrid: React.FC<DiningTableGridProps> = ({
                   {table.active_order.customer_name}
                 </p>
                 <div className="flex items-center justify-between text-xs text-green-600 dark:text-green-400">
-                  <span>#{table.active_order.daily_order_number || table.active_order.order_number}</span>
+                                          <span>#{table.active_order.daily_order_number || table.active_order.id}</span>
                   <span className="font-medium">
                     ${table.active_order.total_amount ? Number(table.active_order.total_amount).toFixed(2) : '0.00'}
                   </span>

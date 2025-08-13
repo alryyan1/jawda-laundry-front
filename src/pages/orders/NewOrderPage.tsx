@@ -92,7 +92,7 @@ const NewOrderPage: React.FC = () => {
   const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
     mutationFn: (formData) => createOrder(formData, allServiceOfferings),
     onSuccess: (response) => {
-      const order = handleOrderResponse(response, t('orderCreatedSuccess', { ns: 'orders', orderNumber: response.order.order_number }));
+              const order = handleOrderResponse(response, t('orderCreatedSuccess', { ns: 'orders', orderNumber: response.order.id }));
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       navigate(`/orders/${order.id}`);
     },

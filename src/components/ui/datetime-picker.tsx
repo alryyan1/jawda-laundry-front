@@ -73,7 +73,7 @@ export function DateTimePicker({
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate ? (
-              format(selectedDate, "PPP")
+              format(selectedDate, "dd/MM/yyyy")
             ) : (
               <span>{placeholder}</span>
             )}

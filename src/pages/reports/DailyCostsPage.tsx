@@ -134,7 +134,7 @@ const DailyCostsPage: React.FC = () => {
                                     className={day.daily_cost > 0 ? 'font-bold text-lg text-red-600' : ''}
                                 >
                                     <TableCell className={`font-medium ${day.daily_cost > 0 ? 'font-bold text-lg text-red-600' : ''}`}>
-                                        {format(parseISO(day.date), 'EEEE, MMM d, yyyy')}
+                                        {format(parseISO(day.date), 'EEEE, dd/MM/yyyy')}
                                     </TableCell>
                                     <TableCell className={`text-center ${day.daily_cost > 0 ? 'font-bold text-lg text-red-600' : ''}`}>
                                         {day.expense_count}

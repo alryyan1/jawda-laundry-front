@@ -73,7 +73,7 @@ const OrderStatusBadgeComponent: React.FC<{
   if (status === "processing")
     bgColor =
       "bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50";
-  if (status === "ready_for_pickup")
+          if (status === "delivered")
     bgColor =
       "bg-green-400/20 text-green-600 dark:text-green-400 border border-green-500/50";
   if (status === "completed")

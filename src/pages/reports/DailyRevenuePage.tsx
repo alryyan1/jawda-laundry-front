@@ -196,7 +196,7 @@ const DailyRevenuePage: React.FC = () => {
                                                 className={day.daily_revenue > 0 ? 'bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500' : ''}
                                             >
                                                 <TableCell className={`font-medium ${day.daily_revenue > 0 ? 'text-lg font-bold text-green-700 dark:text-green-300' : ''}`}>
-                                                    {format(parseISO(day.date), 'EEEE, d/MM/yyyy')}
+                                                    {format(parseISO(day.date), 'EEEE, dd/MM/yyyy')}
                                                 </TableCell>
                                                 <TableCell className={`text-center ${day.daily_revenue > 0 ? 'text-lg font-bold text-green-700 dark:text-green-300' : ''}`}>
                                                     {day.order_count}
@@ -230,7 +230,7 @@ const DailyRevenuePage: React.FC = () => {
                                     >
                                         <CardContent className="p-4">
                                             <div className={`font-medium ${day.daily_revenue > 0 ? 'text-green-700 dark:text-green-300' : ''}`}>
-                                                {format(parseISO(day.date), 'EEEE, d/MM/yyyy')}
+                                                {format(parseISO(day.date), 'EEEE, dd/MM/yyyy')}
                                             </div>
                                             <div className="flex justify-between items-center mt-2">
                                                 <span className={`text-sm ${day.daily_revenue > 0 ? 'text-green-700 dark:text-green-300' : 'text-muted-foreground'}`}>

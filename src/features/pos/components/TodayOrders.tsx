@@ -38,7 +38,7 @@ const getStatusColor = (status: string) => {
       return 'bg-green-500';
     case 'cancelled':
       return 'bg-red-500';
-    case 'ready_for_pickup':
+            case 'delivered':
       return 'bg-purple-500';
     case 'picked_up':
       return 'bg-gray-500';
@@ -85,10 +85,9 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(i18n.language, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   };
 
@@ -147,7 +146,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
                       {/* Order header */}
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-lg">#{order.order_number}</h3>
+                          <h3 className="font-semibold text-lg">#{order.id}</h3>
                           <p className="text-sm text-muted-foreground">
                             {getStatusText(order.status)}
                           </p>

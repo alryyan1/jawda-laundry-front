@@ -9,6 +9,7 @@
   "status_ready_for_pickup": "Ready for Pickup",
   "status_completed": "Completed",
   "status_cancelled": "Cancelled",
+  "status_delivered": "Delivered",
   "filterByStatus": "Filter by status...",
   "allStatuses": "All Statuses",
   "items": "Items",

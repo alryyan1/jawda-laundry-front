@@ -55,12 +55,14 @@ export const MobileOrderCard: React.FC<MobileOrderCardProps> = ({
             <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-1">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                <span>{new Date(order.order_date).toLocaleDateString(undefined)}</span>
+                <span>{new Date(order.order_date).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
               </div>
-              {order.pickup_date && (
+              {(order.category_sequences_string || order.category_sequences) && (
                 <div className="flex items-center gap-1">
                   <Package className="h-3 w-3" />
-                  <span>{new Date(order.pickup_date).toLocaleDateString(undefined)}</span>
+                  <span className="font-mono text-xs">
+                    {order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')}
+                  </span>
                 </div>
               )}
             </div>

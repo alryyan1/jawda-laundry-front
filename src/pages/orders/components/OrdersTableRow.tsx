@@ -7,6 +7,7 @@ import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
 import { downloadOrderInvoice } from "@/api/orderService";
+import dayjs from "dayjs";
 
 type OrdersTableRowProps = {
   order: Order;
@@ -47,8 +48,13 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
     >
       <TableCell className="font-mono text-xs text-muted-foreground text-center">{order.id}</TableCell>
       <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
-      <TableCell className="text-center">{new Date(order.order_date).toLocaleDateString(undefined)}</TableCell>
-      <TableCell className="text-center">{order.pickup_date ? new Date(order.pickup_date).toLocaleDateString(undefined) : "-"}</TableCell>
+      <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
+      <TableCell className="text-center font-mono text-xs">
+        {order.category_sequences_string || order.category_sequences ? 
+          (order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')) : 
+          "-"
+        }
+      </TableCell>
       <TableCell className="text-center">
         <OrderStatusBadge status={order.status} />
       </TableCell>

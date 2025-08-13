@@ -69,6 +69,7 @@ export const getOrders = async (
         dateFrom?: string; // YYYY-MM-DD
         dateTo?: string;   // YYYY-MM-DD
         createdDate?: string; // YYYY-MM-DD
+        category_sequence_search?: string;
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -80,6 +81,7 @@ export const getOrders = async (
     if (filters?.dateFrom) params.date_from = filters.dateFrom;
     if (filters?.dateTo) params.date_to = filters.dateTo;
     if (filters?.createdDate) params.created_date = filters.createdDate;
+    if (filters?.category_sequence_search) params.category_sequence_search = filters.category_sequence_search;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;
@@ -453,9 +455,9 @@ export const downloadOrderInvoice = async (orderId: string | number): Promise<vo
 };
 
 /**
- * Download orders list PDF
+ * Download orders list Excel
  */
-export const downloadOrdersListPdf = async (filters: {
+export const downloadOrdersListExcel = async (filters: {
     status?: string;
     search?: string;
     orderId?: string;
@@ -463,6 +465,7 @@ export const downloadOrdersListPdf = async (filters: {
     productTypeId?: string;
     dateFrom?: string;
     dateTo?: string;
+    category_sequence_search?: string;
 }): Promise<void> => {
     try {
         const params = new URLSearchParams();
@@ -473,22 +476,23 @@ export const downloadOrdersListPdf = async (filters: {
         if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
         if (filters.dateFrom) params.append('date_from', filters.dateFrom);
         if (filters.dateTo) params.append('date_to', filters.dateTo);
+        if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
         
-        const response = await apiClient.get(`/orders/pdf/download?${params.toString()}`, {
+        const response = await apiClient.get(`/reports/orders/export-csv?${params.toString()}`, {
             responseType: 'blob',
         });
         
-        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `orders-list-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.download = `orders-report-${new Date().toISOString().split('T')[0]}.xlsx`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
     } catch (error) {
-        console.error('Error downloading PDF:', error);
+        console.error('Error downloading Excel:', error);
         throw error;
     }
 };

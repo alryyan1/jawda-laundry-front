@@ -60,7 +60,6 @@ export interface Customer {
 
 export interface Order {
   id: number;
-  order_number: string;
   daily_order_number?: number;
   customer_name: string;
   status: string;

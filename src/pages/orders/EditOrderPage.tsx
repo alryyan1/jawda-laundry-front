@@ -73,7 +73,7 @@ const EditOrderPage: React.FC = () => {
       toast.success(
         t("orderUpdatedSuccess", {
           ns: "orders",
-          orderNumber: data.order_number,
+          orderNumber: data.id,
         })
       );
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -185,7 +185,7 @@ const EditOrderPage: React.FC = () => {
               <h1 className="text-lg font-semibold leading-none">
                 {t("editOrderTitle", {
                   ns: "orders",
-                  orderNumber: existingOrder.order_number,
+                  orderNumber: existingOrder.id,
                 })}
               </h1>
               <p className="text-sm text-muted-foreground">

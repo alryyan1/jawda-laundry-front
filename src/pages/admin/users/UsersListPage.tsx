@@ -148,7 +148,7 @@ const UsersListPage: React.FC = () => {
             header: t('dateCreated'),
             cell: ({ row }) => (
                 <div className="text-sm text-muted-foreground text-center">
-                    {new Date(row.original.created_at || '').toLocaleDateString(i18n.language)}
+                    {new Date(row.original.created_at || '').toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </div>
             )
         },

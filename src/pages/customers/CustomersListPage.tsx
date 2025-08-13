@@ -197,7 +197,7 @@ const CustomersListPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span>{format(new Date(customer.registered_date), "PP", { locale: currentLocale })}</span>
+                        <span>{format(new Date(customer.registered_date), "dd/MM/yyyy", { locale: currentLocale })}</span>
                     </div>
                 </div>
                 {!customer.is_default && (
@@ -336,7 +336,7 @@ const CustomersListPage: React.FC = () => {
                                         <TableCell className="text-center">{customer.phone || t('notAvailable')}</TableCell>
                                         <TableCell className="text-center">{customer.total_orders ?? 0}</TableCell>
                                         <TableCell>
-                                            {format(new Date(customer.registered_date), "PP", { locale: currentLocale })}
+                                            {format(new Date(customer.registered_date), "dd/MM/yyyy", { locale: currentLocale })}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {customer.is_default ? (

@@ -147,7 +147,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                       >
                         {/* Only show order number */}
                         <span className="text-sm font-bold text-foreground">
-                          {order.daily_order_number || order.order_number}
+                          {order.daily_order_number || order.id}
                         </span>
                         
                         {/* Green check mark for fully paid orders */}

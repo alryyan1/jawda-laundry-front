@@ -50,7 +50,7 @@ export const PaymentsListDialog: React.FC<PaymentsListDialogProps> = ({ order, i
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Wallet className="h-6 w-6 text-primary"/>
-                        {t('paymentHistoryForOrder', {ns: 'orders', orderNumber: order.order_number})}
+                        {t('paymentHistoryForOrder', {ns: 'orders', orderNumber: order.id})}
                     </DialogTitle>
                     <DialogDescription>
                         {t('allTransactionsAreListed', {ns:'orders', defaultValue: 'All recorded payments and refunds for this order are listed below.'})}
@@ -76,7 +76,7 @@ export const PaymentsListDialog: React.FC<PaymentsListDialogProps> = ({ order, i
                                     payments.map(payment => (
                                         <TableRow key={payment.id}>
                                             <TableCell className="text-sm">
-                                                {formatDateTime(payment.payment_date, 'PP', i18n.language)}
+                                                {formatDateTime(payment.payment_date, 'dd/MM/yyyy', i18n.language)}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge

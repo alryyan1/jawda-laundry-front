@@ -212,8 +212,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             onOrderUpdate={onOrderUpdate}
           />}
           
-          {/* Order Type Selection - Only show when not viewing an existing order */}
-          {!selectedOrder && (
+          {/* Order Type Selection - Hidden as requested */}
+          {/* {!selectedOrder && (
             <div className="flex items-center gap-1">
               <Label className="text-xs text-white whitespace-nowrap">
                 {t("orderType", { ns: "orders", defaultValue: "Order Type" })}:
@@ -238,10 +238,10 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          )}
+          )} */}
 
-          {/* Table Selection - Only show for in-house orders when not viewing an existing order */}
-          {!selectedOrder && orderType === 'in_house' && (
+          {/* Table Selection - Hidden as requested */}
+          {/* {!selectedOrder && orderType === 'in_house' && (
             <div className="flex items-center gap-1">
               <Label className="text-xs text-white whitespace-nowrap">
                 {t("section", { ns: "dining", defaultValue: "Section" })}:
@@ -280,7 +280,7 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          )}
+          )} */}
         </div>
         
         {/* Calculator Button - Always visible */}
@@ -375,54 +375,10 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             
               className="hover:opacity-90 transition-opacity h-7 px-2"
             >
-              <Printer className=" " />
+              <Printer className="" />
             </Button>
            
-            {/* Payment Button */}
-            {can("order:record-payment") && selectedOrder && (selectedOrder.amount_due || 0) > 0 && (
-              selectedOrder.status !== 'cancelled' && 
-              <Button
-                size="sm"
-                onClick={onPaymentClick}
-                style={{
-                  backgroundColor: getSecondaryColor(),
-                  borderColor: getSecondaryColor(700),
-                  color: 'white'
-                }}
-                className="hover:opacity-90 transition-opacity h-7 px-2"
-              >
-                {t("recordOrUpdatePayment", {
-                  ns: "orders",
-                  defaultValue: "Record/Update Payment",
-                })}
-              </Button>
-            )}
-            
-            {/* WhatsApp Buttons */}
-            {can("order:send-whatsapp") && selectedOrder.customer?.phone && (
-              <>
-              
-                
-                <Button
-                  size="sm"
-                  variant={selectedOrder.whatsapp_pdf_sent ? "default" : "outline"}
-                  style={{
-                    backgroundColor: selectedOrder.whatsapp_pdf_sent ? getSecondaryColor() : 'transparent',
-                    borderColor: getSecondaryColor(300),
-                    color: selectedOrder.whatsapp_pdf_sent ? 'white' : getSecondaryColor()
-                  }}
-                  className="hover:opacity-90 transition-opacity h-7 px-2"
-                  onClick={handleSendWhatsAppInvoice}
-                  disabled={sendWhatsAppInvoiceMutation.isPending}
-                >
-                  <WhatsAppIcon className="h-3 w-3 mr-1" />
-                  {sendWhatsAppInvoiceMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                  ) : null}
-                  {selectedOrder.whatsapp_pdf_sent ? t("invoiceSent", { ns: "orders" }) : t("sendInvoice", { ns: "orders" })}
-                </Button>
-              </>
-            )}
+         
           </div>
         )}
       </div>

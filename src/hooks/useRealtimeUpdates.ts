@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 interface OrderEvent {
   order: {
     id: number;
-    order_number: string;
     daily_order_number?: number;
     status: string;
     total_amount: number;
@@ -42,10 +41,10 @@ export const useRealtimeUpdates = () => {
     toast.success(
       t('newOrderCreated', { 
         defaultValue: 'New order created',
-        orderNumber: event.order.order_number 
+        orderNumber: event.order.id 
       }),
       {
-        description: `${event.order.customer.name} - ${event.order.order_number}`,
+        description: `${event.order.customer.name} - #${event.order.id}`,
         duration: 5000,
       }
     );
@@ -65,11 +64,11 @@ export const useRealtimeUpdates = () => {
       toast.info(
         t('orderStatusUpdated', { 
           defaultValue: 'Order status updated',
-          orderNumber: event.order.order_number,
+          orderNumber: event.order.id,
           status: t(`status_${event.order.status}`, { defaultValue: event.order.status })
         }),
         {
-          description: `${event.order.customer.name} - ${event.order.order_number}`,
+          description: `${event.order.customer.name} - #${event.order.id}`,
           duration: 4000,
         }
       );

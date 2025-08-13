@@ -67,7 +67,7 @@ const OrdersReportPage: React.FC = () => {
 
   // Filter data based on search term
   const filteredData = reportData?.orders?.filter(order => 
-    order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    order.id?.toString().includes(searchTerm) ||
     order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
@@ -332,7 +332,7 @@ const OrdersReportPage: React.FC = () => {
                           {order.daily_order_number}
                         </TableCell>
                         <TableCell>
-                          {order.order_date ? format(new Date(order.order_date), 'MMM dd, yyyy HH:mm') : '-'}
+                          {order.order_date ? format(new Date(order.order_date), 'dd/MM/yyyy HH:mm') : '-'}
                         </TableCell>
                         <TableCell>
                           {formatCurrency(order.paid_amount || 0, currencyCode, i18n.language, 3)}

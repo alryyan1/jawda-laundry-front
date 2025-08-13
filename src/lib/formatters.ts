@@ -12,7 +12,7 @@ import { enUS, arSA } from 'date-fns/locale'; // Import locales you use
  */
 export const formatDate = (
     dateInput: string | Date | null | undefined,
-    formatString: string = 'PPP', // Just date: 'MMM d, yyyy'
+    formatString: string = 'dd/MM/yyyy', // Default to dd/mm/yyyy format
     lang: string = 'en'
 ): string => {
     if (!dateInput) return 'N/A';

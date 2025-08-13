@@ -106,7 +106,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg">#{order.order_number}</h3>
+                        <h3 className="font-semibold text-lg">#{order.id}</h3>
                         <OrderStatusBadge status={order.status} size="sm"/>
                       </div>
                     </div>

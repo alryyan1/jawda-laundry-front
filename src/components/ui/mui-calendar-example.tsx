@@ -162,8 +162,8 @@ export const MuiCalendarExample: React.FC = () => {
           <div className="space-y-2 pt-4 border-t">
             <h3 className="text-lg font-medium">Current Values</h3>
             <div className="text-sm text-muted-foreground">
-              <p>DatePicker Value: {datePickerValue ? format(datePickerValue, 'PPP') : 'None'}</p>
-              <p>Calendar Button Value: {calendarButtonValue ? format(calendarButtonValue, 'PPP') : 'None'}</p>
+              <p>DatePicker Value: {datePickerValue ? format(datePickerValue, 'dd/MM/yyyy') : 'None'}</p>
+              <p>Calendar Button Value: {calendarButtonValue ? format(calendarButtonValue, 'dd/MM/yyyy') : 'None'}</p>
             </div>
           </div>
         </CardContent>

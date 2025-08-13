@@ -53,7 +53,7 @@ export const POSDatePicker: React.FC<POSDatePickerProps> = ({ onDateChange }) =>
   };
 
   const formatDisplayDate = (date: Date) => {
-    return format(date, 'MMM dd, yyyy', { locale: getLocale() });
+    return format(date, 'dd/MM/yyyy', { locale: getLocale() });
   };
 
   return (

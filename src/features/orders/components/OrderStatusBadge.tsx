@@ -23,7 +23,7 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, clas
     case 'processing':
       statusClasses = 'bg-blue-100 text-blue-700 border border-blue-300 dark:bg-blue-700/30 dark:text-blue-300 dark:border-blue-600';
       break;
-    case 'ready_for_pickup':
+            case 'delivered':
       statusClasses = 'bg-green-100 text-green-700 border border-green-300 dark:bg-green-700/30 dark:text-green-300 dark:border-green-600';
       break;
     case 'completed':

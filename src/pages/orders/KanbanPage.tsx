@@ -29,7 +29,7 @@ import type { Order, OrderStatus, PaginatedResponse } from '@/types';
 type KanbanColumns = Record<OrderStatus, Order[]>;
 
 // The statuses that will appear as columns on the board
-const KANBAN_STATUSES: OrderStatus[] = ['pending', 'processing', 'ready_for_pickup', 'completed'];
+const KANBAN_STATUSES: OrderStatus[] = ['pending', 'processing', 'delivered', 'completed'];
 
 const KanbanPage: React.FC = () => {
     const { t } = useTranslation(['orders', 'common']);
