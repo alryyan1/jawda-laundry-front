@@ -15,7 +15,7 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -278,16 +278,30 @@ const OrdersListPage: React.FC = () => {
       >
 
         
-        {/* Excel Export Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadOrdersListExcel(filters)}
-          className="flex items-center gap-2"
-        >
-          <FileText className="h-4 w-4" />
-          {t("exportExcel", { defaultValue: "Export Excel" })}
-        </Button>
+        {/* Export Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Excel Export Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadOrdersListExcel(filters)}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            {t("exportExcel", { defaultValue: "Export Excel" })}
+          </Button>
+          
+          {/* PDF Export Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadOrdersListPdf(filters)}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            {t("exportPdf", { defaultValue: "Export PDF" })}
+          </Button>
+        </div>
         
         {/* Mobile Date Range Picker */}
         {/* Mobile Date Range Picker */}

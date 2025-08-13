@@ -497,4 +497,37 @@ export const downloadOrdersListExcel = async (filters: {
     }
 };
 
+/**
+ * Download orders list PDF (opens in new tab)
+ */
+export const downloadOrdersListPdf = async (filters: {
+    status?: string;
+    search?: string;
+    orderId?: string;
+    customerId?: string;
+    productTypeId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    category_sequence_search?: string;
+}): Promise<void> => {
+    try {
+        const params = new URLSearchParams();
+        if (filters.status) params.append('status', filters.status);
+        if (filters.search) params.append('search', filters.search);
+        if (filters.orderId) params.append('order_id', filters.orderId);
+        if (filters.customerId) params.append('customer_id', filters.customerId);
+        if (filters.productTypeId) params.append('product_type_id', filters.productTypeId);
+        if (filters.dateFrom) params.append('date_from', filters.dateFrom);
+        if (filters.dateTo) params.append('date_to', filters.dateTo);
+        if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
+        
+        // Open PDF in new tab
+        const url = `${apiClient.defaults.baseURL}/reports/orders/list-pdf?${params.toString()}`;
+        window.open(url, '_blank');
+    } catch (error) {
+        console.error('Error opening PDF:', error);
+        throw error;
+    }
+};
+
 
