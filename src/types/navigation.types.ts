@@ -18,6 +18,12 @@ export interface NavigationItem {
   parent?: NavigationItem;
 }
 
+// Helper type for display purposes
+export interface NavigationItemDisplay extends Omit<NavigationItem, 'title'> {
+  title: string; // Single string for display (English by default)
+  level: number; // For indentation in table
+}
+
 export interface UserNavigationPermission {
   navigation_item_id: number;
   navigation_item: NavigationItem;

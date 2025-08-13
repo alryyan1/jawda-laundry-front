@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import Echo from '@/lib/websocket';
 import { useTranslation } from 'react-i18next';
+import { useDate } from '@/context/DateContext';
 
 interface OrderEvent {
   order: {
@@ -28,12 +29,13 @@ interface OrderEvent {
 export const useRealtimeUpdates = () => {
   const queryClient = useQueryClient();
   const { t } = useTranslation(['orders']);
+  const { selectedDate } = useDate();
 
   const handleOrderCreated = useCallback((event: OrderEvent) => {
     console.log('Order created event received:', event);
     
-    // Invalidate and refetch relevant queries
-    queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
+    // Invalidate and refetch relevant queries with correct query keys
+    queryClient.invalidateQueries({ queryKey: ['todayOrders', selectedDate] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['orderStatistics'] });
     
@@ -48,13 +50,13 @@ export const useRealtimeUpdates = () => {
         duration: 5000,
       }
     );
-  }, [queryClient, t]);
+  }, [queryClient, t, selectedDate]);
 
   const handleOrderUpdated = useCallback((event: OrderEvent) => {
     console.log('Order updated event received:', event);
     
-    // Invalidate and refetch relevant queries
-    queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
+    // Invalidate and refetch relevant queries with correct query keys
+    queryClient.invalidateQueries({ queryKey: ['todayOrders', selectedDate] });
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['orderStatistics'] });
     queryClient.invalidateQueries({ queryKey: ['order', event.order.id] });
@@ -73,7 +75,7 @@ export const useRealtimeUpdates = () => {
         }
       );
     }
-  }, [queryClient, t]);
+  }, [queryClient, t, selectedDate]);
 
   useEffect(() => {
     // Check if Echo is properly configured

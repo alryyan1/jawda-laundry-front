@@ -26,7 +26,13 @@ export const createNavigationItem = async (data: NavigationFormData): Promise<Na
 };
 
 export const updateNavigationItem = async (id: number, data: Partial<NavigationFormData>): Promise<NavigationItem> => {
-  const response = await apiClient.put<{ data: NavigationItem; message: string }>(`/navigation/${id}`, data);
+  // Convert boolean values to integers for backend compatibility
+  const processedData = { ...data };
+  if ('is_active' in processedData && typeof processedData.is_active === 'boolean') {
+    processedData.is_active = processedData.is_active ? 1 : 0;
+  }
+  
+  const response = await apiClient.put<{ data: NavigationItem; message: string }>(`/navigation/${id}`, processedData);
   return response.data.data;
 };
 

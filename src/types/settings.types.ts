@@ -8,7 +8,7 @@ export interface GeneralSettings {
 }
 
 export interface WhatsAppSettings {
-    api_url?: string;
+    instance_id?: string;
     api_token?: string;
     enabled?: boolean;
 }

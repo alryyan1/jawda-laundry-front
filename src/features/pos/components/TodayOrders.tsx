@@ -64,8 +64,10 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
   });
 
   const orders = ordersResponse?.data || [];
-  const totalPages = Math.ceil(orders.length / ordersPerPage);
-  const currentOrders = orders.slice(
+  // Ensure orders is always an array to prevent map errors
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const totalPages = Math.ceil(safeOrders.length / ordersPerPage);
+  const currentOrders = safeOrders.slice(
     currentPage * ordersPerPage,
     (currentPage + 1) * ordersPerPage
   );
@@ -101,7 +103,7 @@ export const TodayOrders: React.FC<TodayOrdersProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {t("ordersForDate", { ns: "orders", defaultValue: "Orders for" })} {selectedDate} ({orders.length})
+            {t("ordersForDate", { ns: "orders", defaultValue: "Orders for" })} {selectedDate} ({safeOrders.length})
           </DialogTitle>
           <DialogDescription>
             {t("selectOrderToView", { ns: "orders", defaultValue: "Select an order to view its details" })}

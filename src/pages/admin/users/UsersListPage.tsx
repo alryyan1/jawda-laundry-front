@@ -16,6 +16,7 @@ import {
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable } from '@/components/shared/DataTable';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
+import { PermissionWrapper, PermissionButton } from '@/components/ui/permission-wrapper';
 import { UserFormModal } from '@/features/admin/users/components/UserFormModal';
 import { UserNavigationPermissionsModal } from '@/features/admin/users/components/UserNavigationPermissionsModal';
 import { getUsers, deleteUser } from '@/api/adminService';
@@ -120,7 +121,7 @@ const UsersListPage: React.FC = () => {
             cell: ({ row }) => (
                 <div className="flex flex-col text-center">
                     <div className="font-medium">{row.original.name}</div>
-                    <div className="text-sm text-muted-foreground">{row.original.email}</div>
+                    <div className="text-sm text-muted-foreground">{row.original.username}</div>
                 </div>
             )
         },
@@ -171,21 +172,21 @@ const UsersListPage: React.FC = () => {
                         <DropdownMenuContent align={i18n.dir() === 'rtl' ? 'start' : 'end'}>
                             <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
                             
-                            {can('user:update') && (
+                            <PermissionWrapper permission="user:update" fallback={null}>
                                 <DropdownMenuItem onClick={() => handleOpenEditModal(row.original)}>
                                     <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                                     {t("edit")}
                                 </DropdownMenuItem>
-                            )}
+                            </PermissionWrapper>
                             
-                            {can('user-navigation:manage') && (
+                            <PermissionWrapper permission="user-navigation:manage" fallback={null}>
                                 <DropdownMenuItem onClick={() => handleOpenNavigationModal(row.original)}>
                                     <Navigation className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                                     {t("manageNavigation")}
                                 </DropdownMenuItem>
-                            )}
+                            </PermissionWrapper>
                             
-                            {can('user:delete') && (
+                            <PermissionWrapper permission="user:delete" fallback={null}>
                                 <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem 
@@ -197,7 +198,7 @@ const UsersListPage: React.FC = () => {
                                         {t("delete")}
                                     </DropdownMenuItem>
                                 </>
-                            )}
+                            </PermissionWrapper>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -220,11 +221,15 @@ const UsersListPage: React.FC = () => {
             <PageHeader
                 title={t('usersTitle')}
                 description={t('usersDescription')}
-                actionButton={can('user:create') ? { 
-                    label: t('newUserBtn'), 
-                    icon: PlusCircle, 
-                    onClick: handleOpenAddModal 
-                } : undefined}
+                actionButton={
+                    <PermissionWrapper permission="user:create" fallback={null}>
+                        {{
+                            label: t('newUserBtn'), 
+                            icon: PlusCircle, 
+                            onClick: handleOpenAddModal 
+                        }}
+                    </PermissionWrapper>
+                }
                 showRefreshButton 
                 onRefresh={refetch} 
                 isRefreshing={isFetching}
@@ -237,7 +242,7 @@ const UsersListPage: React.FC = () => {
                         className="h-9 w-full sm:w-auto sm:max-w-xs"
                     />
                     
-                    {can('navigation:view') && (
+                    <PermissionWrapper permission="navigation:view" fallback={null}>
                         <Button
                             variant="outline"
                             size="sm"
@@ -247,7 +252,7 @@ const UsersListPage: React.FC = () => {
                             <Settings className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                             {t('manageNavigation')}
                         </Button>
-                    )}
+                    </PermissionWrapper>
                 </div>
             </PageHeader>
 
@@ -261,34 +266,41 @@ const UsersListPage: React.FC = () => {
             />
             
             {/* User Form Modal */}
-            {(can('user:create') || can('user:update')) && (
+            <PermissionWrapper 
+                permission={editingUser ? "user:update" : "user:create"} 
+                fallback={null}
+            >
                 <UserFormModal 
                     isOpen={isUserModalOpen} 
                     onOpenChange={handleUserModalClose} 
                     editingUser={editingUser} 
                 />
-            )}
+            </PermissionWrapper>
 
             {/* User Navigation Permissions Modal */}
-            {can('user-navigation:manage') && (
-                <UserNavigationPermissionsModal
-                    isOpen={isNavigationModalOpen}
-                    onOpenChange={handleNavigationModalClose}
-                    user={managingNavigationUser}
+            <PermissionWrapper permission="user-navigation:manage" fallback={null}>
+                <UserNavigationPermissionsModal 
+                    isOpen={isNavigationModalOpen} 
+                    onOpenChange={handleNavigationModalClose} 
+                    user={managingNavigationUser} 
                 />
-            )}
+            </PermissionWrapper>
             
             {/* Delete Confirmation Dialog */}
-            {can('user:delete') && (
-                <DeleteConfirmDialog 
-                    isOpen={!!itemToDelete} 
-                    onOpenChange={(open) => !open && setItemToDelete(null)} 
-                    onConfirm={() => { if (itemToDelete) deleteMutation.mutate(itemToDelete.id); }} 
-                    itemName={itemToDelete?.name} 
-                    itemType="userLC" 
-                    isPending={deleteMutation.isPending} 
+            <PermissionWrapper permission="user:delete" fallback={null}>
+                <DeleteConfirmDialog
+                    isOpen={!!itemToDelete}
+                    onOpenChange={(open) => !open && setItemToDelete(null)}
+                    onConfirm={() => {
+                        if (itemToDelete) {
+                            deleteMutation.mutate(itemToDelete.id);
+                        }
+                    }}
+                    itemName={itemToDelete?.name || itemToDelete?.username}
+                    itemType="user"
+                    isPending={deleteMutation.isPending}
                 />
-            )}
+            </PermissionWrapper>
         </div>
     );
 };

@@ -6,7 +6,6 @@ import type { User, Role, PaginatedResponse } from '@/types';
 export interface UserFormData {
     name: string;
     username: string;
-    email: string;
     password?: string;
     password_confirmation?: string;
     role_ids: number[]; // Array of role IDs

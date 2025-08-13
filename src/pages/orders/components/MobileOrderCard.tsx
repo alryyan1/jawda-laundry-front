@@ -2,11 +2,10 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Calendar, CheckCircle, CreditCard, Eye, MoreHorizontal, Package, FileText } from "lucide-react";
-import type { Order } from "@/types";
+import { Calendar, CheckCircle, CreditCard, Eye, MoreHorizontal, Package } from "lucide-react";
+import { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
-import { downloadOrderInvoice } from "@/api/orderService";
 
 type MobileOrderCardProps = {
   order: Order;
@@ -18,7 +17,7 @@ type MobileOrderCardProps = {
   onEdit: (order: Order) => void;
   can: (permission: string) => boolean;
   t: (key: string, options?: any) => string;
-  currentLocale: any;
+  currentLocale: Locale;
   currencySymbol: string;
 };
 
@@ -115,16 +114,6 @@ export const MobileOrderCard: React.FC<MobileOrderCardProps> = ({
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  downloadOrderInvoice(order.id);
-                }}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                {t("downloadPdf", { defaultValue: "Download PDF" })}
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
