@@ -1,5 +1,8 @@
 // src/lib/constants.ts
 
+// Import configuration variables
+export { CONFIG, SCHEMA, HOST, PROJECT_FOLDER, BASE_URL, FULL_URL } from './config';
+
 // API related constants (if not solely in .env)
 export const API_REQUEST_TIMEOUT = 15000; // 15 seconds
 export const DEFAULT_ITEMS_PER_PAGE = 10;

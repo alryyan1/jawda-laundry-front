@@ -1,5 +1,6 @@
 // src/lib/axios.ts (Simplified Interceptor)
 import axios from 'axios';
+import { BASE_URL } from './config';
 // Import the store directly to call logout if needed
 // Be cautious with this pattern if it causes circular dependencies.
 // import { useAuthStore } from '@/store/authStore';
@@ -8,7 +9,7 @@ import axios from 'axios';
 const getBaseURL = () => {
   // For local development with XAMPP
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://127.0.0.1/laundry/jawda-laundry-backend/public/api';
+    return BASE_URL;
   }
   // For production or other environments
   return import.meta.env.VITE_API_BASE_URL || 'https://shai-khadri.com/api';
