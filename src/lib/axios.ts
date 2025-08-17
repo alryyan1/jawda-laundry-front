@@ -12,7 +12,7 @@ const getBaseURL = () => {
     return BASE_URL;
   }
   // For production or other environments
-  return import.meta.env.VITE_API_BASE_URL || 'https://shai-khadri.com/api';
+  return import.meta.env.VITE_API_BASE_URL || 'https://192.168.100.6/api';
 };
 
 const apiClient = axios.create({

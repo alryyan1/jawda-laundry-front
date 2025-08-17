@@ -145,8 +145,7 @@
   "totalPaid": "إجمالي المدفوع",
   "type": "النوع",
   "method": "الطريقة",
-  "kanbanBoardTitle": "لوحة كانبان",
-  "kanbanBoardDescription": "اسحب وأسقط الطلبات لتحديث حالتها.",
+
   "noOrdersInStatus": "لا توجد طلبات في هذه الحالة.",
   "itemCount": "{{count}} عنصر",
   "itemCount_plural": "{{count}} عناصر",
@@ -166,7 +165,7 @@
   "pickupDateUpdatedSuccess": "تم تحديث تاريخ الاستلام بنجاح",
   "pickupDateUpdateFailed": "فشل تحديث تاريخ الاستلام",
   "newOrder": "طلب جديد",
-  "kanban": "لوحة كانبان",
+
   "quoteError": "خطأ في حساب السعر",
   "selectCustomerFirst": "يرجى اختيار العميل أولاً",
   "todayOrders": "طلبات اليوم",

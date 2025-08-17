@@ -138,13 +138,21 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
     string | number
   >({
     mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
-    onSuccess: () => {
-      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
+    onSuccess: (data) => {
+      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }), {
+        description: data.message
+      });
     },
-    onError: (error) => {
-      toast.error(
-        error.message || t("whatsappInvoiceSendFailed", { ns: "orders" })
-      );
+    onError: (error: any) => {
+      // Extract detailed error message from backend response
+      const errorMessage = error?.response?.data?.details || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          t("whatsappInvoiceSendFailed", { ns: "orders" });
+      
+      toast.error(t("whatsappInvoiceSendFailed", { ns: "orders" }), {
+        description: errorMessage
+      });
     },
   });
 
@@ -183,22 +191,13 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
 
             {/* Order ID Display - Show when there's a selected order */}
             {selectedOrder && (
-              <Card 
-                sx={{ 
-                  background: `linear-gradient(135deg, ${getSecondaryColor()} 0%, ${getSecondaryColor()}dd 100%)`,
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                }}
-              >
-                  <Typography 
-                    variant="h4" 
-                    sx={{ 
-                      color: 'white',
-                      fontWeight: 700,
-                    }}
-                  >
-                    #{selectedOrder.id}
-                  </Typography>
-              </Card>
+             
+               <Card className='bg-secondary text-white'>
+                 #{selectedOrder.id}
+
+
+               </Card>
+             
             )}
 
           {/* Show CustomerSelection when there's a selected order OR when we're in new order mode */}

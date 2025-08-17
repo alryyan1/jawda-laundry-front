@@ -970,12 +970,23 @@ const POSPage: React.FC = () => {
       setIsProcessing(true);
       
       // Call the backend API to send WhatsApp invoice
-      await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
+      const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
       
-      toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }));
-    } catch (error) {
+      toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }), {
+        description: response.data?.message
+      });
+    } catch (error: any) {
       console.error('Failed to send invoice:', error);
-      toast.error(t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" }));
+      
+      // Extract detailed error message from backend response
+      const errorMessage = error?.response?.data?.details || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" });
+      
+      toast.error(t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" }), {
+        description: errorMessage
+      });
     } finally {
       setIsProcessing(false);
     }

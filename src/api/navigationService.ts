@@ -16,7 +16,9 @@ export const getNavigationItems = async (): Promise<NavigationItem[]> => {
 };
 
 export const getUserNavigation = async (): Promise<NavigationItem[]> => {
+  console.log('Fetching user navigation...');
   const response = await apiClient.get<NavigationApiResponse>('/navigation/user');
+  console.log('Navigation response:', response.data);
   return response.data.data;
 };
 

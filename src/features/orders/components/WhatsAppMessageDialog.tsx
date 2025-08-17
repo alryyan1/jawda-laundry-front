@@ -58,15 +58,25 @@ export const WhatsAppMessageDialog: React.FC<WhatsAppMessageDialogProps> = ({
     { orderId: string | number; message: string }
   >({
     mutationFn: ({ orderId, message }) => sendOrderWhatsAppMessage(orderId, message),
-    onSuccess: () => {
-      toast.success(t('whatsappMessageSentSuccess'));
+    onSuccess: (data) => {
+      toast.success(t('whatsappMessageSentSuccess'), {
+        description: data.message
+      });
       // Refresh the order data to get updated WhatsApp status
       queryClient.invalidateQueries({ queryKey: ["order", order.id] });
       onOpenChange(false);
       setMessage('');
     },
-    onError: (error) => {
-      toast.error(error.message || t('whatsappMessageSendFailed'));
+    onError: (error: any) => {
+      // Extract detailed error message from backend response
+      const errorMessage = error?.response?.data?.details || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          t('whatsappMessageSendFailed');
+      
+      toast.error(t('whatsappMessageSendFailed'), {
+        description: errorMessage
+      });
     },
   });
 

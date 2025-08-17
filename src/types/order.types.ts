@@ -3,7 +3,7 @@ import type { User } from './auth.types';
 import type { Customer } from './customer.types';
 import type { ServiceOffering, PricingStrategy } from './service.types';
 import type { PAYMENT_METHODS } from '@/lib/constants';
-import type { RestaurantTable } from './restaurantTable.types';
+import type { ServiceTable } from './restaurantTable.types';
 import type { DiningTable } from './dining.types';
 
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
@@ -77,7 +77,7 @@ export interface Order {
     daily_order_number?: number;
     customer: Customer | null;
     table_id?: number | null;
-    table?: RestaurantTable;
+    table?: ServiceTable;
     dining_table_id?: number | null;
     dining_table?: DiningTable;
     staff_user?: User;
@@ -92,6 +92,7 @@ export interface Order {
     order_date: string;
     due_date?: string | null;
     pickup_date?: string | null;
+    delivered_date?: string | null;
     whatsapp_text_sent?: boolean;
     whatsapp_pdf_sent?: boolean;
     category_sequences?: Record<string, string> | null;

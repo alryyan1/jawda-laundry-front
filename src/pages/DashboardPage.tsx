@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import RoleTest from "@/components/RoleTest";
 import {
   ResponsiveContainer,
   BarChart,
@@ -292,6 +293,11 @@ const DashboardPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Temporary Role Test Component */}
+      <div className="mt-8">
+        <RoleTest />
       </div>
     </div>
   );

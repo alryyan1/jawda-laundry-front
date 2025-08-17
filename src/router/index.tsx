@@ -9,7 +9,7 @@ import ErrorBoundary from "@/components/shared/ErrorBoundary";
 
 // Protected Route Wrapper
 import { ProtectedRoute } from "./ProtectedRoute"; // Assuming ProtectedRoute.tsx is in the same folder
-import EditOrderPage from "@/pages/orders/EditOrderPage";
+
 import { ApplicationSettingsAdmin } from "@/features/settings/components/ApplicationSettingsAdmin";
 import UsersListPage from "@/pages/admin/users/UsersListPage";
 import UserFormPage from "@/pages/admin/users/UserFormPage";
@@ -21,7 +21,6 @@ import { AppearanceSettings } from "@/features/settings/components/AppearanceSet
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
 import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
-import KanbanPage from "@/pages/orders/KanbanPage";
 import POSPage from '@/pages/pos/POSPage';
 import DiningManagementPage from '@/pages/dining/DiningManagementPage';
 
@@ -67,7 +66,6 @@ const CustomerPriceListPage = React.lazy(
 const OrdersListPage = React.lazy(
   () => import("@/pages/orders/OrdersListPage")
 );
-const NewOrderPage = React.lazy(() => import("@/pages/orders/NewOrderPage"));
 const OrderDetailsPage = React.lazy(
   () => import("@/pages/orders/OrderDetailsPage")
 );
@@ -275,14 +273,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "orders/new",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <NewOrderPage />
-              </React.Suspense>
-            ),
-          },
+      
           {
             path: "orders/:id",
             element: (
@@ -466,7 +457,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          { path: 'orders/kanban', element: <React.Suspense fallback={<RouteSuspenseFallback />}><KanbanPage /></React.Suspense> },
+
 
           // Admin Service Management (could be further nested under an /admin path if desired)
           {
@@ -493,14 +484,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "orders/:id/edit",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <EditOrderPage />
-              </React.Suspense>
-            ),
-          },
+
 
           // Settings
           {

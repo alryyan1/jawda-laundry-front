@@ -15,7 +15,7 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, updateOrderStatus } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -44,7 +44,6 @@ import {
 import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 
 import {
-  PlusCircle,
   Loader2,
   FileText,
 } from "lucide-react";
@@ -212,7 +211,7 @@ const OrdersListPage: React.FC = () => {
   // Handler to mark order as delivered
   const handleMarkDelivered = async (order: Order) => {
     try {
-      await updateOrderStatus(order.id, 'delivered');
+      await markOrderAsDelivered(order.id);
       // Update the cache
       queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
         if (!oldData) return oldData;
@@ -220,7 +219,11 @@ const OrdersListPage: React.FC = () => {
           ...oldData,
           data: oldData.data.map((o) => {
             if (o.id === order.id) {
-              return { ...o, status: 'delivered' as OrderStatus };
+              return { 
+                ...o, 
+                status: 'delivered' as OrderStatus,
+                delivered_date: new Date().toISOString()
+              };
             }
             return o;
           }),
@@ -291,11 +294,6 @@ const OrdersListPage: React.FC = () => {
       <PageHeader
         title={t("title")}
         description={t("orderListDescription")}
-        actionButton={
-          can("order:create")
-            ? { label: t("newOrder"), icon: PlusCircle, to: "/pos" }
-            : undefined
-        }
         showRefreshButton
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
@@ -495,18 +493,19 @@ const OrdersListPage: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60px] text-center">ID</TableHead>
+                <TableHead className="w-[60px] text-center font-bold text-lg">ID</TableHead>
                 <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
+                <TableHead className="text-center">{t("deliveredDate", { defaultValue: "Delivered Date" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">
                   {t("actions", { defaultValue: "Actions" })}
                 </TableHead>
-                <TableHead className="text-center">
+                <TableHead className="text-center font-bold text-lg">
                   {t("totalAmount", { ns: "orders" })}
                 </TableHead>
-                <TableHead className="text-center">
+                <TableHead className="text-center font-bold text-lg">
                   {t("amountPaid")}
                 </TableHead>
                 <TableHead className="text-center w-12">
@@ -517,7 +516,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
               {isLoading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -528,7 +527,6 @@ const OrdersListPage: React.FC = () => {
                     order={order}
                     selectedOrderId={orderItemsDialogOrder?.id ?? null}
                     onNavigate={(path) => navigate(path)}
-                    onOpenItems={(o) => setOrderItemsDialogOrder(o)}
                     onOpenPayments={(o) => setSelectedOrderForPayments(o)}
                     onRecordPayment={(o) => setSelectedOrderForPayment(o)}
                     onMarkDelivered={handleMarkDelivered}
@@ -541,7 +539,7 @@ const OrdersListPage: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     {t("noResults")}
                   </TableCell>
                 </TableRow>

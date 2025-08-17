@@ -23,7 +23,6 @@ import { Loader2 } from 'lucide-react';
 const userFormSchema = z.object({
   name: z.string().nonempty({ message: "validation.nameRequired" }),
   username: z.string().nonempty({ message: "validation.usernameRequired" }).regex(/^[a-zA-Z0-9_-]+$/, { message: "validation.usernameInvalid" }),
-  email: z.string().email({ message: "validation.emailInvalid" }),
   role_ids: z.array(z.number()).min(1, { message: "validation.roleRequired" }),
   password: z.string().optional(),
   password_confirmation: z.string().optional(),
@@ -48,7 +47,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
 
     const { control, handleSubmit, reset, formState: { errors, isDirty } } = useForm<UserFormValues>({
         resolver: zodResolver(userFormSchema),
-        defaultValues: { name: '', username: '', email: '', password: '', password_confirmation: '', role_ids: [] }
+        defaultValues: { name: '', username: '', password: '', password_confirmation: '', role_ids: [] }
     });
     
     // Debug logging to see what's happening with role_ids
@@ -81,11 +80,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                 reset({
                     name: editingUser.name,
                     username: editingUser.username,
-                    email: editingUser.email,
                     role_ids: roleIds,
                 });
             } else {
-                reset({ name: '', username: '', email: '', role_ids: [] });
+                reset({ name: '', username: '', role_ids: [] });
             }
         }
     }, [editingUser, isOpen, reset, roles]);
@@ -112,7 +110,6 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
         const payload: Partial<UserFormData> = { 
             name: data.name, 
             username: data.username, 
-            email: data.email, 
             role_ids: roleIds
         };
         
@@ -166,24 +163,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onOpenChan
                             {errors.username && <p className="text-sm text-destructive">{t(errors.username.message as string)}</p>}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="user-email">{t('email')}<span className="text-destructive">*</span></Label>
-                            <Controller
-                                name="email"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input 
-                                        id="user-email" 
-                                        type="email" 
-                                        {...field}
-                                        placeholder={t('enterEmail', { ns: 'common', defaultValue: 'Enter email...' })}
-                                    />
-                                )}
-                            />
-                            {errors.email && <p className="text-sm text-destructive">{t(errors.email.message as string)}</p>}
-                        </div>
-                    </div>
+
                     {!editingUser && (
                         <>
                             <Separator/>

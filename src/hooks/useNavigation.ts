@@ -11,7 +11,6 @@ import {
   Shirt,
   DollarSign,
   ShoppingCart,
-  FolderKanban,
   ChartBar,
   TrendingUp,
   Layers,
@@ -25,7 +24,6 @@ import {
   Shield,
   Plus,
   List,
-  Kanban,
   UserPlus,
   Grid3x3,
   Tags,
@@ -53,7 +51,6 @@ const iconMap: Record<string, any> = {
   Settings: SettingsIcon,
   Plus: Plus,
   List: List,
-  Kanban: Kanban,
   UserPlus: UserPlus,
   Grid3x3: Grid3x3,
   Tags: Tags,
@@ -68,7 +65,7 @@ const iconMap: Record<string, any> = {
   Layers: Layers,
   Box: Box,
   Wand2: Wand2,
-  FolderKanban: FolderKanban,
+
 };
 
 export interface NavigationItemWithIcon {

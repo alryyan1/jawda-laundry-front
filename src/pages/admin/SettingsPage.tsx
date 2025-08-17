@@ -69,12 +69,13 @@ const settingsFormSchema = z.object({
   global_low_stock_threshold: z.coerce.number().int().min(0).optional(),
   invoice_prefix: z.string().optional(),
   purchase_order_prefix: z.string().optional(),
-  // WhatsApp settings
+  // WhatsApp settings (UltraMsg only)
   whatsapp_enabled: z.boolean().optional(),
-  whatsapp_api_url: z.string().optional(),
-  whatsapp_api_token: z.string().optional(),
   whatsapp_notification_number: z.string().optional(),
   whatsapp_country_code: z.string().optional(),
+  // UltraMsg settings
+  ultramsg_token: z.string().optional(),
+  ultramsg_instance_id: z.string().optional(),
   // POS settings
   pos_auto_show_pdf: z.boolean().optional(),
   pos_show_products_as_list: z.boolean().optional(),
@@ -111,12 +112,13 @@ const SettingsPage: React.FC = () => {
       global_low_stock_threshold: 10,
       invoice_prefix: "INV-",
       purchase_order_prefix: "PO-",
-      // WhatsApp settings
+      // WhatsApp settings (UltraMsg only)
       whatsapp_enabled: false,
-      whatsapp_api_url: "",
-      whatsapp_api_token: "",
       whatsapp_notification_number: "",
       whatsapp_country_code: "968",
+      // UltraMsg settings
+      ultramsg_token: "",
+      ultramsg_instance_id: "",
       // POS settings
       pos_auto_show_pdf: false,
       pos_show_products_as_list: false,
@@ -149,12 +151,13 @@ const SettingsPage: React.FC = () => {
         global_low_stock_threshold: settings.global_low_stock_threshold ?? 10,
         invoice_prefix: settings.invoice_prefix || "INV-",
         purchase_order_prefix: settings.purchase_order_prefix || "PO-",
-        // WhatsApp settings
+        // WhatsApp settings (UltraMsg only)
         whatsapp_enabled: settings.whatsapp_enabled || false,
-        whatsapp_api_url: settings.whatsapp_api_url || "",
-        whatsapp_api_token: settings.whatsapp_api_token || "",
         whatsapp_notification_number: settings.whatsapp_notification_number || "",
         whatsapp_country_code: settings.whatsapp_country_code || "968",
+        // UltraMsg settings
+        ultramsg_token: settings.ultramsg_token || "",
+        ultramsg_instance_id: settings.ultramsg_instance_id || "",
         // POS settings
         pos_auto_show_pdf: settings.pos_auto_show_pdf || false,
         pos_show_products_as_list: settings.pos_show_products_as_list || false,

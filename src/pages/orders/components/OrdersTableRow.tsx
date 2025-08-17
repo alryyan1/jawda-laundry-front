@@ -46,7 +46,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
       } ${isFullyPaid ? "bg-green-50/50 dark:bg-green-950/10 border-l-2 border-l-green-400" : ""}`}
       onClick={() => onNavigate(`/orders/${order.id}`)}
     >
-      <TableCell className="font-mono text-xs text-muted-foreground text-center">{order.id}</TableCell>
+      <TableCell className="font-mono text-sm font-bold text-center">{order.id}</TableCell>
       <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
       <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
       <TableCell className="text-center font-mono text-xs">
@@ -54,6 +54,9 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
           (order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')) : 
           "-"
         }
+      </TableCell>
+      <TableCell className="text-center">
+        {order.delivered_date ? dayjs(order.delivered_date).format('DD/MM/YYYY') : "-"}
       </TableCell>
       <TableCell className="text-center">
         <OrderStatusBadge status={order.status} />
@@ -82,11 +85,11 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
           )}
         </div>
       </TableCell>
-      <TableCell className="text-center font-semibold">{formatCurrency(order.total_amount, currencySymbol, language, 3)}</TableCell>
-      <TableCell className="text-center font-semibold text-green-600 dark:text-green-500">
+      <TableCell className="text-center font-bold text-lg">{formatCurrency(order.total_amount, currencySymbol, language, 3)}</TableCell>
+      <TableCell className={`text-center font-bold text-lg ${order.paid_amount > 0 ? 'text-green-600 dark:text-green-500' : ''}`}>
         <div className="flex items-center justify-center gap-1">
           {formatCurrency(order.paid_amount, currencySymbol, language, 3)}
-          {isFullyPaid && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />}
+          {isFullyPaid && order.paid_amount > 0 && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />}
         </div>
       </TableCell>
       <TableCell className="text-center w-12" onClick={(e) => e.stopPropagation()}>

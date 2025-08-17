@@ -177,6 +177,23 @@ export const updateOrderStatus = async (orderId: string | number, status: OrderS
 };
 
 /**
+ * Marks an order as delivered and sets the delivered_date to current date
+ */
+export const markOrderAsDelivered = async (orderId: string | number): Promise<OrderResponseWithWarnings> => {
+    const { data } = await apiClient.patch<OrderResponseWithWarnings | { data: Order }>(`/orders/${orderId}/status`, { 
+        status: 'delivered',
+        delivered_date: new Date().toISOString()
+    });
+    
+    // Handle both response formats (with warnings or without)
+    if ('warnings' in data) {
+        return data as OrderResponseWithWarnings;
+    } else {
+        return { order: data.data };
+    }
+};
+
+/**
  * Records a payment for a specific order.
  */
 export const recordOrderPayment = async (orderId: string | number, paymentData: RecordPaymentPayload): Promise<Order> => {

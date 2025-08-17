@@ -15,12 +15,13 @@ export interface AppSettings {
     global_low_stock_threshold: number;
     invoice_prefix: string;
     purchase_order_prefix: string;
-    // WhatsApp settings
+    // WhatsApp settings (UltraMsg only)
     whatsapp_enabled: boolean;
-    whatsapp_api_url: string;
-    whatsapp_api_token: string;
     whatsapp_notification_number: string;
     whatsapp_country_code: string;
+    // UltraMsg settings
+    ultramsg_token: string;
+    ultramsg_instance_id: string;
     // POS settings
     pos_auto_show_pdf: boolean;
     pos_show_products_as_list: boolean;

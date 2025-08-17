@@ -14,7 +14,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { PlusCircle, MoreHorizontal, Edit3, Trash2, Loader2, FolderKanban, ArrowLeft } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit3, Trash2, Loader2, ArrowLeft } from 'lucide-react';
 
 const ExpenseCategoriesListPage: React.FC = () => {
     const { t, i18n } = useTranslation(['common', 'expenses', 'validation']);
@@ -138,7 +138,7 @@ const ExpenseCategoriesListPage: React.FC = () => {
                             <TableRow>
                                 <TableCell colSpan={4} className="h-48 text-center">
                                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                        <FolderKanban className="h-10 w-10" />
+                                        <Box className="h-10 w-10" />
                                         <h3 className="font-semibold">{t('noCategoriesFound', { ns: 'expenses' })}</h3>
                                         <p className="text-sm">{t('noCategoriesFoundHint', { ns: 'expenses' })}</p>
                                         {can('expense-category:manage') && (

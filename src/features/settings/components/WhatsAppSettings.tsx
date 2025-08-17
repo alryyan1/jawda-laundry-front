@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 
 export const WhatsAppSettings: React.FC = () => {
   const { t } = useTranslation(["settings", "common"]);
-  const { control, watch } = useFormContext<SettingsFormValues>();
+  const { control, watch, setValue } = useFormContext<SettingsFormValues>();
 
   const [testPhone, setTestPhone] = useState("");
 
@@ -97,77 +97,99 @@ export const WhatsAppSettings: React.FC = () => {
 
           {isWhatsAppEnabled && (
             <div className="space-y-4 pt-4 border-t">
-              <FormField
-                control={control}
-                name="whatsapp_api_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("apiUrl")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="https://waapi.app/api/v1/instances/YOUR_INSTANCE_ID"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="whatsapp_api_token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("apiToken")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>{t("apiTokenHint")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="whatsapp_notification_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("notificationNumber")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="98889761"
-                      />
-                    </FormControl>
-                    <FormDescription>{t("notificationNumberHint")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="whatsapp_country_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("countryCode")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        placeholder="968"
-                      />
-                    </FormControl>
-                    <FormDescription>{t("countryCodeHint")}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* UltraMsg Configuration */}
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {t("ultraMsgInfo", { defaultValue: "Using UltraMsg WhatsApp API" })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    {t("ultraMsgDescription", { defaultValue: "This system uses UltraMsg API for WhatsApp messaging. Please configure your UltraMsg credentials below." })}
+                  </p>
+                </div>
+
+                <FormField
+                  control={control}
+                  name="ultramsg_token"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("ultramsgToken", { defaultValue: "UltraMsg Token" })}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="b6ght2y2ff7rbha6"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t("ultramsgTokenHint", { defaultValue: "Your UltraMsg API token" })}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="ultramsg_instance_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("ultramsgInstanceId", { defaultValue: "UltraMsg Instance ID" })}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="instance139458"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t("ultramsgInstanceIdHint", { defaultValue: "Your UltraMsg instance ID" })}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={control}
+                  name="whatsapp_notification_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("notificationNumber")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="98889761"
+                        />
+                      </FormControl>
+                      <FormDescription>{t("notificationNumberHint")}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="whatsapp_country_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("countryCode")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="968"
+                        />
+                      </FormControl>
+                      <FormDescription>{t("countryCodeHint")}</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
           )}
         </CardContent>

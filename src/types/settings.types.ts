@@ -8,9 +8,9 @@ export interface GeneralSettings {
 }
 
 export interface WhatsAppSettings {
-    api_url?: string;
-    api_token?: string;
     enabled?: boolean;
+    ultramsg_token?: string;
+    ultramsg_instance_id?: string;
 }
 
 export interface ApplicationSettings {

@@ -67,11 +67,26 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     setSelectedItemId(null);
   };
 
+  // Handle keyboard events
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      // Only trigger checkout if we have items and not processing
+      if (items.length > 0 && !isProcessing) {
+        onCheckout();
+      }
+    }
+  };
+
     return (
-    <div className={cn(
-      "flex flex-col h-full relative",
-      isCompleted && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
-    )}>
+    <div 
+      className={cn(
+        "flex flex-col h-full relative",
+        isCompleted && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
+      )}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+    >
       {/* Cart Items Avatar Header - Positioned at top border */}
       {items.length > 0 && (
         <div className={cn(

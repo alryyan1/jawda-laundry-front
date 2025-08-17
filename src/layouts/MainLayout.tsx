@@ -49,7 +49,6 @@ import {
     Lock,
     DollarSign,
     ShoppingCart,
-    FolderKanban,
     ChartBar,
     Calculator,
     PanelLeftClose,
@@ -100,7 +99,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Lock,
   DollarSign,
   ShoppingCart,
-  FolderKanban,
   ChartBar,
   Calculator,
   TrendingUp,
@@ -114,7 +112,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield: Lock,
   Plus: Package,
   List: Package,
-  Kanban: FolderKanban,
   UserPlus: Users,
   Grid3x3: Layers,
   Tags: Box,
@@ -242,12 +239,16 @@ const MainLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Fetch user navigation
-  const { data: navigationItems = [], isLoading: isNavigationLoading } = useQuery({
+  const { data: navigationItems = [], isLoading: isNavigationLoading, error: navigationError } = useQuery({
     queryKey: ['user-navigation'],
     queryFn: getUserNavigation,
     enabled: !!user,
   });
 
+  console.log('User:', user);
+  console.log('User roles:', user?.roles);
+  console.log('Navigation items:', navigationItems);
+  console.log('Navigation error:', navigationError);
   const handleLogout = async () => {
     try {
       await apiClient.post("/logout");
@@ -404,7 +405,7 @@ const MainLayout: React.FC = () => {
         location.pathname === child.route
       );
       const isCollapsed = collapsedStates[item.id] !== undefined ? collapsedStates[item.id] : true; // Default to true (collapsed)
-
+      // console.log(item,'item')
       if (hasChildren) {
         return collapsed ? (
           <Button

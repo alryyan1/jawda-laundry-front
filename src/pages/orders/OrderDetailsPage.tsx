@@ -243,15 +243,23 @@ const OrderDetailsPage: React.FC = () => {
     string | number
   >({
     mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
-    onSuccess: () => {
-      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }));
+    onSuccess: (data) => {
+      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }), {
+        description: data.message
+      });
       // Refresh the order data to get updated WhatsApp status
       queryClient.invalidateQueries({ queryKey: ["order", id] });
     },
-    onError: (error) => {
-      toast.error(
-        error.message || t("whatsappInvoiceSendFailed", { ns: "orders" })
-      );
+    onError: (error: any) => {
+      // Extract detailed error message from backend response
+      const errorMessage = error?.response?.data?.details || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          t("whatsappInvoiceSendFailed", { ns: "orders" });
+      
+      toast.error(t("whatsappInvoiceSendFailed", { ns: "orders" }), {
+        description: errorMessage
+      });
     },
   });
 

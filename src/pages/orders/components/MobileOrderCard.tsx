@@ -52,20 +52,26 @@ export const MobileOrderCard: React.FC<MobileOrderCardProps> = ({
             <h3 className="font-semibold text-sm sm:text-base mb-1">
               {order.customer?.name || t("notAvailable")}
             </h3>
-            <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-1">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(order.order_date).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-              </div>
-              {(order.category_sequences_string || order.category_sequences) && (
+                          <div className="text-xs sm:text-sm text-muted-foreground space-y-0.5 sm:space-y-1">
                 <div className="flex items-center gap-1">
-                  <Package className="h-3 w-3" />
-                  <span className="font-mono text-xs">
-                    {order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')}
-                  </span>
+                  <Calendar className="h-3 w-3" />
+                  <span>{new Date(order.order_date).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                 </div>
-              )}
-            </div>
+                {order.delivered_date && (
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>Delivered: {new Date(order.delivered_date).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                  </div>
+                )}
+                {(order.category_sequences_string || order.category_sequences) && (
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3 w-3" />
+                    <span className="font-mono text-xs">
+                      {order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
