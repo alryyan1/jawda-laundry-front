@@ -975,16 +975,57 @@ const POSPage: React.FC = () => {
       toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }), {
         description: response.data?.message
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to send invoice:', error);
       
       // Extract detailed error message from backend response
-      const errorMessage = error?.response?.data?.details || 
-                          error?.response?.data?.message || 
-                          error?.message || 
+      const errorResponse = error as { response?: { data?: { details?: string; message?: string } } };
+      const errorMessage = errorResponse?.response?.data?.details || 
+                          errorResponse?.response?.data?.message || 
+                          (error as Error)?.message || 
                           t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" });
       
       toast.error(t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" }), {
+        description: errorMessage
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSendWhatsAppText = async () => {
+    if (!selectedOrder) {
+      toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
+      return;
+    }
+
+    if (!selectedOrder.customer?.phone) {
+      toast.error(t("customerPhoneRequired", { ns: "orders", defaultValue: "Customer phone number is required to send WhatsApp message" }));
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      // Call the backend API to send WhatsApp text message
+      const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-message`, {
+        message: `Hello ${selectedOrder.customer.name}, your order #${selectedOrder.id} is ready for pickup. Thank you for choosing our service!`
+      });
+      
+      toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }), {
+        description: response.data?.message
+      });
+    } catch (error: unknown) {
+      console.error('Failed to send WhatsApp message:', error);
+      
+      // Extract detailed error message from backend response
+      const errorResponse = error as { response?: { data?: { details?: string; message?: string } } };
+      const errorMessage = errorResponse?.response?.data?.details || 
+                          errorResponse?.response?.data?.message || 
+                          (error as Error)?.message || 
+                          t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" });
+      
+      toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }), {
         description: errorMessage
       });
     } finally {
@@ -1134,6 +1175,7 @@ const POSPage: React.FC = () => {
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
                                onInvoiceClick={handleSendInvoice}
                                onPdfClick={() => setIsPdfDialogOpen(true)}
+                               onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
                              />
                            ) : (
@@ -1214,6 +1256,7 @@ const POSPage: React.FC = () => {
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
                                onInvoiceClick={handleSendInvoice}
                                onPdfClick={() => setIsPdfDialogOpen(true)}
+                               onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
                              />
                            ) : (

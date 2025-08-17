@@ -240,7 +240,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                   <TooltipTrigger asChild>
                     <div>
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         className="w-full h-12 text-base font-semibold"
                         onClick={onCancelOrder}
                         disabled={isProcessing || paymentStatus === 'paid'}
