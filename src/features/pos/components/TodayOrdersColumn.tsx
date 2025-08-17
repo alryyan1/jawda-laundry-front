@@ -123,7 +123,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-1">
+              <div className="flex flex-col items-center space-y-1 p-2">
                 {orders.map((order, index) => (
                   <React.Fragment key={order.id}>
                     <MuiBadge

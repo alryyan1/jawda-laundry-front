@@ -2,19 +2,16 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { 
   CreditCard, 
-  Receipt, 
   DollarSign, 
   Calendar,
-  User,
   FileText,
   CheckCircle,
   AlertCircle,
-  Clock,
   Download,
   ChevronDown,
   ChevronUp
@@ -28,6 +25,7 @@ interface ActionsComponentProps {
   onPaymentClick: () => void;
   onInvoiceClick: () => void;
   onPdfClick: () => void;
+  onWhatsAppTextClick?: () => void;
   isProcessing: boolean;
 }
 
@@ -36,6 +34,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   onPaymentClick,
   onInvoiceClick,
   onPdfClick,
+  onWhatsAppTextClick,
   isProcessing,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
@@ -44,7 +43,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   // Calculate payment totals from actual payments array
   const totalAmount = order.total_amount || 0;
   const payments = order.payments || [];
-   console.log(order,'order')
+   console.log(order,'order in actions component')
   // Calculate paid amount from payments array (more accurate)
   const paidAmountFromPayments = payments
     .filter(payment => payment.type === 'payment')
@@ -57,12 +56,11 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   // More accurate payment status calculation
   const isFullyPaid = totalAmount > 0 && paidAmount >= totalAmount;
   const hasPartialPayment = paidAmount > 0 && paidAmount < totalAmount;
-  const hasNoPayment = paidAmount === 0;
 
   // Get payment status for display
   const getPaymentStatusDisplay = () => {
     if (isFullyPaid) return { text: t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" }), variant: "success" as const };
-    if (hasPartialPayment) return { text: t("partiallyPaid", { ns: "orders", defaultValue: "Partially Paid" }), variant: "warning" as const };
+    if (hasPartialPayment) return { text: t("partiallyPaid", { ns: "orders", defaultValue: "Partially Paid" }), variant: "default" as const };
     return { text: t("unpaid", { ns: "orders", defaultValue: "Unpaid" }), variant: "destructive" as const };
   };
 
@@ -83,7 +81,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               className={cn(
                 "font-medium",
                 paymentStatus.variant === "success" && "bg-green-100 text-green-800 border-green-200",
-                paymentStatus.variant === "warning" && "bg-yellow-100 text-yellow-800 border-yellow-200",
+                paymentStatus.variant === "default" && "bg-yellow-100 text-yellow-800 border-yellow-200",
                 paymentStatus.variant === "destructive" && "bg-red-100 text-red-800 border-red-200"
               )}
             >
@@ -147,16 +145,57 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 
             <Button
               onClick={onInvoiceClick}
-              disabled={isProcessing}
-              variant="outline"
-              className="h-11 flex items-center justify-center gap-2 font-medium border-gray-300 hover:bg-gray-50"
+              disabled={isProcessing || order.whatsapp_pdf_sent}
+              variant={order.whatsapp_pdf_sent ? "default" : "outline"}
+              className={cn(
+                "h-11 flex items-center justify-center gap-2 font-medium",
+                order.whatsapp_pdf_sent 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : "border-gray-300 hover:bg-gray-50"
+              )}
             >
-              <Receipt className="h-4 w-4" />
+              {order.whatsapp_pdf_sent ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <WhatsAppIcon className="h-4 w-4" />
+              )}
               <span className="text-sm">
-                {t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })}
+                {order.whatsapp_pdf_sent 
+                  ? t("invoiceSent", { ns: "orders", defaultValue: "Invoice Sent" })
+                  : t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })
+                }
               </span>
             </Button>
           </div>
+
+          {/* WhatsApp Text Button */}
+          {onWhatsAppTextClick && order.customer?.phone && (
+            <div className="mt-3">
+              <Button
+                onClick={onWhatsAppTextClick}
+                disabled={isProcessing || order.whatsapp_text_sent}
+                variant={order.whatsapp_text_sent ? "default" : "outline"}
+                className={cn(
+                  "w-full h-11 flex items-center justify-center gap-2 font-medium",
+                  order.whatsapp_text_sent 
+                    ? "bg-green-600 hover:bg-green-700 text-white" 
+                    : "border-gray-300 hover:bg-gray-50"
+                )}
+              >
+                {order.whatsapp_text_sent ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : (
+                  <WhatsAppIcon className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {order.whatsapp_text_sent 
+                    ? t("messageSent", { ns: "orders", defaultValue: "Message Sent" })
+                    : t("sendMessage", { ns: "orders", defaultValue: "Send Message" })
+                  }
+                </span>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

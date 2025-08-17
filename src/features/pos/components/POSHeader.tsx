@@ -192,7 +192,7 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             {/* Order ID Display - Show when there's a selected order */}
             {selectedOrder && (
              
-               <Card className='bg-secondary text-white'>
+               <Card className='bg-secondary text-white p-2 text-2xl text-bold'>
                  #{selectedOrder.id}
 
 
