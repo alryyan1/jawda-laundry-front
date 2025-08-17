@@ -118,12 +118,12 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button
               onClick={onPaymentClick}
               disabled={isProcessing || isFullyPaid}
               className={cn(
-                "h-11 flex items-center justify-center gap-2 font-medium",
+                "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
                 isFullyPaid 
                   ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-100" 
                   : "bg-blue-600 hover:bg-blue-700"
@@ -148,7 +148,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               disabled={isProcessing || order.whatsapp_pdf_sent}
               variant={order.whatsapp_pdf_sent ? "default" : "outline"}
               className={cn(
-                "h-11 flex items-center justify-center gap-2 font-medium",
+                "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
                 order.whatsapp_pdf_sent 
                   ? "bg-green-600 hover:bg-green-700 text-white" 
                   : "border-gray-300 hover:bg-gray-50"
@@ -166,17 +166,15 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 }
               </span>
             </Button>
-          </div>
 
-          {/* WhatsApp Text Button */}
-          {onWhatsAppTextClick && order.customer?.phone && (
-            <div className="mt-3">
+            {/* WhatsApp Text Button */}
+            {onWhatsAppTextClick && order.customer?.phone && (
               <Button
                 onClick={onWhatsAppTextClick}
                 disabled={isProcessing || order.whatsapp_text_sent}
                 variant={order.whatsapp_text_sent ? "default" : "outline"}
                 className={cn(
-                  "w-full h-11 flex items-center justify-center gap-2 font-medium",
+                  "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
                   order.whatsapp_text_sent 
                     ? "bg-green-600 hover:bg-green-700 text-white" 
                     : "border-gray-300 hover:bg-gray-50"
@@ -194,8 +192,9 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                   }
                 </span>
               </Button>
-            </div>
-          )}
+            )}
+          </div>
+         
         </CardContent>
       </Card>
 
