@@ -920,6 +920,33 @@ const POSPage: React.FC = () => {
       
       // Auto-show PDF when order is completed
       setIsPdfDialogOpen(true);
+
+      // Auto-send WhatsApp notifications based on settings
+      if (settings) {
+        // Auto-send WhatsApp invoice if enabled
+        if (settings.pos_auto_send_whatsapp_invoice && response.order.customer?.phone) {
+          try {
+            await apiClient.post(`/orders/${response.order.id}/send-whatsapp-invoice`);
+            toast.success(t("invoiceSentSuccessfully", { ns: "orders", defaultValue: "Invoice sent successfully via WhatsApp" }));
+          } catch (error) {
+            console.error('Failed to auto-send WhatsApp invoice:', error);
+            toast.error(t("failedToSendInvoice", { ns: "orders", defaultValue: "Failed to send invoice" }));
+          }
+        }
+
+        // Auto-send WhatsApp text if enabled
+        if (settings.pos_auto_send_whatsapp_text && response.order.customer?.phone) {
+          try {
+            await apiClient.post(`/orders/${response.order.id}/send-whatsapp-message`, {
+              message: `Hello ${response.order.customer.name}, your order #${response.order.id} is ready for pickup. Thank you for choosing our service!`
+            });
+            toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }));
+          } catch (error) {
+            console.error('Failed to auto-send WhatsApp message:', error);
+            toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to complete order:', error);
       toast.error(t("failedToCompleteOrder", { ns: "orders", defaultValue: "Failed to complete order" }));
