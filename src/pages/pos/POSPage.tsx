@@ -96,6 +96,8 @@ const POSPage: React.FC = () => {
   const [isIpadView, setIsIpadView] = useState(false);
   const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
   const [isNewOrderMode, setIsNewOrderMode] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const debouncedCartItems = useDebounce(cartItems, 500);
 
   // Get today's date for statistics (using local timezone)
@@ -967,7 +969,7 @@ const POSPage: React.FC = () => {
     }
 
     try {
-      setIsProcessing(true);
+      setIsSendingInvoice(true);
       
       // Call the backend API to send WhatsApp invoice
       const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-invoice`);
@@ -989,7 +991,7 @@ const POSPage: React.FC = () => {
         description: errorMessage
       });
     } finally {
-      setIsProcessing(false);
+      setIsSendingInvoice(false);
     }
   };
 
@@ -1005,7 +1007,7 @@ const POSPage: React.FC = () => {
     }
 
     try {
-      setIsProcessing(true);
+      setIsSendingMessage(true);
       
       // Call the backend API to send WhatsApp text message
       const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-message`, {
@@ -1029,7 +1031,7 @@ const POSPage: React.FC = () => {
         description: errorMessage
       });
     } finally {
-      setIsProcessing(false);
+      setIsSendingMessage(false);
     }
   };
 
@@ -1177,6 +1179,8 @@ const POSPage: React.FC = () => {
                                onPdfClick={() => setIsPdfDialogOpen(true)}
                                onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
+                               isSendingInvoice={isSendingInvoice}
+                               isSendingMessage={isSendingMessage}
                              />
                            ) : (
                              // Show ProductColumn when order is not completed
@@ -1258,6 +1262,8 @@ const POSPage: React.FC = () => {
                                onPdfClick={() => setIsPdfDialogOpen(true)}
                                onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
+                               isSendingInvoice={isSendingInvoice}
+                               isSendingMessage={isSendingMessage}
                              />
                            ) : (
                              // Show ProductColumn when order is not completed

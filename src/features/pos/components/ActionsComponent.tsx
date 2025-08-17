@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Download,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { Order, Payment } from "@/types";
@@ -27,6 +28,8 @@ interface ActionsComponentProps {
   onPdfClick: () => void;
   onWhatsAppTextClick?: () => void;
   isProcessing: boolean;
+  isSendingInvoice?: boolean;
+  isSendingMessage?: boolean;
 }
 
 export const ActionsComponent: React.FC<ActionsComponentProps> = ({
@@ -36,6 +39,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   onPdfClick,
   onWhatsAppTextClick,
   isProcessing,
+  isSendingInvoice = false,
+  isSendingMessage = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
@@ -145,7 +150,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 
             <Button
               onClick={onInvoiceClick}
-              disabled={isProcessing || order.whatsapp_pdf_sent}
+              disabled={isProcessing || order.whatsapp_pdf_sent || isSendingInvoice}
               variant={order.whatsapp_pdf_sent ? "default" : "outline"}
               className={cn(
                 "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
@@ -154,13 +159,17 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                   : "border-gray-300 hover:bg-gray-50"
               )}
             >
-              {order.whatsapp_pdf_sent ? (
+              {isSendingInvoice ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : order.whatsapp_pdf_sent ? (
                 <CheckCircle className="h-4 w-4" />
               ) : (
                 <WhatsAppIcon className="h-4 w-4" />
               )}
               <span className="text-sm">
-                {order.whatsapp_pdf_sent 
+                {isSendingInvoice 
+                  ? t("sending", { ns: "common", defaultValue: "Sending..." })
+                  : order.whatsapp_pdf_sent 
                   ? t("invoiceSent", { ns: "orders", defaultValue: "Invoice Sent" })
                   : t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })
                 }
@@ -171,7 +180,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
             {onWhatsAppTextClick && order.customer?.phone && (
               <Button
                 onClick={onWhatsAppTextClick}
-                disabled={isProcessing || order.whatsapp_text_sent}
+                disabled={isProcessing || order.whatsapp_text_sent || isSendingMessage}
                 variant={order.whatsapp_text_sent ? "default" : "outline"}
                 className={cn(
                   "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
@@ -180,13 +189,17 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                     : "border-gray-300 hover:bg-gray-50"
                 )}
               >
-                {order.whatsapp_text_sent ? (
+                {isSendingMessage ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : order.whatsapp_text_sent ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
                   <WhatsAppIcon className="h-4 w-4" />
                 )}
                 <span className="text-sm">
-                  {order.whatsapp_text_sent 
+                  {isSendingMessage 
+                    ? t("sending", { ns: "common", defaultValue: "Sending..." })
+                    : order.whatsapp_text_sent 
                     ? t("messageSent", { ns: "orders", defaultValue: "Message Sent" })
                     : t("sendMessage", { ns: "orders", defaultValue: "Send Message" })
                   }
