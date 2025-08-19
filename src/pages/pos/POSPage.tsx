@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderComplete, updateOrderItemDimensions, updateOrderItemQuantity } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -76,6 +76,11 @@ const POSPage: React.FC = () => {
       clearNewlyCreatedOrder();
     }
   }, [newlyCreatedOrder, clearNewlyCreatedOrder]);
+
+  // Clear selected order when the date changes via POSDatePicker
+  useEffect(() => {
+    setSelectedOrder(null);
+  }, [selectedDate]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
@@ -154,7 +159,7 @@ const POSPage: React.FC = () => {
     : allServiceOfferings;
 
   // Fetch dining tables for in-house orders
-  const { data: diningTables = [] } = useQuery<DiningTable[], Error>({
+  useQuery<DiningTable[], Error>({
     queryKey: ["diningTables"],
     queryFn: getDiningTables,
   });
@@ -167,7 +172,7 @@ const POSPage: React.FC = () => {
   });
 
   // Fetch orders for the selected date
-  const { data: todayOrders = [] } = useQuery<Order[], Error>({
+  useQuery<Order[], Error>({
     queryKey: ["todayOrders", selectedDate],
     queryFn: () => getTodayOrders(selectedDate),
     staleTime: 5 * 60 * 1000,
@@ -341,9 +346,9 @@ const POSPage: React.FC = () => {
   };
 
   const handleSelectProduct = (product: ProductType) => {
-    // Prevent adding items to completed orders
-    if (selectedOrder?.status === 'completed') {
-      toast.error(t("orderCompletedCannotEdit", { ns: "orders", defaultValue: "This order is completed and cannot be edited" }));
+    // Prevent adding items to received orders
+    if (selectedOrder?.received) {
+      toast.error(t("orderReceivedCannotEdit", { ns: "orders", defaultValue: "This order is received and cannot be edited" }));
       return;
     }
 
@@ -649,9 +654,9 @@ const POSPage: React.FC = () => {
   };
 
   const handleServiceOfferingSelect = (offering: ServiceOffering) => {
-    // Prevent adding items to completed orders
-    if (selectedOrder?.status === 'completed') {
-      toast.error(t("orderCompletedCannotEdit", { ns: "orders", defaultValue: "This order is completed and cannot be edited" }));
+    // Prevent adding items to received orders
+    if (selectedOrder?.received) {
+      toast.error(t("orderReceivedCannotEdit", { ns: "orders", defaultValue: "This order is received and cannot be edited" }));
       setIsServiceOfferingDialogOpen(false);
       setSelectedProductForDialog(null);
       return;
@@ -828,12 +833,12 @@ const POSPage: React.FC = () => {
 
 
   const handleCheckout = async () => {
-    // If we have a selected order, we should complete it instead of creating a new one
-    if (selectedOrder) {
-      // Complete the selected order
-      await handleCompleteOrder();
-      return;
-    }
+          // If we have a selected order, we should receive it instead of creating a new one
+      if (selectedOrder) {
+        // Receive the selected order
+        await handleReceiveOrder();
+        return;
+      }
 
     // Otherwise, create a new order (this should rarely happen now with the new workflow)
     if (!selectedCustomerId) {
@@ -882,43 +887,43 @@ const POSPage: React.FC = () => {
     createOrderMutation.mutate(orderData);
   };
 
-  const handleCompleteOrder = async () => {
+  const handleReceiveOrder = async () => {
     if (!selectedOrder) {
       toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
       return;
     }
 
-    // Prevent completing already completed orders
-    if (selectedOrder.order_complete) {
-      toast.error(t("orderAlreadyCompleted", { ns: "orders", defaultValue: "This order is already completed" }));
+    // Prevent receiving already received orders
+    if (selectedOrder.received) {
+      toast.error(t("orderAlreadyReceived", { ns: "orders", defaultValue: "This order is already received" }));
       return;
     }
 
-    // Check if order has a customer (required for completion)
+    // Check if order has a customer (required for receiving)
     if (!selectedOrder.customer) {
-      toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before completing it" }));
+      toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before receiving it" }));
       return;
     }
 
-    console.log('Completing order - backend will recalculate total from order items');
+    console.log('Receiving order - backend will recalculate total from order items');
     
-    // Mark order as complete - backend will recalculate total from order items
+    // Mark order as received - backend will recalculate total from order items
     try {
       setIsProcessing(true);
       
-      // Use the markOrderComplete endpoint - backend will recalculate total from order items
-      const response = await markOrderComplete(selectedOrder.id);
+      // Use the markOrderReceived endpoint - backend will recalculate total from order items
+      const response = await markOrderReceived(selectedOrder.id);
       
-      // Update the selected order with the completed status
+      // Update the selected order with the received status
       setSelectedOrder(response.order);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
-      toast.success(t("orderCompletedSuccessfully", { ns: "orders", defaultValue: "Order completed successfully" }));
+      toast.success(t("orderReceivedSuccessfully", { ns: "orders", defaultValue: "Order received successfully" }));
       
-      // Auto-show PDF when order is completed
+      // Auto-show PDF when order is received
       setIsPdfDialogOpen(true);
 
       // Auto-send WhatsApp notifications based on settings
@@ -934,22 +939,22 @@ const POSPage: React.FC = () => {
           }
         }
 
-        // Auto-send WhatsApp text if enabled
-        if (settings.pos_auto_send_whatsapp_text && response.order.customer?.phone) {
-          try {
-            await apiClient.post(`/orders/${response.order.id}/send-whatsapp-message`, {
-              message: `Hello ${response.order.customer.name}, your order #${response.order.id} is ready for pickup. Thank you for choosing our service!`
-            });
-            toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }));
-          } catch (error) {
-            console.error('Failed to auto-send WhatsApp message:', error);
-            toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
-          }
-        }
+        // // Auto-send WhatsApp text if enabled
+        // if (settings.pos_auto_send_whatsapp_text && response.order.customer?.phone) {
+        //   try {
+        //     await apiClient.post(`/orders/${response.order.id}/send-whatsapp-message`, {
+        //       message: `Hello ${response.order.customer.name}, your order #${response.order.id} is ready for pickup. Thank you for choosing our service!`
+        //     });
+        //     toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }));
+        //   } catch (error) {
+        //     console.error('Failed to auto-send WhatsApp message:', error);
+        //     toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
+        //   }
+        // }
       }
     } catch (error) {
-      console.error('Failed to complete order:', error);
-      toast.error(t("failedToCompleteOrder", { ns: "orders", defaultValue: "Failed to complete order" }));
+      console.error('Failed to receive order:', error);
+      toast.error(t("failedToReceiveOrder", { ns: "orders", defaultValue: "Failed to receive order" }));
     } finally {
       setIsProcessing(false);
     }
@@ -961,9 +966,9 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Check if order is completed (can only cancel completed orders)
-    if (!selectedOrder.order_complete) {
-      toast.error(t("orderNotCompleted", { ns: "orders", defaultValue: "Only completed orders can be cancelled" }));
+    // Check if order is received (can only cancel received orders)
+    if (!selectedOrder.received) {
+      toast.error(t("orderNotReceived", { ns: "orders", defaultValue: "Only received orders can be cancelled" }));
       return;
     }
 
@@ -1118,6 +1123,33 @@ const POSPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkIpadView);
   }, []);
 
+  // Global keyboard event listener for Enter key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger if Enter is pressed and not in a text input/textarea
+      if (event.key === 'Enter' && !event.shiftKey) {
+        const target = event.target as HTMLElement;
+        const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true';
+        
+        if (!isInput) {
+          event.preventDefault();
+          
+          // Only trigger checkout if we have items and not processing
+          if (cartItems.length > 0 && !isProcessing) {
+            if (selectedOrder) {
+              handleReceiveOrder();
+            } else {
+              handleCheckout();
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cartItems.length, isProcessing, selectedOrder]);
+
   return (
     <div style={{
       userSelect: 'none',
@@ -1127,16 +1159,8 @@ const POSPage: React.FC = () => {
           onCustomerSelected={handleCustomerSelected}
           onNewCustomerClick={() => setIsCustomerModalOpen(true)}
           selectedOrder={selectedOrder}
-          orderType={orderType}
-          onOrderTypeChange={setOrderType}
-          selectedTableId={selectedTableId}
-          onTableIdChange={setSelectedTableId}
-          diningTables={diningTables}
-          todayOrders={todayOrders}
-          isProcessing={isProcessing}
           onCalculatorClick={() => setIsCalculatorOpen(true)}
           onPdfClick={() => setIsPdfDialogOpen(true)}
-          onPaymentClick={() => setIsPaymentModalOpen(true)}
           onOrderSelect={setSelectedOrder}
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={setSelectedCategoryId}
@@ -1195,10 +1219,9 @@ const POSPage: React.FC = () => {
                       )}
 
                                              {/* Products */}
-                       <Card className="flex-1 flex flex-col">
-                         <CardContent className="flex-1 min-h-0 p-0">
-                           {selectedOrder?.order_complete ? (
-                             // Show ActionsComponent when order is completed
+                       <div className="flex-1 flex flex-col p-1">
+                           {selectedOrder?.received ? (
+                             // Show ActionsComponent when order is received
                              <ActionsComponent
                                order={selectedOrder}
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
@@ -1210,7 +1233,7 @@ const POSPage: React.FC = () => {
                                isSendingMessage={isSendingMessage}
                              />
                            ) : (
-                             // Show ProductColumn when order is not completed
+                             // Show ProductColumn when order is not received
                              <>
                                {settings?.pos_show_products_as_list ? (
                                  <ProductListColumn
@@ -1231,8 +1254,7 @@ const POSPage: React.FC = () => {
                                )}
                              </>
                            )}
-                         </CardContent>
-                       </Card>
+                       </div>
 
                       {/* Cart - Only show when there are items */}
                       {cartItems.length > 0 && (
@@ -1244,13 +1266,13 @@ const POSPage: React.FC = () => {
                             onUpdateQuantity={handleUpdateQuantity}
                             onUpdateDimensions={handleUpdateDimensions}
                             onUpdateNotes={handleUpdateNotes}
-                            onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
-                            onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
+                            onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
+                            onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                             isProcessing={isProcessing}
                             mode={selectedOrder ? 'order_edit' : 'cart'}
                             orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
-                            isReadOnly={selectedOrder?.status === 'completed'}
-                            isCompleted={selectedOrder?.order_complete === true}
+                            isReadOnly={selectedOrder?.received}
+                            isReceived={selectedOrder?.received === true}
                             paymentStatus={selectedOrder?.payment_status}
                           />
                           </CardContent>
@@ -1280,8 +1302,8 @@ const POSPage: React.FC = () => {
                      <Card className="flex-1 flex flex-col">
                        <CardContent className="flex-1 min-h-0 p-1">
                          <div className="flex-1 min-h-0">
-                           {selectedOrder?.order_complete ? (
-                             // Show ActionsComponent when order is completed
+                           {selectedOrder?.received ? (
+                             // Show ActionsComponent when order is received
                              <ActionsComponent
                                order={selectedOrder}
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
@@ -1341,13 +1363,13 @@ const POSPage: React.FC = () => {
                                onUpdateQuantity={handleUpdateQuantity}
                                onUpdateDimensions={handleUpdateDimensions}
                                onUpdateNotes={handleUpdateNotes}
-                               onCheckout={selectedOrder ? handleCompleteOrder : handleCheckout}
-                               onCancelOrder={selectedOrder?.order_complete ? handleCancelOrder : undefined}
+                               onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
+                               onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                                isProcessing={isProcessing}
                                mode={selectedOrder ? 'order_edit' : 'cart'}
                                orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
-                               isReadOnly={selectedOrder?.status === 'completed'}
-                               isCompleted={selectedOrder?.order_complete === true}
+                               isReadOnly={selectedOrder?.received}
+                                isReceived={selectedOrder?.received === true}
                                paymentStatus={selectedOrder?.payment_status}
                                                           />
                                  </CardContent>

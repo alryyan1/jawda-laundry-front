@@ -15,7 +15,8 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus, sendOrderWhatsAppMessage } from "@/api/orderService";
+import { toast } from "sonner";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -25,6 +26,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -46,6 +48,7 @@ import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 import {
   Loader2,
   FileText,
+  Filter,
 } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
@@ -53,6 +56,7 @@ import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
 import OrdersTableRow from "./components/OrdersTableRow";
 import OrdersPagination from "./components/OrdersPagination";
+import { OrderStatusTimelineDialog } from "@/features/orders/components/OrderStatusTimelineDialog";
 
 
 const OrdersListPage: React.FC = () => {
@@ -74,14 +78,19 @@ const OrdersListPage: React.FC = () => {
     dateFrom?: string;
     dateTo?: string;
     categorySequenceSearch?: string;
+    showOnlyIncomplete?: boolean;
   }>({
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: format(new Date(), "yyyy-MM-dd"),
+    showOnlyIncomplete: false,
   });
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
   const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
+  const [timelineOrder, setTimelineOrder] = useState<Order | null>(null);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [isCompletingOrderId, setIsCompletingOrderId] = useState<number | null>(null);
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -100,6 +109,7 @@ const OrdersListPage: React.FC = () => {
       filters.dateFrom,
       filters.dateTo,
       filters.categorySequenceSearch,
+      filters.showOnlyIncomplete,
     ],
     [
       currentPage,
@@ -112,6 +122,7 @@ const OrdersListPage: React.FC = () => {
       filters.dateFrom,
       filters.dateTo,
       filters.categorySequenceSearch,
+      filters.showOnlyIncomplete,
     ]
   );
 
@@ -234,6 +245,45 @@ const OrdersListPage: React.FC = () => {
     }
   };
 
+  // Handler to mark order as completed (sets completed_at on backend via status change)
+  const handleMarkCompleted = async (order: Order) => {
+    try {
+      if (isCompletingOrderId) return; // prevent parallel actions
+      setIsCompletingOrderId(order.id);
+      await updateOrderStatus(order.id, 'completed');
+      queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((o) => {
+            if (o.id === order.id) {
+              return { 
+                ...o, 
+                status: 'completed' as OrderStatus,
+                completed_at: new Date().toISOString()
+              };
+            }
+            return o;
+          }),
+        };
+      });
+
+      // Send WhatsApp notification: Order is ready for pickup
+      try {
+        const message = `Your order #${order.id} is ready for pickup. Thank you!`;
+        await sendOrderWhatsAppMessage(order.id, message);
+        toast.success(t("whatsappMessageSent", { defaultValue: "Pickup message sent" }));
+      } catch {
+        // Non-blocking: show a soft error toast
+        toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    } finally {
+      setIsCompletingOrderId(null);
+    }
+  };
+
 
 
   // --- Data Fetching ---
@@ -263,6 +313,7 @@ const OrdersListPage: React.FC = () => {
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
         category_sequence_search: filters.categorySequenceSearch,
+        show_only_incomplete: filters.showOnlyIncomplete,
       }),
     placeholderData: keepPreviousData,
   });
@@ -280,6 +331,7 @@ const OrdersListPage: React.FC = () => {
     filters.dateFrom,
     filters.dateTo,
     filters.categorySequenceSearch,
+    filters.showOnlyIncomplete,
   ]);
 
   const orders = paginatedData?.data || [];
@@ -323,30 +375,44 @@ const OrdersListPage: React.FC = () => {
             <FileText className="h-4 w-4" />
             {t("exportPdf", { defaultValue: "Export PDF" })}
           </Button>
+
+          {/* Filter Incomplete Orders Button */}
+          <Button
+            variant={filters.showOnlyIncomplete ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilters(prev => ({ ...prev, showOnlyIncomplete: !prev.showOnlyIncomplete }))}
+            className="flex items-center gap-2"
+            title={filters.showOnlyIncomplete ? t("showAllOrders", { defaultValue: "Show All Orders" }) : t("showIncompleteOrders", { defaultValue: "Show Only Incomplete Orders" })}
+          >
+            <Filter className="h-4 w-4" />
+            {filters.showOnlyIncomplete ? t("showingIncomplete", { defaultValue: "Incomplete Only" }) : t("showIncomplete", { defaultValue: "Incomplete Only" })}
+          </Button>
         </div>
         
         {/* Mobile Date Range Picker */}
         {/* Mobile Date Range Picker */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full">
           <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-            <div className="flex-1 sm:flex-none">
-              <Input
+            <div className="flex items-center gap-2">
+              <Label className="text-xs sm:text-sm whitespace-nowrap">From:</Label>
+              <input
                 type="date"
                 value={filters.dateFrom || ""}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
                 }
-                className="w-full sm:w-40 text-xs sm:text-sm"
+                className="w-32 sm:w-36 text-xs sm:text-sm px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
             </div>
-            <div className="flex-1 sm:flex-none">
-              <Input
+            <div className="flex items-center gap-2">
+              <Label className="text-xs sm:text-sm whitespace-nowrap">To:</Label>
+              <input
                 type="date"
                 value={filters.dateTo || ""}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
                 }
-                className="w-full sm:w-40 text-xs sm:text-sm"
+                className="w-32 sm:w-36 text-xs sm:text-sm px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
             </div>
           </div>
@@ -362,13 +428,13 @@ const OrdersListPage: React.FC = () => {
              {/* Desktop Filters */}
        <div className="hidden sm:block mb-4">
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-          <Input
+          {/* <Input
             placeholder={t("searchOrdersPlaceholder")}
             value={filters.search || ""}
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, search: e.target.value }))
             }
-          />
+          /> */}
           <Input
             placeholder="Order ID"
             value={filters.orderId || ""}
@@ -499,6 +565,7 @@ const OrdersListPage: React.FC = () => {
                 <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
                 <TableHead className="text-center">{t("deliveredDate", { defaultValue: "Delivered Date" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
+                <TableHead className="text-center w-20">{t("communication", { defaultValue: "Communication" })}</TableHead>
                 <TableHead className="text-center">
                   {t("actions", { defaultValue: "Actions" })}
                 </TableHead>
@@ -516,7 +583,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
               {isLoading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-32 text-center">
+                  <TableCell colSpan={11} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -529,7 +596,10 @@ const OrdersListPage: React.FC = () => {
                     onNavigate={(path) => navigate(path)}
                     onOpenPayments={(o) => setSelectedOrderForPayments(o)}
                     onRecordPayment={(o) => setSelectedOrderForPayment(o)}
+                    onMarkCompleted={handleMarkCompleted}
                     onMarkDelivered={handleMarkDelivered}
+                    onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
+                    isCompleting={isCompletingOrderId === order.id}
                     onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
                     can={can}
                     t={t}
@@ -539,7 +609,7 @@ const OrdersListPage: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-32 text-center">
+                  <TableCell colSpan={11} className="h-32 text-center">
                     {t("noResults")}
                   </TableCell>
                 </TableRow>
@@ -603,6 +673,12 @@ const OrdersListPage: React.FC = () => {
           }}
         />
       )}
+
+      <OrderStatusTimelineDialog
+        order={timelineOrder}
+        isOpen={isTimelineOpen}
+        onOpenChange={(open) => { setIsTimelineOpen(open); if (!open) setTimelineOrder(null); }}
+      />
 
 
     </div>

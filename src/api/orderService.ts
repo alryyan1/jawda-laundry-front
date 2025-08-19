@@ -70,6 +70,7 @@ export const getOrders = async (
         dateTo?: string;   // YYYY-MM-DD
         createdDate?: string; // YYYY-MM-DD
         category_sequence_search?: string;
+        show_only_incomplete?: boolean;
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -82,6 +83,7 @@ export const getOrders = async (
     if (filters?.dateTo) params.date_to = filters.dateTo;
     if (filters?.createdDate) params.created_date = filters.createdDate;
     if (filters?.category_sequence_search) params.category_sequence_search = filters.category_sequence_search;
+    if (filters?.show_only_incomplete) params.show_only_incomplete = filters.show_only_incomplete;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;
@@ -414,8 +416,8 @@ export const cancelOrder = async (orderId: string | number): Promise<{ order: Or
     return data;
 };
 
-export const markOrderComplete = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
-    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-complete`);
+export const markOrderReceived = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
+    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-received`);
     return data;
 };
 

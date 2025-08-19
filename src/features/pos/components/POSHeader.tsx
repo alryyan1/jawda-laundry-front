@@ -2,10 +2,9 @@ import React from 'react';
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 // MUI imports for order ID display
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card } from '@mui/material';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
 import { ORDER_STATUSES } from "@/lib/constants";
@@ -13,7 +12,6 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
 import type { Order, OrderStatus } from '@/types';
-import type { DiningTable } from '@/types/dining.types';
 import { CustomerSelection } from './CustomerSelection';
 import { OrderStatusBadgeComponent } from './OrderStatusBadge';
 import { updateOrderStatus, sendOrderWhatsAppInvoice } from "@/api/orderService";
@@ -39,16 +37,8 @@ interface POSHeaderProps {
   onCustomerSelected: (customerId: string | null) => void;
   onNewCustomerClick: () => void;
   selectedOrder: Order | null;
-  orderType: 'in_house' | 'take_away' | 'delivery';
-  onOrderTypeChange: (orderType: 'in_house' | 'take_away' | 'delivery') => void;
-  selectedTableId: string;
-  onTableIdChange: (tableId: string) => void;
-  diningTables: DiningTable[];
-  todayOrders: Order[];
-  isProcessing: boolean;
   onCalculatorClick: () => void;
   onPdfClick: () => void;
-  onPaymentClick: () => void;
   onOrderSelect: (order: Order | null) => void;
   selectedCategoryId: string | null;
   onCategorySelect: (categoryId: string) => void;
@@ -61,16 +51,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   onCustomerSelected,
   onNewCustomerClick,
   selectedOrder,
-  orderType,
-  onOrderTypeChange,
-  selectedTableId,
-  onTableIdChange,
-  diningTables,
-  todayOrders,
-  isProcessing,
   onCalculatorClick,
   onPdfClick,
-  onPaymentClick,
   onOrderSelect,
   selectedCategoryId,
   onCategorySelect,
@@ -143,10 +125,10 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
         description: data.message
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       // Extract detailed error message from backend response
-      const errorMessage = error?.response?.data?.details || 
-                          error?.response?.data?.message || 
+      const errorMessage = (error as any)?.response?.data?.details || 
+                          (error as any)?.response?.data?.message || 
                           error?.message || 
                           t("whatsappInvoiceSendFailed", { ns: "orders" });
       
@@ -159,12 +141,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   const handleStatusChange = (newStatus: OrderStatus) => {
     if (selectedOrder && newStatus !== selectedOrder.status) {
       updateStatusMutation.mutate({ orderId: selectedOrder.id, status: newStatus });
-    }
-  };
-
-  const handleSendWhatsAppInvoice = () => {
-    if (selectedOrder) {
-      sendWhatsAppInvoiceMutation.mutate(selectedOrder.id);
     }
   };
 

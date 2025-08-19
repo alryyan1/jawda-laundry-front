@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Calendar, CheckCircle, CreditCard, Eye, MoreHorizontal, Package, FileText } from "lucide-react";
+import { Calendar, CheckCircle, CreditCard, Eye, MoreHorizontal, Package, FileText, MessageSquare, FileText as FileTextIcon } from "lucide-react";
 import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
@@ -71,6 +71,35 @@ export const MobileOrderCard: React.FC<MobileOrderCardProps> = ({
                     </span>
                   </div>
                 )}
+                                 {/* Communication Status */}
+                 {(order.received || order.whatsapp_text_sent || order.whatsapp_pdf_sent || order.order_receive_message_sent) && (
+                   <div className="flex items-center gap-2 mt-1">
+                     {order.received && (
+                       <div className="flex items-center gap-1" title={t("orderReceived", { defaultValue: "Order received" })}>
+                         <Package className="h-3 w-3 text-orange-600 dark:text-orange-500" />
+                         <span className="text-xs text-orange-600 dark:text-orange-500">Received</span>
+                       </div>
+                     )}
+                     {order.whatsapp_text_sent && (
+                       <div className="flex items-center gap-1" title={t("whatsappTextSent", { defaultValue: "WhatsApp text sent" })}>
+                         <MessageSquare className="h-3 w-3 text-green-600 dark:text-green-500" />
+                         <span className="text-xs text-green-600 dark:text-green-500">Text</span>
+                       </div>
+                     )}
+                     {order.whatsapp_pdf_sent && (
+                       <div className="flex items-center gap-1" title={t("whatsappPdfSent", { defaultValue: "WhatsApp PDF sent" })}>
+                         <FileTextIcon className="h-3 w-3 text-blue-600 dark:text-blue-500" />
+                         <span className="text-xs text-blue-600 dark:text-blue-500">PDF</span>
+                       </div>
+                     )}
+                     {order.order_receive_message_sent && (
+                       <div className="flex items-center gap-1" title={t("receiveMessageSent", { defaultValue: "Receive message sent" })}>
+                         <MessageSquare className="h-3 w-3 text-purple-600 dark:text-purple-500" />
+                         <span className="text-xs text-purple-600 dark:text-purple-500">Receive</span>
+                       </div>
+                     )}
+                   </div>
+                 )}
               </div>
           </div>
           <DropdownMenu>

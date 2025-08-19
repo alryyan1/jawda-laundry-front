@@ -81,6 +81,7 @@ const settingsFormSchema = z.object({
   pos_show_products_as_list: z.boolean().optional(),
   pos_auto_send_whatsapp_invoice: z.boolean().optional(),
   pos_auto_send_whatsapp_text: z.boolean().optional(),
+  pos_auto_send_receive_order_message: z.boolean().optional(),
   // App branding settings
   app_name: z.string().optional(),
   app_description: z.string().optional(),
@@ -124,8 +125,9 @@ const SettingsPage: React.FC = () => {
       // POS settings
       pos_auto_show_pdf: false,
       pos_show_products_as_list: false,
-      pos_auto_send_whatsapp_invoice: false,
-      pos_auto_send_whatsapp_text: false,
+          pos_auto_send_whatsapp_invoice: false,
+    pos_auto_send_whatsapp_text: false,
+    pos_auto_send_receive_order_message: false,
       // App branding settings
       app_name: "Jawda Laundry",
       app_description: "LAUNDRY MANAGEMENT SYSTEM",
@@ -165,8 +167,9 @@ const SettingsPage: React.FC = () => {
         // POS settings
         pos_auto_show_pdf: settings.pos_auto_show_pdf || false,
         pos_show_products_as_list: settings.pos_show_products_as_list || false,
-        pos_auto_send_whatsapp_invoice: settings.pos_auto_send_whatsapp_invoice || false,
-        pos_auto_send_whatsapp_text: settings.pos_auto_send_whatsapp_text || false,
+            pos_auto_send_whatsapp_invoice: settings.pos_auto_send_whatsapp_invoice || false,
+    pos_auto_send_whatsapp_text: settings.pos_auto_send_whatsapp_text || false,
+    pos_auto_send_receive_order_message: settings.pos_auto_send_receive_order_message || false,
         // App branding settings
         app_name: settings.app_name || "Jawda Laundry",
         app_description: settings.app_description || "LAUNDRY MANAGEMENT SYSTEM",
@@ -586,6 +589,28 @@ const SettingsPage: React.FC = () => {
                             <FormLabel>{t("settings:posAutoSendWhatsAppText", { defaultValue: "Auto Send WhatsApp Text" })}</FormLabel>
                             <FormDescription>
                               {t("settings:posAutoSendWhatsAppTextDesc", { defaultValue: "Automatically send WhatsApp text message when order is completed" })}
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="pos_auto_send_receive_order_message"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>{t("settings:posAutoSendReceiveOrderMessage", { defaultValue: "Auto Send Receive Order Message" })}</FormLabel>
+                            <FormDescription>
+                              {t("settings:posAutoSendReceiveOrderMessageDesc", { defaultValue: "Automatically send WhatsApp message when order is received" })}
                             </FormDescription>
                           </div>
                         </FormItem>

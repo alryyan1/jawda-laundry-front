@@ -22,7 +22,7 @@ interface CartColumnProps {
   mode?: 'cart' | 'order_view' | 'order_edit';
   orderNumber?: string;
   isReadOnly?: boolean;
-  isCompleted?: boolean;
+  isReceived?: boolean;
   paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | string | null;
 }
 
@@ -38,7 +38,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   mode = 'cart',
   orderNumber,
   isReadOnly = false,
-  isCompleted = false,
+  isReceived = false,
   paymentStatus,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
@@ -67,31 +67,18 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     setSelectedItemId(null);
   };
 
-  // Handle keyboard events
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      // Only trigger checkout if we have items and not processing
-      if (items.length > 0 && !isProcessing) {
-        onCheckout();
-      }
-    }
-  };
-
     return (
     <div 
       className={cn(
         "flex flex-col h-full relative",
-        isCompleted && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
+        isReceived && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
       )}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
     >
       {/* Cart Items Avatar Header - Positioned at top border */}
       {items.length > 0 && (
         <div className={cn(
           "rounded-lg p-1 shadow-lg",
-          isCompleted 
+          isReceived 
             ? "bg-gradient-to-br from-sky-100 to-green-100 border border-sky-300 shadow-sky-200/50" 
             : "bg-white border border-gray-200"
         )}>
@@ -146,10 +133,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
             <div className="mt-2 text-center">
               <div className={cn(
                 "text-lg font-bold",
-                isCompleted ? "text-green-700" : "text-sky-700"
+                isReceived ? "text-green-700" : "text-sky-700"
               )}>
                 {orderNumber}
-                {isCompleted && (
+                {isReceived && (
                   <span className="ml-2 text-green-600">✓</span>
                 )}
               </div>
@@ -163,7 +150,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
       <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
         <div className={cn(
           "p-1 space-y-4",
-          isCompleted && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
+          isReceived && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
         )}>
           {itemsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
@@ -203,7 +190,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
               disabled={items.length === 0 || isProcessing}
             >
               {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("completeOrder", { ns: "orders" })}
+              {t("receiveOrder", { ns: "orders", defaultValue: "Receive Order" })}
             </Button>
           </div>
         </div>
@@ -221,20 +208,20 @@ export const CartColumn: React.FC<CartColumnProps> = ({
           </div>
 
           <div className="flex flex-col gap-2">
-            {/* Show Complete Order button when order is NOT completed */}
-            {!isCompleted && (
+            {/* Show Complete Order button when order is NOT received */}
+            {!isReceived && (
               <Button
                 className="w-full h-12 text-base font-semibold"
                 onClick={onCheckout}
                 disabled={isProcessing}
               >
                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t("completeOrder", { ns: "orders", defaultValue: "Complete Order" })}
+                {t("receiveOrder", { ns: "orders", defaultValue: "Receive Order" })}
               </Button>
             )}
             
-            {/* Show Cancel Order button when order IS completed */}
-            {isCompleted && onCancelOrder && (
+            {/* Show Cancel Order button when order IS received */}
+            {isReceived && onCancelOrder && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

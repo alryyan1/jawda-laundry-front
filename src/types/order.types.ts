@@ -93,8 +93,12 @@ export interface Order {
     due_date?: string | null;
     pickup_date?: string | null;
     delivered_date?: string | null;
+    completed_at?: string | null;
     whatsapp_text_sent?: boolean;
     whatsapp_pdf_sent?: boolean;
+    received?: boolean;
+    received_at?: string | null;
+    order_receive_message_sent?: boolean;
     category_sequences?: Record<string, string> | null;
     category_sequences_string?: string | null;
     items: OrderItem[];

@@ -73,6 +73,75 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 
   return (
     <div className="flex flex-col h-full space-y-4">
+      {/* Order Details Card */}
+      <Card className="border-l-4 border-l-purple-500">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              {t("orderDetails", { ns: "orders", defaultValue: "Order Details" })}
+            </h3>
+            <Badge variant="secondary" className="font-medium">
+              #{order.id}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  {t("createdAt", { ns: "orders", defaultValue: "Created" })}
+                </div>
+                <div className="text-sm font-medium">
+                  {order.created_at
+                    ? new Date(order.created_at).toLocaleString(i18n.language)
+                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  {t("pickupDate", { ns: "orders", defaultValue: "Pickup Date" })}
+                </div>
+                <div className="text-sm font-medium">
+                  {order.pickup_date
+                    ? new Date(order.pickup_date).toLocaleString(i18n.language)
+                    : t("notSet", { ns: "common", defaultValue: "Not set" })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  {t("completedAt", { ns: "orders", defaultValue: "Completed" })}
+                </div>
+                <div className="text-sm font-medium">
+                  {order.completed_at
+                    ? new Date(order.completed_at).toLocaleString(i18n.language)
+                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-xs text-muted-foreground">
+                  {t("deliveredDate", { ns: "orders", defaultValue: "Delivered" })}
+                </div>
+                <div className="text-sm font-medium">
+                  {order.delivered_date
+                    ? new Date(order.delivered_date).toLocaleString(i18n.language)
+                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Payment Status Card */}
       <Card className="border-l-4 border-l-blue-500">
         <CardContent className="p-4">

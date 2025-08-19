@@ -3,13 +3,13 @@
 // Configuration variables for the application
 export const CONFIG = {
   // Schema - HTTP protocol
-  SCHEMA: 'http',
+  SCHEMA: 'https',
   
   // Host - Dynamic based on current device IP
-  HOST: window.location.hostname,
+  HOST: 'intaj-starstechnology.com',
   
   // Project folder - Backend directory name
-  PROJECT_FOLDER: 'jawda-laundry-backend',
+  PROJECT_FOLDER: 'laundry-backend',
   
   // Derived values
   get BASE_URL() {

@@ -131,7 +131,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             <Badge variant="info" className="text-xs mb-1">
               {item.serviceOffering.display_name}
             </Badge>
-            <p className=" text-muted-foreground text-2xl">
+            <p className=" text-2xl">
               {item.productType.name}
             </p>
             {item.productType.category && (
@@ -146,7 +146,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-8 w-8 hover:text-destructive"
                 onClick={() => onRemoveItem(item.id)}
                 disabled={item._isDeleting}
               >

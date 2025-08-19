@@ -165,7 +165,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 
   return (
     <MuiThemeProvider theme={muiTheme}>
-      <div className="flex flex-col h-full" ref={containerRef}>
+      <div className="flex flex-col h-full " ref={containerRef}>
         <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
           <div className="p-0">
             {filteredProducts.length === 0 ? (

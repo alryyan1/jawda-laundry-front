@@ -2,7 +2,7 @@ import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal, FileText } from "lucide-react";
+import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal, FileText, MessageSquare, FileText as FileTextIcon, Package, Loader2 } from "lucide-react";
 import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
@@ -15,7 +15,10 @@ type OrdersTableRowProps = {
   onNavigate: (path: string) => void;
   onOpenPayments: (order: Order) => void;
   onRecordPayment: (order: Order) => void;
+  onMarkCompleted: (order: Order) => void;
   onMarkDelivered: (order: Order) => void;
+  onOpenTimeline: (order: Order) => void;
+  isCompleting?: boolean;
   onEdit: (order: Order) => void;
   can: (permission: string) => boolean;
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -29,7 +32,10 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   onNavigate,
   onOpenPayments,
   onRecordPayment,
+  onMarkCompleted,
   onMarkDelivered,
+  onOpenTimeline,
+  isCompleting,
   onEdit,
   can,
   t,
@@ -59,11 +65,48 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
         {order.delivered_date ? dayjs(order.delivered_date).format('DD/MM/YYYY') : "-"}
       </TableCell>
       <TableCell className="text-center">
-        <OrderStatusBadge status={order.status} />
+        <button type="button" onClick={(e) => { e.stopPropagation(); onOpenTimeline(order); }} className="inline-flex items-center gap-1 hover:opacity-80">
+          <OrderStatusBadge status={order.status} />
+        </button>
+      </TableCell>
+      <TableCell className="text-center">
+        <div className="flex items-center justify-center gap-1">
+       
+          {order.whatsapp_text_sent && (
+            <div className="flex items-center gap-1" title={t("whatsappTextSent", { defaultValue: "WhatsApp text sent" })}>
+              <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-500" />
+            </div>
+          )}
+          {order.whatsapp_pdf_sent && (
+            <div className="flex items-center gap-1" title={t("whatsappPdfSent", { defaultValue: "WhatsApp PDF sent" })}>
+              <FileTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+            </div>
+          )}
+          {order.order_receive_message_sent && (
+            <div className="flex items-center gap-1" title={t("receiveMessageSent", { defaultValue: "Receive message sent" })}>
+              <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-500" />
+            </div>
+          )}
+          {!order.received && !order.whatsapp_text_sent && !order.whatsapp_pdf_sent && !order.order_receive_message_sent && (
+            <span className="text-xs text-muted-foreground">-</span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col gap-1">
-          {order.status !== 'delivered' && can("order:update") && (
+          {!order.completed_at && can("order:update-status") && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onMarkCompleted(order)}
+              disabled={!!isCompleting}
+              className="h-7 text-xs"
+            >
+              {isCompleting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+              {t("markComplete", { defaultValue: "Mark Complete" })}
+            </Button>
+          )}
+          {order.status === 'completed' && can("order:update-status") && (
             <Button
               variant="outline"
               size="sm"
@@ -73,7 +116,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               {t("markDelivered", { defaultValue: "Mark Delivered" })}
             </Button>
           )}
-          {can("order:record-payment") && (
+          {order.status === 'delivered' && can("order:record-payment") && (
             <Button
               variant="outline"
               size="sm"

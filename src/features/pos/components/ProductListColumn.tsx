@@ -10,7 +10,6 @@ import type { CustomerProductTypesResponse } from "@/types/customerProductTypes.
 import { useDebounce } from "@/hooks/useDebounce";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Search, CheckCircle } from "lucide-react";
@@ -122,7 +121,7 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow h-[calc(100vh-400px)]">
-        <div className="p-1">
+        <div>
           {filteredProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[200px]">
               <Search className="h-12 w-12 mb-4 opacity-50" />
@@ -130,7 +129,7 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
               <p className="text-sm">{t("tryAdjustingSearch", { ns: "services" })}</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div>
               {filteredProducts.map((product) => (
                 <TooltipProvider key={product.id} delayDuration={300}>
                   <Tooltip>
@@ -138,11 +137,10 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
                       <button
                         onClick={() => onSelectProduct(product)}
                         className={cn(
-                          "w-full flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer",
-                          "bg-card hover:bg-card/90",
-                          "shadow-sm hover:shadow-md",
-                          "border border-border hover:border-primary/50",
-                          activeProductId === product.id.toString() && "border-2 border-primary bg-primary/5 shadow-primary/20"
+                          "w-full flex items-center justify-between p-3 transition-all cursor-pointer",
+                          "hover:bg-muted/50",
+                          "border-b border-border",
+                          activeProductId === product.id.toString() && "bg-primary/10 border-primary"
                         )}
                       >
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
