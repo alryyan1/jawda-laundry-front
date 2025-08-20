@@ -161,8 +161,8 @@ const NotFoundPage: React.FC = () => {
         {/* Footer Info */}
         <div className="text-center mt-8 pt-6 border-t">
           <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
-            <Shirt className="h-4 w-4" />
-            <span>{t('appName', { defaultValue: 'Laundry Management' })}</span>
+                         <Coffee className="h-4 w-4" />
+                            <span>{t('appName', { defaultValue: 'Restaurant Management' })}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Error Code: 404 • Page Not Found • {new Date().toLocaleString()}

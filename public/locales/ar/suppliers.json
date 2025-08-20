@@ -21,7 +21,7 @@
   "totalPurchases": "إجمالي المشتريات",
   "contactInfo": "معلومات الاتصال",
   "purchases": "المشتريات",
-  "newSupplierDescription": "إضافة مورد جديد لنظام إدارة المغسلة",
+      "newSupplierDescription": "إضافة مورد جديد لنظام إدارة المطعم",
   "supplierNamePlaceholder": "أدخل اسم المورد...",
   "createSupplierBtn": "إنشاء مورد",
   "noSuppliersFoundHint": "ابدأ بإضافة أول مورد لك",

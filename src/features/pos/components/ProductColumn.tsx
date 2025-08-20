@@ -12,7 +12,7 @@ import { useSearch } from "@/context/SearchContext";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getImageUrl } from "@/lib/utils";
-import { CheckCircle, Shirt } from "lucide-react";
+import { CheckCircle, Utensils } from "lucide-react";
 
 // --- MUI Import ---
 import Badge from '@mui/material/Badge';
@@ -233,7 +233,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                             className={`w-full h-full flex items-center justify-center bg-muted ${product.image_url ? 'hidden' : 'flex'}`}
                             style={{ display: product.image_url ? 'none' : 'flex' }}
                           >
-                            <Shirt className="h-8 w-8 text-muted-foreground" />
+                            <Utensils className="h-8 w-8 text-muted-foreground" />
                           </div>
                         </div>
                       </Badge>

@@ -129,8 +129,8 @@ const SettingsPage: React.FC = () => {
     pos_auto_send_whatsapp_text: false,
     pos_auto_send_receive_order_message: false,
       // App branding settings
-      app_name: "Jawda Laundry",
-      app_description: "LAUNDRY MANAGEMENT SYSTEM",
+              app_name: "Jawda Restaurant",
+        app_description: "RESTAURANT MANAGEMENT SYSTEM",
       // Theme settings
       theme_primary_color: "sky",
       theme_secondary_color: "blue",
@@ -171,8 +171,8 @@ const SettingsPage: React.FC = () => {
     pos_auto_send_whatsapp_text: settings.pos_auto_send_whatsapp_text || false,
     pos_auto_send_receive_order_message: settings.pos_auto_send_receive_order_message || false,
         // App branding settings
-        app_name: settings.app_name || "Jawda Laundry",
-        app_description: settings.app_description || "LAUNDRY MANAGEMENT SYSTEM",
+        app_name: settings.app_name || "Jawda Restaurant",
+        app_description: settings.app_description || "RESTAURANT MANAGEMENT SYSTEM",
         // Theme settings - use theme context values if available, otherwise fall back to settings
         theme_primary_color: settings.theme_primary_color || "sky",
         theme_secondary_color: settings.theme_secondary_color || "blue",

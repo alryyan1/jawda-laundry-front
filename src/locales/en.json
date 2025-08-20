@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "LAUNDRY MANAGEMENT PRO",
+    "appName": "RESTAURANT MANAGEMENT PRO",
     "dashboard": "Dashboard",
     "orders": "Orders",
     "customers": "Customers",
@@ -397,7 +397,7 @@
     "haveAccount": "Already have an account?",
     "forgotPasswordQuestion": "Forgot your password?",
     "backToLogin": "Back to Login",
-    "appSubtitle": "LAUNDRY MANAGEMENT SYSTEM",
+    "appSubtitle": "RESTAURANT MANAGEMENT SYSTEM",
     "emailPlaceholder": "name@example.com",
     "passwordPlaceholder": "Enter your password",
     "namePlaceholder": "e.g., John Doe",

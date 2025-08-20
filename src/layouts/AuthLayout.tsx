@@ -2,7 +2,7 @@
 import { Outlet } from 'react-router-dom';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useTranslation } from 'react-i18next';
-import { Shirt } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import settingService from '@/services/settingService';
 import AppIcon from '@/components/ui/app-icon';
@@ -41,14 +41,14 @@ const AuthLayout = () => {
             <AppIcon 
               iconUrl={settings?.company_logo_url} 
               className="h-8 w-8" 
-              fallbackIcon={Shirt}
+              fallbackIcon={Utensils}
             />
             <h1 className="text-3xl font-bold tracking-tight">
               {settings?.app_name || t('appName')}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            {settings?.app_description || t('appSubtitle', { ns: 'auth', defaultValue: 'LAUNDRY MANAGEMENT SYSTEM' })}
+            {settings?.app_description || t('appSubtitle', { ns: 'auth', defaultValue: 'RESTAURANT MANAGEMENT SYSTEM' })}
           </p>
         </div>
 

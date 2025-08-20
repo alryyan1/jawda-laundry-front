@@ -1,7 +1,7 @@
 {
   "title": "إدارة الطلبات",
   "orderListDescription": "عرض وإدارة جميع طلبات العملاء.",
-  "newOrderDescription": "املأ التفاصيل لإنشاء طلب غسيل جديد.",
+      "newOrderDescription": "املأ التفاصيل لإنشاء طلب مطعم جديد.",
   "orderId": "معرف الطلب",
   "orderNumber": "طلب رقم",
   "status_pending": "قيد الانتظار",

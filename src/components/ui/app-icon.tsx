@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shirt } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 
 interface AppIconProps {
   iconUrl?: string | null;
@@ -12,7 +12,7 @@ const AppIcon: React.FC<AppIconProps> = ({
   iconUrl, 
   alt = "App Icon", 
   className = "h-6 w-6", 
-  fallbackIcon: FallbackIcon = Shirt 
+  fallbackIcon: FallbackIcon = Utensils 
 }) => {
   const [imageError, setImageError] = React.useState(false);
 

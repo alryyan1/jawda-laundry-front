@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <Suspense fallback="Loading translations...">
       <SettingsProvider>
         <AppThemeProvider>
-          <ThemeProvider defaultTheme="dark" storageKey="laundry-management-ui-theme">
+          <ThemeProvider defaultTheme="dark" storageKey="restaurant-management-ui-theme">
             <QueryClientProvider client={queryClient}>
                              <SearchProvider>
                  <NewOrderProvider>

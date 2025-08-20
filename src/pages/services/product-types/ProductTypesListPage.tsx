@@ -53,7 +53,7 @@ import {
   ChevronUp,
   ChevronDown,
   AlertTriangle,
-  Shirt,
+  Utensils,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 
@@ -83,7 +83,7 @@ const MobileMemoizedCard = React.memo(
               alt={productType.name}
             />
             <AvatarFallback className="rounded-md bg-muted">
-              <Shirt className="h-6 w-6 text-muted-foreground" />
+              <Utensils className="h-6 w-6 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -389,7 +389,7 @@ const ProductTypesListPage: React.FC = () => {
                   alt={productType.name}
                 />
                 <AvatarFallback className="rounded-md bg-muted">
-                  <Shirt className="h-4 w-4 text-muted-foreground" />
+                  <Utensils className="h-4 w-4 text-muted-foreground" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">

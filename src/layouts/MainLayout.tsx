@@ -38,7 +38,7 @@ import {
     Settings as SettingsIcon,
     LogOut,
     Menu,
-    Shirt,
+    Utensils,
     Layers,
     Box,
     Wand2,
@@ -54,7 +54,7 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     TrendingUp,
-    Utensils,
+    Coffee,
   Loader2,
   Lamp,
   } from "lucide-react";
@@ -91,7 +91,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
   Settings: SettingsIcon,
   Menu,
-      Shirt,
+      Utensils,
   Layers,
   Box,
   Wand2,
@@ -506,7 +506,7 @@ const MainLayout: React.FC = () => {
                     <AppIcon 
                       iconUrl={settings?.company_logo_url} 
                       className="h-6 w-6" 
-                      fallbackIcon={Shirt}
+                      fallbackIcon={Utensils}
                     />
                     <span className="text-lg">{settings?.app_name || t("appName", { ns: "common" })}</span>
                   </Link>
@@ -562,7 +562,7 @@ const MainLayout: React.FC = () => {
                   <AppIcon 
                     iconUrl={settings?.company_logo_url} 
                     className="h-6 w-6" 
-                    fallbackIcon={Shirt}
+                    fallbackIcon={Utensils}
                   />
                   <span className="text-lg">
                     {settings?.app_name || t("appName", { ns: "common" })}
