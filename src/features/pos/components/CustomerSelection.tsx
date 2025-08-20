@@ -21,7 +21,6 @@ interface CustomerSelectionProps {
   selectedCustomerId: string | null;
   onCustomerSelected: (customerId: string) => void;
   onNewCustomerClick?: () => void;
-  disabled?: boolean;
   forcedCustomer?: Customer | null;
   selectedOrder?: Order | null;
   onOrderUpdate?: (updatedOrder: Order) => void;
@@ -31,12 +30,10 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   selectedCustomerId,
   onCustomerSelected,
   onNewCustomerClick,
-  disabled = false,
   forcedCustomer = null,
   selectedOrder = null,
   onOrderUpdate,
 }) => {
-  console.log(disabled,'disabled')
   const { t } = useTranslation(["common", "orders", "customers"]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -90,7 +87,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
 
   // Auto-select default customer when no customer is selected
   useEffect(() => {
-    if (!selectedCustomerId && !disabled && customersResponse?.data) {
+    if (!selectedCustomerId && customersResponse?.data) {
       const defaultCustomer = customersResponse.data.find(customer => customer.is_default);
       if (defaultCustomer) {
         onCustomerSelected(defaultCustomer.id.toString());
@@ -104,11 +101,11 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
         }
       }
     }
-  }, [selectedCustomerId, disabled, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation]);
+  }, [selectedCustomerId, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation]);
 
   // Show animation when order has no customer and no default customer is available
   useEffect(() => {
-    if (selectedOrder && !selectedOrder.customer && !disabled && !selectedCustomerId) {
+    if (selectedOrder && !selectedOrder.customer && !selectedCustomerId) {
       // Check if there's a default customer available
       const hasDefaultCustomer = customersResponse?.data?.some(customer => customer.is_default);
       if (!hasDefaultCustomer) {
@@ -119,7 +116,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     } else {
       setShowAnimation(false);
     }
-  }, [selectedOrder, selectedCustomerId, disabled, customersResponse?.data]);
+  }, [selectedOrder, selectedCustomerId, customersResponse?.data]);
 
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer | null) => {
@@ -168,7 +165,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                   </div>
                 </div>
               )}
-              <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !disabled && !selectedOrder?.customer && !customersResponse?.data?.some(c => c.is_default) ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
+              <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !selectedOrder?.customer && !customersResponse?.data?.some(c => c.is_default) ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
                 <Autocomplete
                   options={customersResponse?.data || []}
                   getOptionLabel={(option) => `${option.name} (${option.phone})`}
@@ -195,7 +192,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                           ? t("changeCustomer", { ns: "customers", defaultValue: "Change customer" })
                           : t("selectOrSearchCustomer", { ns: "customers" })
                       }
-                      disabled={disabled || updateOrderCustomerMutation.isPending}
+                      disabled={updateOrderCustomerMutation.isPending}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
@@ -227,7 +224,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
             size="icon"
             onClick={onNewCustomerClick || (() => navigate("/customers/new"))}
             title={t("createNewCustomer", { ns: "customers" })}
-            disabled={disabled || updateOrderCustomerMutation.isPending}
+            disabled={updateOrderCustomerMutation.isPending}
           >
             <UserPlus className="h-4 w-4" />
           </Button>

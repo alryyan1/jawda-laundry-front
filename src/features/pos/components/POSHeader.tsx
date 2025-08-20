@@ -181,7 +181,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             selectedCustomerId={selectedCustomerId}
             onCustomerSelected={onCustomerSelected}
             onNewCustomerClick={onNewCustomerClick}
-            disabled={!!(selectedOrder && selectedOrder.customer)}
             forcedCustomer={selectedOrder?.customer || null}
             selectedOrder={selectedOrder}
             onOrderUpdate={onOrderUpdate}
