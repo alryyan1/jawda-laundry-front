@@ -77,8 +77,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     },
   });
 
-  // Allow changing customer regardless of order items
-  const canChangeCustomer = true;
+
 
   // MUI theme
   const muiTheme = createTheme({
@@ -175,9 +174,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                   getOptionLabel={(option) => `${option.name} (${option.phone})`}
                   value={getCurrentCustomer()}
                   onChange={(_, newValue) => {
-                    if (!disabled && canChangeCustomer) {
-                      handleCustomerSelect(newValue);
-                    }
+                    handleCustomerSelect(newValue);
                   }}
                   sx={
                     {minWidth: '400px'}
@@ -198,7 +195,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                           ? t("changeCustomer", { ns: "customers", defaultValue: "Change customer" })
                           : t("selectOrSearchCustomer", { ns: "customers" })
                       }
-                      disabled={disabled || !canChangeCustomer || updateOrderCustomerMutation.isPending}
+                      disabled={disabled || updateOrderCustomerMutation.isPending}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
