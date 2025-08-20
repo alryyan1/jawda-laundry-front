@@ -48,5 +48,18 @@
     "orderItemsLast7Days": "Order Items Last 7 Days",
     "orderStatusOverview": "Order Status Overview",
     "totalQuantity": "Total Quantity",
-    "orderItems": "Order Items"
+    "orderItems": "Order Items",
+    "ordersToday": "Orders Today",
+    "totalOrdersForToday": "Total orders for today",
+    "ordersThisWeek": "Orders This Week",
+    "totalOrdersForThisWeek": "Total orders for this week",
+    "ordersThisMonth": "Orders This Month",
+    "totalOrdersForThisMonth": "Total orders for this month",
+    "revenueToday": "Revenue Today",
+    "totalRevenueForToday": "Total revenue for today",
+    "revenueThisWeek": "Revenue This Week",
+    "totalRevenueForThisWeek": "Total revenue for this week",
+    "revenueThisMonth": "Revenue This Month",
+    "totalRevenueForThisMonth": "Total revenue for this month",
+    "topProducts": "Top 5 Requested Products"
 }

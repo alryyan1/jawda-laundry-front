@@ -1,6 +1,6 @@
 // src/api/dashboardService.ts
 import apiClient from './apiClient';
-import type { DashboardSummary, OrderTrendItem, OrderItemTrendItem, RevenueBreakdownItem, TodaySummary } from '@/types';
+import type { DashboardSummary, OrderTrendItem, OrderItemTrendItem, RevenueBreakdownItem, TodaySummary, TopProductItem } from '@/types';
 
 /**
  * Fetches the main summary statistics for the dashboard cards.
@@ -48,5 +48,14 @@ export const fetchOrderItemsTrend = async (days: number = 7): Promise<OrderItemT
 
 export const fetchTodaySummary = async (): Promise<TodaySummary> => {
     const { data } = await apiClient.get<{ data: TodaySummary }>('/dashboard/today-summary');
+    return data.data;
+};
+
+/**
+ * Fetches data for the "Top Products" pie chart showing the most requested products.
+ * @returns A promise that resolves to an array of TopProductItem objects.
+ */
+export const fetchTopProducts = async (): Promise<TopProductItem[]> => {
+    const { data } = await apiClient.get<{ data: TopProductItem[] }>('/dashboard/top-products');
     return data.data;
 };

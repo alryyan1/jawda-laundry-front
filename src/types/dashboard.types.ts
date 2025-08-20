@@ -1,6 +1,17 @@
 // src/types/dashboard.types.ts
 
 export interface DashboardSummary {
+    // Order counts by time period
+    totalOrdersToday: number;
+    totalOrdersThisWeek: number;
+    totalOrdersThisMonth: number;
+    
+    // Revenue by time period
+    totalRevenueToday: number;
+    totalRevenueThisWeek: number;
+    totalRevenueThisMonth: number;
+    
+    // Legacy fields (keeping for backward compatibility)
     pendingOrders: number;
     processingOrders: number;
     readyForPickupOrders: number;
@@ -8,6 +19,13 @@ export interface DashboardSummary {
     cancelledOrders: number;
     totalActiveCustomers: number;
     monthlyRevenue: number;
+}
+
+export interface TopProductItem {
+    name: string; // Product name
+    count: number; // Number of times ordered
+    percentage: number; // Percentage of total orders
+    color: string; // Color for the pie chart
 }
 
 export interface OrderTrendItem {

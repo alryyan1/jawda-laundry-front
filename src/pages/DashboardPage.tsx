@@ -3,7 +3,6 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import RoleTest from "@/components/RoleTest";
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,6 +14,9 @@ import {
   Tooltip,
   ComposedChart,
   Area,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 import {
@@ -28,17 +30,19 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import {
   DollarSign,
   Package,
-  Hourglass,
-  XCircle,
   TrendingUp,
   BarChart3,
+  Calendar,
+  Clock,
+  CalendarDays,
 } from "lucide-react";
 
 import {
   fetchDashboardSummary,
   fetchOrderItemsTrend,
+  fetchTopProducts,
 } from "@/api/dashboardService";
-import type { DashboardSummary, OrderItemTrendItem } from "@/types";
+import type { DashboardSummary, OrderItemTrendItem, TopProductItem } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
 
@@ -103,31 +107,26 @@ const DashboardPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const {
+    data: topProducts,
+    isLoading: isLoadingTopProducts,
+    refetch: refetchTopProducts,
+  } = useQuery<TopProductItem[], Error>({
+    queryKey: ["topProducts"],
+    queryFn: fetchTopProducts,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const handleRefresh = () => {
     refetchSummary();
     refetchOrderItemsTrend();
+    refetchTopProducts();
   };
 
-  const orderStatusChartData = useMemo(() => {
-    if (!summary) return [];
-    return [
-      {
-        name: t("status_pending", { ns: "orders" }),
-        count: summary.pendingOrders || 0,
-        fill: "hsl(var(--chart-1))",
-      },
-      {
-        name: t("status_processing", { ns: "orders" }),
-        count: summary.processingOrders || 0,
-        fill: "hsl(var(--chart-2))",
-      },
-      {
-        name: t("status_cancelled", { ns: "orders" }),
-        count: summary.cancelledOrders || 0,
-        fill: "hsl(var(--chart-4))",
-      },
-    ];
-  }, [summary, t]);
+  // Colors for the pie chart
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
@@ -136,7 +135,7 @@ const DashboardPage: React.FC = () => {
         description={t("dashboardWelcome", { ns: "dashboard" })}
         showRefreshButton
         onRefresh={handleRefresh}
-        isRefreshing={isLoadingSummary || isLoadingOrderItemsTrend}
+        isRefreshing={isLoadingSummary || isLoadingOrderItemsTrend || isLoadingTopProducts}
       />
 
       {summaryError && (
@@ -146,38 +145,64 @@ const DashboardPage: React.FC = () => {
         </p>
       )}
 
-      {/* --- Stats Cards --- */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* --- Order Count Cards --- */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <StatCard
-          title={t("monthlyRevenue", { ns: "dashboard" })}
+          title={t("ordersToday", { ns: "dashboard", defaultValue: "Orders Today" })}
+          value={summary?.totalOrdersToday || 0}
+          icon={Clock}
+          description={t("totalOrdersForToday", { ns: "dashboard", defaultValue: "Total orders for today" })}
+          isLoading={isLoadingSummary}
+        />
+        <StatCard
+          title={t("ordersThisWeek", { ns: "dashboard", defaultValue: "Orders This Week" })}
+          value={summary?.totalOrdersThisWeek || 0}
+          icon={CalendarDays}
+          description={t("totalOrdersForThisWeek", { ns: "dashboard", defaultValue: "Total orders for this week" })}
+          isLoading={isLoadingSummary}
+        />
+        <StatCard
+          title={t("ordersThisMonth", { ns: "dashboard", defaultValue: "Orders This Month" })}
+          value={summary?.totalOrdersThisMonth || 0}
+          icon={Calendar}
+          description={t("totalOrdersForThisMonth", { ns: "dashboard", defaultValue: "Total orders for this month" })}
+          isLoading={isLoadingSummary}
+        />
+      </div>
+
+      {/* --- Revenue Cards --- */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        <StatCard
+          title={t("revenueToday", { ns: "dashboard", defaultValue: "Revenue Today" })}
           value={
-            summary?.monthlyRevenue !== undefined
-              ? formatCurrency(summary.monthlyRevenue, currencySymbol, i18n.language)
+            summary?.totalRevenueToday !== undefined
+              ? formatCurrency(summary.totalRevenueToday, currencySymbol, i18n.language)
               : undefined
           }
           icon={DollarSign}
-          description={t("totalRevenueForCurrentMonth", { ns: "dashboard" })}
+          description={t("totalRevenueForToday", { ns: "dashboard", defaultValue: "Total revenue for today" })}
           isLoading={isLoadingSummary}
         />
         <StatCard
-          title={t("pendingOrders", { ns: "dashboard" })}
-          value={summary?.pendingOrders}
-          icon={Hourglass}
-          description={t("ordersAwaitingProcessing", { ns: "dashboard" })}
+          title={t("revenueThisWeek", { ns: "dashboard", defaultValue: "Revenue This Week" })}
+          value={
+            summary?.totalRevenueThisWeek !== undefined
+              ? formatCurrency(summary.totalRevenueThisWeek, currencySymbol, i18n.language)
+              : undefined
+          }
+          icon={DollarSign}
+          description={t("totalRevenueForThisWeek", { ns: "dashboard", defaultValue: "Total revenue for this week" })}
           isLoading={isLoadingSummary}
         />
         <StatCard
-          title={t("processingOrders", { ns: "dashboard" })}
-          value={summary?.processingOrders}
-          icon={Package}
-          description={t("ordersInProcessing", { ns: "dashboard" })}
-          isLoading={isLoadingSummary}
-        />
-        <StatCard
-          title={t("cancelledOrders", { ns: "dashboard" })}
-          value={summary?.cancelledOrders}
-          icon={XCircle}
-          description={t("ordersCancelled", { ns: "dashboard" })}
+          title={t("revenueThisMonth", { ns: "dashboard", defaultValue: "Revenue This Month" })}
+          value={
+            summary?.totalRevenueThisMonth !== undefined
+              ? formatCurrency(summary.totalRevenueThisMonth, currencySymbol, i18n.language)
+              : undefined
+          }
+          icon={DollarSign}
+          description={t("totalRevenueForThisMonth", { ns: "dashboard", defaultValue: "Total revenue for this month" })}
           isLoading={isLoadingSummary}
         />
       </div>
@@ -251,53 +276,45 @@ const DashboardPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
-              {t("orderStatusOverview", { ns: "dashboard" })}
+              {t("topProducts", { ns: "dashboard", defaultValue: "Top 5 Requested Products" })}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoadingSummary ? (
+            {isLoadingTopProducts ? (
               <Skeleton className="w-full h-[300px]" />
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={orderStatusChartData}>
-                  <XAxis
-                    dataKey="name"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                    width={30}
-                  />
+                <PieChart>
+                  <Pie
+                    data={topProducts}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percentage }) => `${name} (${percentage}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {topProducts?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip
-                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
                     contentStyle={{
                       backgroundColor: "hsl(var(--background))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                     }}
+                    formatter={(value: number, name: string) => [
+                      `${value} orders`,
+                      name
+                    ]}
                   />
-                  <Bar
-                    dataKey="count"
-                    name={t("count", { ns: "common", defaultValue: "Count" })}
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
-      </div>
-      
-      {/* Temporary Role Test Component */}
-      <div className="mt-8">
-        <RoleTest />
       </div>
     </div>
   );
