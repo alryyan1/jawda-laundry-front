@@ -14,12 +14,11 @@ export interface CustomerType {
 export interface Customer {
   id: number;
   name:string;
+  car_plate_number?: string | null;
   phone: string; // Now required
   email?: string | null; // Now optional
   address?: string | null;
   notes?: string | null;
-  customer_type_id?: number | null;
-  customerType?: CustomerType;
   user_id?: number | null;
   managedBy?: User; // The staff member who manages them
   registered_date: string;
@@ -32,10 +31,10 @@ export interface Customer {
 // Form data for creating/editing customers
 export interface CustomerFormData {
     name: string;
+    car_plate_number?: string;
     phone: string;
     address?: string;
     notes?: string;
-    customer_type_id?: number | string | null; // string from form select
     is_default?: boolean; // New field for default customer
 }
 
