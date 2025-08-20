@@ -77,9 +77,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     },
   });
 
-  // Check if order has items (to determine if customer can be changed)
-  const orderHasItems = selectedOrder && selectedOrder.items && selectedOrder.items.length > 0;
-  const canChangeCustomer = !orderHasItems;
+  // Allow changing customer regardless of order items
+  const canChangeCustomer = true;
 
   // MUI theme
   const muiTheme = createTheme({
@@ -90,17 +89,38 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     },
   });
 
-  // Show animation when order has no customer or when in new order mode
+  // Auto-select default customer when no customer is selected
   useEffect(() => {
-    if ((selectedOrder && !selectedOrder.customer && !disabled) || 
-        (!selectedCustomerId && selectedOrder && !disabled)) {
-      setShowAnimation(true);
-      const timer = setTimeout(() => setShowAnimation(false), 3000);
-      return () => clearTimeout(timer);
+    if (!selectedCustomerId && !disabled && customersResponse?.data) {
+      const defaultCustomer = customersResponse.data.find(customer => customer.is_default);
+      if (defaultCustomer) {
+        onCustomerSelected(defaultCustomer.id.toString());
+        
+        // If we have a selected order without a customer, update it in the backend
+        if (selectedOrder && !selectedOrder.customer) {
+          updateOrderCustomerMutation.mutate({
+            orderId: selectedOrder.id,
+            customerId: defaultCustomer.id.toString(),
+          });
+        }
+      }
+    }
+  }, [selectedCustomerId, disabled, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation]);
+
+  // Show animation when order has no customer and no default customer is available
+  useEffect(() => {
+    if (selectedOrder && !selectedOrder.customer && !disabled && !selectedCustomerId) {
+      // Check if there's a default customer available
+      const hasDefaultCustomer = customersResponse?.data?.some(customer => customer.is_default);
+      if (!hasDefaultCustomer) {
+        setShowAnimation(true);
+        const timer = setTimeout(() => setShowAnimation(false), 3000);
+        return () => clearTimeout(timer);
+      }
     } else {
       setShowAnimation(false);
     }
-  }, [selectedOrder, selectedCustomerId, disabled]);
+  }, [selectedOrder, selectedCustomerId, disabled, customersResponse?.data]);
 
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer | null) => {
@@ -111,8 +131,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     
     onCustomerSelected(customer.id.toString());
     
-    // If we have a selected order without a customer, update it in the backend
-    if (selectedOrder && !selectedOrder.customer) {
+    // If we have a selected order, update it in the backend (allow changing customer)
+    if (selectedOrder) {
       updateOrderCustomerMutation.mutate({
         orderId: selectedOrder.id,
         customerId: customer.id.toString(),
@@ -149,7 +169,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                   </div>
                 </div>
               )}
-              <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !disabled && !selectedOrder?.customer ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
+              <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !disabled && !selectedOrder?.customer && !customersResponse?.data?.some(c => c.is_default) ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
                 <Autocomplete
                   options={customersResponse?.data || []}
                   getOptionLabel={(option) => `${option.name} (${option.phone})`}
@@ -174,7 +194,9 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                       {...params}
                       placeholder={shouldShowAnimation 
                         ? t("selectCustomerRequired", { ns: "orders", defaultValue: "Select customer (required)" })
-                        : t("selectOrSearchCustomer", { ns: "customers" })
+                        : selectedCustomerId 
+                          ? t("changeCustomer", { ns: "customers", defaultValue: "Change customer" })
+                          : t("selectOrSearchCustomer", { ns: "customers" })
                       }
                       disabled={disabled || !canChangeCustomer || updateOrderCustomerMutation.isPending}
                       InputProps={{

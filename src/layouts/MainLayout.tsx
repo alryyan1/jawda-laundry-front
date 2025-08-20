@@ -102,10 +102,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   ChartBar,
   Calculator,
   TrendingUp,
-  Utensils,
   // Navigation item icon mappings
   LayoutDashboard: Home,
-      Briefcase: Shirt,
+      Briefcase: Utensils, // Changed from Shirt to Utensils
   Receipt: DollarSign,
   Truck: Users,
   BarChart3: ChartBar,
