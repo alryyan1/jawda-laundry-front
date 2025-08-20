@@ -42,11 +42,11 @@
     "delete": "Delete Roles"
   },
   "service": {
-    "list": "List Services",
-    "view": "View Services",
-    "create": "Create Services",
-    "update": "Update Services",
-    "delete": "Delete Services"
+    "list": "List Meals",
+    "view": "View Meals",
+    "create": "Create Meals",
+    "update": "Update Meals",
+    "delete": "Delete Meals"
   },
   "expense": {
     "list": "List Expenses",
@@ -73,11 +73,11 @@
     "list": "List Permissions"
   },
   "product-type": {
-    "list": "List Product Types",
-    "view": "View Product Types",
-    "create": "Create Product Types",
-    "update": "Update Product Types",
-    "delete": "Delete Product Types"
+    "list": "List Meal Types",
+    "view": "View Meal Types",
+    "create": "Create Meal Types",
+    "update": "Update Meal Types",
+    "delete": "Delete Meal Types"
   },
   "report": {
     "view-financial": "View Financial Reports",
@@ -94,11 +94,11 @@
     "manage": "Manage Services"
   },
   "service-offering": {
-    "list": "List Service Offerings",
-    "view": "View Service Offerings",
-    "create": "Create Service Offerings",
-    "update": "Update Service Offerings",
-    "delete": "Delete Service Offerings"
+    "list": "List Meal Offerings",
+    "view": "View Meal Offerings",
+    "create": "Create Meal Offerings",
+    "update": "Update Meal Offerings",
+    "delete": "Delete Meal Offerings"
   },
   "admin": {
     "view-menu": "View Admin Menu"

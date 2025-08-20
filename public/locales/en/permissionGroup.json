@@ -42,11 +42,11 @@
     "delete": "Role Management"
   },
   "service": {
-    "list": "Service Management",
-    "view": "Service Management",
-    "create": "Service Management",
-    "update": "Service Management",
-    "delete": "Service Management"
+    "list": "Meals Management",
+    "view": "Meals Management",
+    "create": "Meals Management",
+    "update": "Meals Management",
+    "delete": "Meals Management"
   },
   "expense": {
     "list": "Expense Management",
@@ -73,11 +73,11 @@
     "list": "Permission Management"
   },
   "product-type": {
-    "list": "Product Type Management",
-    "view": "Product Type Management",
-    "create": "Product Type Management",
-    "update": "Product Type Management",
-    "delete": "Product Type Management"
+    "list": "Meal Type Management",
+    "view": "Meal Type Management",
+    "create": "Meal Type Management",
+    "update": "Meal Type Management",
+    "delete": "Meal Type Management"
   },
   "report": {
     "view-financial": "Report Management",
@@ -91,13 +91,13 @@
     "delete": "Service Action Management"
   },
   "service-admin": {
-    "manage": "Service Administration"
+    "manage": "Meals Administration"
   },
   "service-offering": {
-    "list": "Service Offering Management",
-    "view": "Service Offering Management",
-    "create": "Service Offering Management",
-    "update": "Service Offering Management",
-    "delete": "Service Offering Management"
+    "list": "Meal Offering Management",
+    "view": "Meal Offering Management",
+    "create": "Meal Offering Management",
+    "update": "Meal Offering Management",
+    "delete": "Meal Offering Management"
   }
 } 
