@@ -1413,8 +1413,8 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsCustomerModalOpen}
         onSuccess={(customer) => {
           setSelectedCustomerId(customer.id.toString());
-          // If we have a selected order without a customer, update it
-          if (selectedOrder && !selectedOrder.customer) {
+          // Always update the selected order with the newly created customer
+          if (selectedOrder) {
             // Update the existing order with the newly created customer
             updateOrderDetails(selectedOrder.id, { customer_id: customer.id })
               .then((updatedOrder) => {
