@@ -103,6 +103,21 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     }
   }, [selectedCustomerId, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation]);
 
+  // Handle when a new customer is created and should be selected
+  useEffect(() => {
+    if (selectedCustomerId && customersResponse?.data) {
+      // Check if the selected customer exists in the current data
+      const customerExists = customersResponse.data.find(customer => customer.id.toString() === selectedCustomerId);
+      
+      // If customer doesn't exist in current data but we have a selectedCustomerId,
+      // it might be a newly created customer that hasn't been fetched yet
+      if (!customerExists && selectedCustomerId) {
+        // Invalidate and refetch customers to get the latest data including the new customer
+        queryClient.invalidateQueries({ queryKey: ["customersForSelect"] });
+      }
+    }
+  }, [selectedCustomerId, customersResponse?.data, queryClient]);
+
   // Show animation when order has no customer and no default customer is available
   useEffect(() => {
     if (selectedOrder && !selectedOrder.customer && !selectedCustomerId) {
@@ -140,7 +155,34 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   const getCurrentCustomer = () => {
     if (forcedCustomer) return forcedCustomer;
     if (!selectedCustomerId) return null;
-    return customersResponse?.data.find(cust => cust.id.toString() === selectedCustomerId) || null;
+    
+    // First try to find the customer in the current data
+    const customer = customersResponse?.data.find(cust => cust.id.toString() === selectedCustomerId);
+    if (customer) return customer;
+    
+    // If customer not found in current data but we have selectedCustomerId,
+    // it might be a newly created customer that hasn't been fetched yet
+    // Return a temporary customer object to show the selection
+    if (selectedCustomerId && customersResponse?.data) {
+      // This is a fallback - the customer should be fetched soon
+      return {
+        id: parseInt(selectedCustomerId, 10),
+        name: `Customer #${selectedCustomerId}`,
+        phone: '',
+        email: null,
+        address: null,
+        notes: null,
+        customer_type_id: null,
+        user_id: null,
+        is_default: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        registered_date: new Date().toISOString(),
+        customerType: undefined,
+      } as unknown as Customer;
+    }
+    
+    return null;
   };
 
   // Determine if we should show the animation
