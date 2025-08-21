@@ -1286,7 +1286,7 @@ const POSPage: React.FC = () => {
                 <>
                   {/* Desktop Layout */}
                   {/* Left Section: Categories */}
-                  <Card className="w-[100px] flex-shrink-0">
+                  <Card className="w-[160px] flex-shrink-0">
                     <CardContent className="p-1 h-full">
                   <CategoryColumn
                     onSelectCategory={handleSelectCategory}
