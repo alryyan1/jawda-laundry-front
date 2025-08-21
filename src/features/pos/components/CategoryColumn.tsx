@@ -80,6 +80,20 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
 
   const isLoading = isLoadingAllCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
 
+  const getPlaceholderSvg = (label: string) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400'>
+      <defs>
+        <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
+          <stop offset='0%' stop-color='#e0f2fe'/>
+          <stop offset='100%' stop-color='#bae6fd'/>
+        </linearGradient>
+      </defs>
+      <rect width='600' height='400' fill='url(#g)'/>
+      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='28' fill='#0c4a6e'>${(label||'Category').replace(/&/g,'&amp;')}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -109,13 +123,19 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                   '--tw-gradient-to': selectedCategoryId === category.id.toString() ? '#0284C7' : materialColors.grey[100],
                 } as React.CSSProperties}
               >
-                <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
+                <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden" style={{height: 84}}>
                   {category.image_url || getDefaultImageForCategoryName(category.name) ? (
                     <>
                       <img 
-                        src={category.image_url || getDefaultImageForCategoryName(category.name)!} 
+                        src={category.image_url || getDefaultImageForCategoryName(category.name)!}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => {
+                          // Fallback to SVG placeholder if remote image fails
+                          (e.currentTarget as HTMLImageElement).src = getPlaceholderSvg(category.name);
+                        }}
                         alt={category.name}
-                        className="w-full h-full object-contain "
+                        className="w-full h-full object-cover"
                         style={{ objectPosition: 'center' }}
                       />
                       <span
