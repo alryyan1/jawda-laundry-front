@@ -26,6 +26,30 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   selectedCategoryId,
   selectedCustomerId,
 }) => {
+  // Returns a representative online image based on category name (fallback when no image_url provided)
+  const getDefaultImageForCategoryName = React.useCallback((name: string): string | null => {
+    const n = (name || "").toLowerCase();
+
+    const src = (query: string) => `https://source.unsplash.com/featured/600x400?${encodeURIComponent(query)}`;
+
+    if (n.includes("بوكس") || n.includes("box")) return src("combo meal,food box");
+    if (n.includes("سندويش") || n.includes("sandwich") || n.includes("shawarma")) return src("shawarma,sandwich,wrap");
+    if (n.includes("فرايز") || n.includes("fries")) return src("french fries");
+    if (n.includes("عراقي")) return src("kebab,grill,iraqi food");
+    if (n.includes("صاروق")) return src("wrap,sandwich");
+    if (n.includes("شبس") || n.includes("chips")) return src("potato chips");
+    if (n.includes("مشروبات باردة") || n.includes("cold drinks")) return src("iced drink,juice,cold beverage");
+    if (n.includes("مشروبات ساخنة") || n.includes("hot drinks") || n.includes("tea") || n.includes("coffee")) return src("tea,coffee,hot drink");
+    if (n.includes("مشروبات") || n.includes("drinks")) return src("beverage,drink");
+    if (n.includes("وجبات التوفير") || n.includes("value")) return src("combo meal");
+    if (n.includes("اللقيمات") || n.includes("luqaimat")) return src("luqaimat,arabic dessert,sweet dumplings");
+    if (n.includes("مندازي") || n.includes("mandazi")) return src("mandazi,african pastry,donut");
+    if (n.includes("فطاير") || n.includes("fatair")) return src("pastry,manakeesh");
+    if (n.includes("رقاق") || n.includes("khubz")) return src("flatbread,khubz");
+    if (n.includes("توست") || n.includes("toast")) return src("toast bread");
+
+    return src("restaurant food");
+  }, []);
   const { data: allCategories = [], isLoading: isLoadingAllCategories } = useQuery<ProductCategory[], Error>({
     queryKey: ["productCategories"],
     queryFn: getProductCategories,
@@ -86,10 +110,10 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 } as React.CSSProperties}
               >
                 <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
-                  {category.image_url ? (
+                  {category.image_url || getDefaultImageForCategoryName(category.name) ? (
                     <>
                       <img 
-                        src={category.image_url} 
+                        src={category.image_url || getDefaultImageForCategoryName(category.name)!} 
                         alt={category.name}
                         className="w-full h-full object-contain "
                         style={{ objectPosition: 'center' }}
