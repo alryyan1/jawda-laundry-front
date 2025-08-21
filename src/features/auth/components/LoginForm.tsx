@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, User as UserIcon } from "lucide-react";
+import { Loader2, Eye, EyeOff, User as UserIcon, Lock, ChefHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { loginUser } from "@/api/authService";
@@ -74,38 +74,49 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="login-username">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Username Field */}
+      <div className="space-y-2">
+        <Label htmlFor="login-username" className="text-sm font-medium text-foreground">
           {t("username", { ns: "common" })}
         </Label>
-        <div className="relative">
-          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 " />
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <UserIcon className="h-5 w-5 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
+          </div>
           <Input
             id="login-username"
             type="text"
             autoComplete="username"
             placeholder={t("usernamePlaceholder", {
               ns: "auth",
-              defaultValue: "e.g., admin",
+              defaultValue: "Enter your username",
             })}
             {...register("username")}
             aria-invalid={errors.username ? "true" : "false"}
-            className={cn("pl-9", errors.username && "border-destructive")}
+            className={cn(
+              "pl-10 h-12 border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
+              errors.username && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+            )}
           />
         </div>
         {errors.username && (
-          <p className="text-xs text-destructive" role="alert">
+          <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
+            <ChefHat className="h-3 w-3" />
             {t(errors.username.message as string)}
           </p>
         )}
       </div>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="login-password">
+      {/* Password Field */}
+      <div className="space-y-2">
+        <Label htmlFor="login-password" className="text-sm font-medium text-foreground">
           {t("password", { ns: "common" })}
         </Label>
-        <div className="relative">
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
+          </div>
           <Input
             id="login-password"
             type={showPassword ? "text" : "password"}
@@ -113,13 +124,16 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             placeholder="••••••••"
             {...register("password")}
             aria-invalid={errors.password ? "true" : "false"}
-            className={cn("pr-10", errors.password && "border-destructive")}
+            className={cn(
+              "pl-10 pr-12 h-12 border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
+              errors.password && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+            )}
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground rtl:left-1 rtl:right-auto"
+            className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 text-muted-foreground hover:text-orange-500 transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={
               showPassword
@@ -135,24 +149,38 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
           </Button>
         </div>
         {errors.password && (
-          <p className="text-xs text-destructive" role="alert">
+          <p className="text-xs text-red-500 flex items-center gap-1" role="alert">
+            <ChefHat className="h-3 w-3" />
             {t(errors.password.message as string)}
           </p>
         )}
       </div>
 
+      {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full mt-2 h-10 text-sm"
+        className="w-full h-12 text-sm font-medium bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
         disabled={isSubmitting}
       >
-        {isSubmitting && (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {t("loggingIn", { ns: "auth" })}
+          </>
+        ) : (
+          <>
+            <ChefHat className="mr-2 h-4 w-4" />
+            {t("login", { ns: "common" })}
+          </>
         )}
-        {isSubmitting
-          ? t("loggingIn", { ns: "auth" })
-          : t("login", { ns: "common" })}
       </Button>
+
+      {/* Quick Tips */}
+      <div className="text-center">
+        <p className="text-xs text-muted-foreground">
+          💡 Tip: Use your restaurant staff credentials to access the system
+        </p>
+      </div>
     </form>
   );
 };

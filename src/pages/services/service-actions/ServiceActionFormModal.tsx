@@ -106,11 +106,11 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
       onSuccess: (data) => {
         toast.success(
           editingAction
-            ? t("serviceActionUpdatedSuccess", {
+            ? t("mealVariationUpdatedSuccess", {
                 ns: "services",
                 name: data.name,
               })
-            : t("serviceActionCreatedSuccess", {
+            : t("mealVariationCreatedSuccess", {
                 ns: "services",
                 name: data.name,
               })
@@ -125,8 +125,8 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
         toast.error(
           error.message ||
             (editingAction
-              ? t("serviceActionUpdateFailed", { ns: "services" })
-              : t("serviceActionCreationFailed", { ns: "services" }))
+              ? t("mealVariationUpdateFailed", { ns: "services" })
+              : t("mealVariationCreationFailed", { ns: "services" }))
         );
       },
     }
@@ -146,13 +146,13 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
         <DialogHeader>
           <DialogTitle>
             {editingAction
-              ? t("editServiceActionTitle", { ns: "services" })
-              : t("newServiceActionTitle", { ns: "services" })}
+              ? t("editMealVariationTitle", { ns: "services" })
+              : t("newMealVariationTitle", { ns: "services" })}
           </DialogTitle>
           <DialogDescription>
             {editingAction
-              ? t("editServiceActionDescription", { ns: "services" })
-              : t("newServiceActionDescription", { ns: "services" })}
+              ? t("editMealVariationDescription", { ns: "services" })
+              : t("newMealVariationDescription", { ns: "services" })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
@@ -164,9 +164,9 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
             <Input
               id="sa-name"
               {...register("name")}
-              placeholder={t("egServiceActionName", {
+              placeholder={t("egMealVariationName", {
                 ns: "services",
-                defaultValue: "e.g., Espresso Brew, Cappuccino Preparation",
+                defaultValue: "e.g., Small, Medium, Large",
               })}
             />
             {errors.name && (
@@ -187,7 +187,7 @@ export const ServiceActionFormModal: React.FC<ServiceActionFormModalProps> = ({
 
           <div>
             <Label htmlFor="sa-duration">
-              {t("durationMinutesOptional", { ns: "services" })}
+              {t("preparationTimeOptional", { ns: "services" })}
             </Label>
             <Input
               id="sa-duration"

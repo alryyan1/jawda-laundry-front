@@ -91,6 +91,9 @@ const ProductCategoriesListPage = React.lazy(
 const ProductTypesListPage = React.lazy(
   () => import("@/pages/services/product-types/ProductTypesListPage")
 );
+const ProductTypeCompositionsPage = React.lazy(
+  () => import("@/pages/services/product-types/ProductTypeCompositionsPage")
+);
 const ServiceActionsListPage = React.lazy(
   () => import("@/pages/services/service-actions/ServiceActionsListPage")
 );
@@ -473,6 +476,14 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <ProductTypesListPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "admin/product-types/:productTypeId/compositions",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ProductTypeCompositionsPage />
               </React.Suspense>
             ),
           },

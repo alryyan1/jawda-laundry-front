@@ -38,6 +38,7 @@ import {
   Loader2,
   Search,
   X,
+  Utensils,
 } from "lucide-react";
 
 const ServiceActionsListPage: React.FC = () => {
@@ -51,7 +52,7 @@ const ServiceActionsListPage: React.FC = () => {
   const [itemToDelete, setItemToDelete] = useState<ServiceAction | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Service Actions list is usually small, so we fetch all without pagination.
+  // Meal variations list is usually small, so we fetch all without pagination.
   // If it becomes large, add pagination state and update getServiceActions service.
   const {
     data: actions = [],
@@ -63,7 +64,7 @@ const ServiceActionsListPage: React.FC = () => {
     queryFn: getServiceActions,
   });
 
-  // Filter actions based on search term
+  // Filter meal variations based on search term
   const filteredActions = actions.filter((action) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
@@ -77,7 +78,7 @@ const ServiceActionsListPage: React.FC = () => {
     mutationFn: (id) => deleteServiceAction(id).then(() => {}),
     onSuccess: () => {
       toast.success(
-        t("serviceActionDeletedSuccess", {
+        t("mealVariationDeletedSuccess", {
           ns: "services",
           name: itemToDelete?.name || "",
         })
@@ -88,7 +89,7 @@ const ServiceActionsListPage: React.FC = () => {
     },
     onError: (error) => {
       toast.error(
-        error.message || t("serviceActionDeleteFailed", { ns: "services" })
+        error.message || t("mealVariationDeleteFailed", { ns: "services" })
       );
       setItemToDelete(null);
     },
@@ -107,7 +108,12 @@ const ServiceActionsListPage: React.FC = () => {
   const MemoizedTableRow = React.memo(
     ({ action }: { action: ServiceAction }) => (
       <TableRow key={action.id}>
-        <TableCell className="font-medium text-center">{action.name}</TableCell>
+        <TableCell className="font-medium text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Utensils className="h-4 w-4 text-muted-foreground" />
+            {action.name}
+          </div>
+        </TableCell>
         <TableCell className="text-muted-foreground text-center">{action.description || "-"}</TableCell>
         <TableCell className="text-center">{action.base_duration_minutes ? `${action.base_duration_minutes} ${t("minutesUnit", { ns: "services", defaultValue: "min" })}` : "-"}</TableCell>
         <TableCell className="text-center">{/* actions dropdown */}
@@ -143,10 +149,10 @@ const ServiceActionsListPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <PageHeader
-        title={t("serviceActionsTitle", { ns: "services" })}
-        description={t("serviceActionsDescription", { ns: "services" })}
+        title={t("mealVariationsTitle", { ns: "services" })}
+        description={t("mealVariationsDescription", { ns: "services" })}
         actionButton={{
-          label: t("newServiceActionBtn", { ns: "services" }),
+          label: t("newMealVariationBtn", { ns: "services" }),
           icon: PlusCircle,
           onClick: handleOpenAddModal,
         }}
@@ -161,7 +167,7 @@ const ServiceActionsListPage: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder={t("searchServiceActions", { ns: "services", defaultValue: "Search service actions..." })}
+            placeholder={t("searchMealVariations", { ns: "services", defaultValue: "Search meal variations..." })}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -193,9 +199,9 @@ const ServiceActionsListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[200px] text-center">{t("name")}</TableHead>
+              <TableHead className="min-w-[200px] text-center">{t("variationName", { ns: "services" })}</TableHead>
               <TableHead className="text-center">{t("description")}</TableHead>
-              <TableHead className="w-[150px] text-center">{t("durationMinutes", { ns: "services" })}</TableHead>
+              <TableHead className="w-[150px] text-center">{t("preparationTime", { ns: "services" })}</TableHead>
               <TableHead className="text-center w-[80px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -206,9 +212,9 @@ const ServiceActionsListPage: React.FC = () => {
                   <div className="flex justify-center items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span>
-                      {t("loadingServiceActions", {
+                      {t("loadingMealVariations", {
                         ns: "services",
-                        defaultValue: "Loading service actions...",
+                        defaultValue: "Loading meal variations...",
                       })}
                     </span>
                   </div>
@@ -224,7 +230,7 @@ const ServiceActionsListPage: React.FC = () => {
                   colSpan={4}
                   className="h-32 text-center text-muted-foreground"
                 >
-                  {searchTerm ? t("noSearchResults", { defaultValue: "No service actions found matching your search." }) : t("noResults")}
+                  {searchTerm ? t("noSearchResults", { defaultValue: "No meal variations found matching your search." }) : t("noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -232,7 +238,7 @@ const ServiceActionsListPage: React.FC = () => {
         </Table>
       </div>
 
-      {/* Pagination is omitted since we are fetching all actions. Add if pagination is implemented. */}
+      {/* Pagination is omitted since we are fetching all variations. Add if pagination is implemented. */}
 
       <ServiceActionFormModal
         isOpen={isFormModalOpen}
@@ -250,7 +256,7 @@ const ServiceActionsListPage: React.FC = () => {
           if (itemToDelete) deleteMutation.mutate(itemToDelete.id);
         }}
         itemName={itemToDelete?.name}
-        itemType="serviceActionLC" // Translation key in services.json: "service action"
+        itemType="mealVariationLC" // Translation key in services.json: "meal variation"
         isPending={deleteMutation.isPending}
       />
     </div>

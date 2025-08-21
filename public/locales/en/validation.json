@@ -10,7 +10,7 @@
     "usernameRequired": "Username is required.",
     "usernameInvalid": "Username can only contain letters, numbers, underscores, and hyphens.",
     "categoryRequired": "Category is required.",
-    "productTypeRequired": "Product type is required.",
+    "productTypeRequired": "Meal type is required.",
     "serviceActionRequired": "Service action is required.",
     "pricingStrategyRequired": "Pricing strategy is required.",
     "pricingStrategyInvalid": "Invalid pricing strategy selected.",

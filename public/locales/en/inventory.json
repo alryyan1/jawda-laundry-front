@@ -32,8 +32,8 @@
   "transactionType": "Transaction Type",
   "selectTransactionType": "Select Transaction Type",
   "unitPrice": "Unit Price",
-  "productType": "Product Type",
-  "selectProductType": "Select Product Type",
+  "productType": "Meal Type",
+  "selectProductType": "Select Meal Type",
   "addItem": "Add Inventory Item",
   "inventoryManagement": "Inventory Management",
   "manageInventoryItems": "Manage your inventory items and track stock levels",
@@ -113,7 +113,7 @@
   "stockManagement": "Stock Management",
   "financialInformation": "Financial Information",
   "creating": "Creating...",
-  "noProductTypes": "No product types found",
+  "noProductTypes": "No meal types found",
   "loading": "Loading..."
   
 } 

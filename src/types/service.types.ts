@@ -80,6 +80,26 @@ export interface PricingRule {
     price_per_sq_meter?: number | null;
 }
 
+// Product Type Composition Types
+export interface ProductComposition {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProductTypeComposition {
+    id: number;
+    product_type_id: number;
+    product_composition_id: number;
+    name: string;
+    description?: string | null;
+    is_active: boolean;
+    product_composition: ProductComposition;
+    created_at: string;
+    updated_at: string;
+}
+
 
 // --- Form Data Interfaces for Service Admin ---
 

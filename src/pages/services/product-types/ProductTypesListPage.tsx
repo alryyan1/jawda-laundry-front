@@ -1,6 +1,7 @@
 // src/pages/services/product-types/ProductTypesListPage.tsx
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   useQuery,
   useMutation,
@@ -18,6 +19,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { getProductCategories } from '@/services/productCategoryService';
 import type { ProductCategory } from '@/types/service.types';
 import { ManageOfferingsDialog } from '../offerings/components/ManageOfferingsDialog';
+import { ManageCompositionsDialog } from './components/ManageCompositionsDialog';
 import { updateFirstOfferingPrice } from '@/api/serviceOfferingService';
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -54,6 +56,7 @@ import {
   ChevronDown,
   AlertTriangle,
   Utensils,
+  List,
 } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 
@@ -118,6 +121,15 @@ const MobileMemoizedCard = React.memo(
                     <PlusCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                     {t('manageOfferings', { ns: 'services', defaultValue: 'Manage Offerings' })}
                   </DropdownMenuItem>
+                                     <DropdownMenuItem
+                     onClick={() => {
+                       setSelectedProductType(productType);
+                       setCompositionsDialogOpen(true);
+                     }}
+                   >
+                     <List className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                     {t('manageCompositions', { ns: 'services', defaultValue: 'Manage Compositions' })}
+                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
@@ -281,6 +293,7 @@ const ProductTypesListPage: React.FC = () => {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [offeringsDialogOpen, setOfferingsDialogOpen] = useState(false);
+  const [compositionsDialogOpen, setCompositionsDialogOpen] = useState(false);
   const [selectedProductType, setSelectedProductType] = useState<ProductType | null>(null);
   const [editingPrice, setEditingPrice] = useState<{ id: number; price: number } | null>(null);
 
@@ -523,17 +536,30 @@ const ProductTypesListPage: React.FC = () => {
             )}
           </TableCell>
           <TableCell className="text-center w-24 hidden xl:table-cell">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelectedProductType(productType);
-                setOfferingsDialogOpen(true);
-              }}
-              className="whitespace-nowrap text-xs h-6 px-2"
-            >
-              {t('manage', { ns: 'common', defaultValue: 'Manage' })}
-            </Button>
+                         <Button
+               size="sm"
+               variant="outline"
+               onClick={() => {
+                 setSelectedProductType(productType);
+                 setOfferingsDialogOpen(true);
+               }}
+               className="whitespace-nowrap text-xs h-6 px-2"
+             >
+               {t('prices', { ns: 'common', defaultValue: 'Prices' })}
+             </Button>
+          </TableCell>
+          <TableCell className="text-center w-24 hidden lg:table-cell">
+                         <Button
+               size="sm"
+               variant="outline"
+               onClick={() => {
+                 setSelectedProductType(productType);
+                 setCompositionsDialogOpen(true);
+               }}
+               className="whitespace-nowrap text-xs h-6 px-2"
+             >
+               {t('compositions', { ns: 'services', defaultValue: 'Compositions' })}
+             </Button>
           </TableCell>
           <TableCell className="text-center w-16">
             <DropdownMenu>
@@ -552,6 +578,15 @@ const ProductTypesListPage: React.FC = () => {
                 >
                   <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t("edit")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSelectedProductType(productType);
+                    setCompositionsDialogOpen(true);
+                  }}
+                >
+                  <List className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+                  {t('manageCompositions', { ns: 'services', defaultValue: 'Manage Compositions' })}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -672,7 +707,10 @@ const ProductTypesListPage: React.FC = () => {
                     {t('price', { ns: 'common', defaultValue: 'Price' })}
                   </TableHead>
                   <TableHead className="text-center w-24 hidden xl:table-cell">
-                    {t('serviceOfferings', { ns: 'services', defaultValue: 'Offerings' })}
+                    {t('actions', { ns: 'common', defaultValue: 'Actions' })}
+                  </TableHead>
+                  <TableHead className="text-center w-24 hidden lg:table-cell">
+                    {t('compositions', { ns: 'services', defaultValue: 'Compositions' })}
                   </TableHead>
                   <TableHead className="text-center w-16">
                     {t("actions")}
@@ -682,7 +720,7 @@ const ProductTypesListPage: React.FC = () => {
               <TableBody>
                 {isLoading && productTypes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center">
+                    <TableCell colSpan={7} className="h-32 text-center">
                       <div className="flex justify-center items-center gap-2 text-muted-foreground">
                         <Loader2 className="h-6 w-6 animate-spin" />
                         <span>
@@ -701,7 +739,7 @@ const ProductTypesListPage: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-32 text-center text-muted-foreground"
                     >
                       {t("noResults")}
@@ -824,13 +862,20 @@ const ProductTypesListPage: React.FC = () => {
         itemType="productTypeLC"
         isPending={deleteMutation.isPending}
       />
-      {selectedProductType && (
-        <ManageOfferingsDialog
-          isOpen={offeringsDialogOpen}
-          onOpenChange={setOfferingsDialogOpen}
-          productType={selectedProductType}
-        />
-      )}
+             {selectedProductType && (
+         <ManageOfferingsDialog
+           isOpen={offeringsDialogOpen}
+           onOpenChange={setOfferingsDialogOpen}
+           productType={selectedProductType}
+         />
+       )}
+       {selectedProductType && (
+         <ManageCompositionsDialog
+           isOpen={compositionsDialogOpen}
+           onOpenChange={setCompositionsDialogOpen}
+           productType={selectedProductType}
+         />
+       )}
     </div>
   );
 };

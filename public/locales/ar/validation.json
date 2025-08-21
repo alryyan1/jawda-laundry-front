@@ -10,7 +10,7 @@
     "usernameRequired": "اسم المستخدم مطلوب.",
     "usernameInvalid": "يمكن أن يحتوي اسم المستخدم على أحرف وأرقام وشرطات سفلية وشرطات فقط.",
     "categoryRequired": "الفئة مطلوبة.",
-    "productTypeRequired": "نوع المنتج مطلوب.",
+    "productTypeRequired": "نوع الوجبة مطلوب.",
     "serviceActionRequired": "إجراء الخدمة مطلوب.",
     "pricingStrategyRequired": "استراتيجية التسعير مطلوبة.",
     "pricingStrategyInvalid": "تم تحديد استراتيجية تسعير غير صالحة.",
