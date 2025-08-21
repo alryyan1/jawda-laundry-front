@@ -26,30 +26,6 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   selectedCategoryId,
   selectedCustomerId,
 }) => {
-  // Returns a representative online image based on category name (fallback when no image_url provided)
-  const getDefaultImageForCategoryName = React.useCallback((name: string): string | null => {
-    const n = (name || "").toLowerCase();
-
-    const src = (query: string) => `https://source.unsplash.com/featured/600x400?${encodeURIComponent(query)}`;
-
-    if (n.includes("بوكس") || n.includes("box")) return src("combo meal,food box");
-    if (n.includes("سندويش") || n.includes("sandwich") || n.includes("shawarma")) return src("shawarma,sandwich,wrap");
-    if (n.includes("فرايز") || n.includes("fries")) return src("french fries");
-    if (n.includes("عراقي")) return src("kebab,grill,iraqi food");
-    if (n.includes("صاروق")) return src("wrap,sandwich");
-    if (n.includes("شبس") || n.includes("chips")) return src("potato chips");
-    if (n.includes("مشروبات باردة") || n.includes("cold drinks")) return src("iced drink,juice,cold beverage");
-    if (n.includes("مشروبات ساخنة") || n.includes("hot drinks") || n.includes("tea") || n.includes("coffee")) return src("tea,coffee,hot drink");
-    if (n.includes("مشروبات") || n.includes("drinks")) return src("beverage,drink");
-    if (n.includes("وجبات التوفير") || n.includes("value")) return src("combo meal");
-    if (n.includes("اللقيمات") || n.includes("luqaimat")) return src("luqaimat,arabic dessert,sweet dumplings");
-    if (n.includes("مندازي") || n.includes("mandazi")) return src("mandazi,african pastry,donut");
-    if (n.includes("فطاير") || n.includes("fatair")) return src("pastry,manakeesh");
-    if (n.includes("رقاق") || n.includes("khubz")) return src("flatbread,khubz");
-    if (n.includes("توست") || n.includes("toast")) return src("toast bread");
-
-    return src("restaurant food");
-  }, []);
   const { data: allCategories = [], isLoading: isLoadingAllCategories } = useQuery<ProductCategory[], Error>({
     queryKey: ["productCategories"],
     queryFn: getProductCategories,
@@ -70,7 +46,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     // Get unique category IDs from customer's products with pricing rules
     const customerCategoryIds = new Set(
       customerProductsWithPricingRules.product_types
-        .map((productType: any) => productType.category?.id)
+        .map(productType => productType.category?.id)
         .filter(Boolean)
     );
 
@@ -79,20 +55,6 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   }, [selectedCustomerId, customerProductsWithPricingRules, allCategories]);
 
   const isLoading = isLoadingAllCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
-
-  const getPlaceholderSvg = (label: string) => {
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='400'>
-      <defs>
-        <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
-          <stop offset='0%' stop-color='#e0f2fe'/>
-          <stop offset='100%' stop-color='#bae6fd'/>
-        </linearGradient>
-      </defs>
-      <rect width='600' height='400' fill='url(#g)'/>
-      <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='28' fill='#0c4a6e'>${(label||'Category').replace(/&/g,'&amp;')}</text>
-    </svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  };
 
   if (isLoading) {
     return (
@@ -123,20 +85,13 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                   '--tw-gradient-to': selectedCategoryId === category.id.toString() ? '#0284C7' : materialColors.grey[100],
                 } as React.CSSProperties}
               >
-                <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden" style={{height: 84}}>
-                  {/* If image_url exists, use it; otherwise, use online fallback */}
-                  {(category.image_url ?? getDefaultImageForCategoryName(category.name)) ? (
+                <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
+                  {category.image_url ? (
                     <>
                       <img 
-                        src={category.image_url ?? getDefaultImageForCategoryName(category.name)!}
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          // Fallback to SVG placeholder if remote image fails
-                          (e.currentTarget as HTMLImageElement).src = getPlaceholderSvg(category.name);
-                        }}
+                        src={category.image_url} 
                         alt={category.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain "
                         style={{ objectPosition: 'center' }}
                       />
                       <span

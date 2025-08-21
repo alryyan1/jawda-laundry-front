@@ -450,6 +450,20 @@ export const updateOrderItemQuantity = async (
 };
 
 /**
+ * Update order item notes
+ */
+export const updateOrderItemNotes = async (
+    orderItemId: string | number,
+    notes: string
+): Promise<{ order_item: OrderItem; order: Order; message: string }> => {
+    const { data } = await apiClient.patch<{ order_item: OrderItem; order: Order; message: string }>(
+        `/order-items/${orderItemId}/notes`,
+        { notes }
+    );
+    return data;
+};
+
+/**
  * Download order invoice PDF
  */
 export const downloadOrderInvoice = async (orderId: string | number): Promise<void> => {

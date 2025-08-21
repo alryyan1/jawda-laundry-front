@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity } from "@/api/orderService";
+import { createOrder, getOrderItemQuote, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -38,7 +38,6 @@ import { getTodayDate } from "@/lib/dateUtils";
 
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
 } from "lucide-react";
@@ -582,6 +581,32 @@ const POSPage: React.FC = () => {
   const handleUpdateNotes = (id: string, notes: string) => {
     setCartItems(prev => prev.map(item =>
       item.id === id ? { ...item, notes } : item
+    ));
+  };
+
+  const handleSaveNotesToBackend = async (orderItemId: string | number, notes: string) => {
+    try {
+      // Update the order item notes in the backend
+      const response = await updateOrderItemNotes(orderItemId, notes);
+      
+      // Update the selected order with the new data
+      if (selectedOrder) {
+        setSelectedOrder(prev => prev ? { ...prev, items: response.order.items } : null);
+      }
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      
+    } catch (error) {
+      console.error('Failed to save notes to backend:', error);
+      toast.error(t("failedToSaveNotes", { ns: "orders", defaultValue: "Failed to save notes" }));
+    }
+  };
+
+  const handleUpdateCompositions = (id: string, excludedIds: number[]) => {
+    setCartItems(prev => prev.map(item =>
+      item.id === id ? { ...item, excludedCompositionIds: excludedIds } : item
     ));
   };
 
@@ -1178,8 +1203,8 @@ const POSPage: React.FC = () => {
                 <>
                   {/* Categories View */}
                   {showCategoriesOnIpad && (
-                    <Card className="flex-1">
-                      <CardContent className=" h-full">
+                    <div   className="flex-1">
+                      <div className=" h-full">
                         <CategoryColumn
                           onSelectCategory={(categoryId) => {
                             setSelectedCategoryId(categoryId);
@@ -1188,8 +1213,8 @@ const POSPage: React.FC = () => {
                           selectedCategoryId={selectedCategoryId}
                           selectedCustomerId={selectedCustomerId}
                         />
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   )}
 
                   {/* Products and Cart View */}
@@ -1258,14 +1283,17 @@ const POSPage: React.FC = () => {
 
                       {/* Cart - Only show when there are items */}
                       {cartItems.length > 0 && (
-                        <Card className="flex-1">
-                          <CardContent className="p-1 h-full">
+                        <div className="flex-1">
+                          <div className="p-1 h-full">
                           <CartColumn
                             items={cartItems}
                             onRemoveItem={handleRemoveItem}
                             onUpdateQuantity={handleUpdateQuantity}
                             onUpdateDimensions={handleUpdateDimensions}
                             onUpdateNotes={handleUpdateNotes}
+                            onUpdateCompositions={handleUpdateCompositions}
+                            onSaveNotesToBackend={handleSaveNotesToBackend}
+                            selectedOrder={selectedOrder}
                             onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
                             onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                             isProcessing={isProcessing}
@@ -1275,8 +1303,8 @@ const POSPage: React.FC = () => {
                             isReceived={selectedOrder?.received === true}
                             paymentStatus={selectedOrder?.payment_status}
                           />
-                          </CardContent>
-                        </Card>
+                          </div>
+                        </div>
                       )}
                     </>
                     </div>
@@ -1286,21 +1314,21 @@ const POSPage: React.FC = () => {
                 <>
                   {/* Desktop Layout */}
                   {/* Left Section: Categories */}
-                  <Card className="w-[160px] flex-shrink-0">
-                    <CardContent className="p-1 h-full">
+                  <div className="w-[160px] flex-shrink-0 ">
+                    <div className="p-1 h-full">
                   <CategoryColumn
                     onSelectCategory={handleSelectCategory}
                     selectedCategoryId={selectedCategoryId}
                     selectedCustomerId={selectedCustomerId}
                   />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
 
               {/* Middle Section: Products and Services */}
               <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
                                  {/* Products */}
-                     <Card className="flex-1 flex flex-col">
-                       <CardContent className="flex-1 min-h-0 p-1">
+                     <div className="flex-1 flex flex-col ">
+                       <div className="flex-1 min-h-0 p-1">
                          <div className="flex-1 min-h-0">
                            {selectedOrder?.received ? (
                              // Show ActionsComponent when order is received
@@ -1337,8 +1365,8 @@ const POSPage: React.FC = () => {
                              </>
                            )}
                          </div>
-                       </CardContent>
-                     </Card>
+                       </div>
+                     </div>
 
                 {/* Removed ServiceOfferingColumn - now handled by dialog */}
               </div>
@@ -1355,14 +1383,17 @@ const POSPage: React.FC = () => {
            
                            {/* Right Section: Cart - Only show when there are items */}
                            {cartItems.length > 0 && (
-                             <Card className="w-[400px] flex-shrink-0">
-                               <CardContent className="p-1 h-full">
+                             <div className="w-[400px] flex-shrink-0 ">
+                               <div className="p-1 h-full">
                              <CartColumn
                                items={cartItems}
                                onRemoveItem={handleRemoveItem}
                                onUpdateQuantity={handleUpdateQuantity}
                                onUpdateDimensions={handleUpdateDimensions}
                                onUpdateNotes={handleUpdateNotes}
+                               onUpdateCompositions={handleUpdateCompositions}
+                               onSaveNotesToBackend={handleSaveNotesToBackend}
+                               selectedOrder={selectedOrder}
                                onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
                                onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                                isProcessing={isProcessing}
@@ -1372,8 +1403,8 @@ const POSPage: React.FC = () => {
                                 isReceived={selectedOrder?.received === true}
                                paymentStatus={selectedOrder?.payment_status}
                                                           />
-                                 </CardContent>
-                             </Card>
+                                 </div>
+                             </div>
                            )}
                   </>
               )}

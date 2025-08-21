@@ -4,7 +4,6 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 // MUI imports for order ID display
-import { Card } from '@mui/material';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
 import { ORDER_STATUSES } from "@/lib/constants";
@@ -168,11 +167,11 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             {/* Order ID Display - Show when there's a selected order */}
             {selectedOrder && (
              
-               <Card className='bg-secondary text-white p-2 text-2xl text-bold'>
+               <div className='bg-secondary text-white p-2 text-2xl text-bold border rounded-lg'>
                  #{selectedOrder.id}
 
 
-               </Card>
+               </div>
              
             )}
 

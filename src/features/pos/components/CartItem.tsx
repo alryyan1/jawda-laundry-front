@@ -13,13 +13,16 @@ import {
   Minus,
   Ruler,
   AlertCircle,
+  List,
+  Check,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import type { ServiceOffering, ProductType } from "@/types";
+import type { ServiceOffering, ProductType, Order } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CartItemCompositionsDialog } from "./CartItemCompositionsDialog";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -32,6 +35,7 @@ export interface CartItem {
   notes?: string;
   length_meters?: number;
   width_meters?: number;
+  excludedCompositionIds?: number[]; // Product compositions excluded by customer
   _isQuoting?: boolean;
   _quoteError?: string | null;
   _quotedSubTotal?: number;
@@ -49,6 +53,9 @@ interface CartItemProps {
     dimensions: { length?: number; width?: number }
   ) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateCompositions: (id: string, excludedIds: number[]) => void;
+  onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
+  selectedOrder?: Order | null;
   isReadOnly?: boolean;
 }
 
@@ -58,14 +65,17 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   onUpdateQuantity,
   onUpdateDimensions,
   onUpdateNotes,
+  onUpdateCompositions,
+  onSaveNotesToBackend,
+  selectedOrder,
   isReadOnly = false,
 }) => {
   // Only use the isReadOnly prop, don't make existing order items read-only
   const effectiveReadOnly = isReadOnly;
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
   const { getSetting } = useSettings();
-  const [isDetailsOpen] = useState(!!item.notes);
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
+  const [isCompositionsDialogOpen, setIsCompositionsDialogOpen] = useState(false);
 
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'OMR');
@@ -78,6 +88,31 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
     // A value of 0 or less will be invalid if using min(1)
     if (value === "" || /^[1-9]\d*$/.test(value)) {
       onUpdateQuantity(item.id, value === "" ? 1 : parseInt(value, 10));
+    }
+  };
+
+  const handleNotesChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newNotes = e.target.value;
+    
+    // Update local state immediately for responsive UI
+    onUpdateNotes(item.id, newNotes);
+    
+    // If this is an existing order item and we have the save function, save to backend
+    if (item._isExistingOrderItem && onSaveNotesToBackend && selectedOrder) {
+      try {
+        // Find the corresponding order item in the selected order
+        const orderItem = selectedOrder.items?.find(oi => 
+          oi.serviceOffering?.id === item.serviceOffering.id &&
+          oi.quantity === item.quantity
+        );
+        
+        if (orderItem) {
+          await onSaveNotesToBackend(orderItem.id, newNotes);
+        }
+      } catch (error) {
+        console.error('Failed to save notes to backend:', error);
+        // Optionally show a toast error here
+      }
     }
   };
 
@@ -139,9 +174,25 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                 {item.productType.category.name}
               </p>
             )}
+            {item.excludedCompositionIds && item.excludedCompositionIds.length > 0 && (
+              <p className="text-xs text-orange-600 font-medium">
+                {t("excludedCompositions", { defaultValue: "Excluded compositions" })}: {item.excludedCompositionIds.length}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-1">
-           
+            {!effectiveReadOnly && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setIsCompositionsDialogOpen(true)}
+                disabled={item._isQuoting}
+                title={t("itemCompositions", { ns: "orders", defaultValue: "Item Compositions" }) as string}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            )}
             {!effectiveReadOnly && (
               <Button
                 variant="ghost"
@@ -290,23 +341,19 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           </div>
 
 
-          {/* Notes appear when toggled or if they already have content */}
-          {(isDetailsOpen || item.notes) && (
-            <div className="pt-2">
-              <div className="grid gap-1.5">
-                <Label className="text-xs">
-                  {t("itemNotesOptional", { ns: "orders" })}
-                </Label>
-                <Textarea
-                  value={item.notes || ""}
-                  onChange={(e) => onUpdateNotes(item.id, e.target.value)}
-                  placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
-                  className="h-16 resize-none text-xs"
-                  disabled={effectiveReadOnly || item._isQuoting}
-                />
-              </div>
-            </div>
-          )}
+          {/* Notes Section - Always visible */}
+          <div className="pt-2">
+            <Label className="text-xs mb-1">
+              {t("itemNotesOptional", { ns: "orders" })}
+            </Label>
+                         <Textarea
+               value={item.notes || ""}
+               onChange={handleNotesChange}
+               placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
+               className="h-16 resize-none text-xs"
+               disabled={effectiveReadOnly || item._isQuoting}
+             />
+          </div>
 
           {/* Quote Error Display */}
           {item._quoteError && !item._isQuoting && (
@@ -330,6 +377,18 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               width: size.width_meters,
             });
           }}
+        />
+      )}
+
+      {item.productType && !effectiveReadOnly && (
+        <CartItemCompositionsDialog
+          isOpen={isCompositionsDialogOpen}
+          onOpenChange={setIsCompositionsDialogOpen}
+          productType={item.productType}
+          excludedCompositionIds={item.excludedCompositionIds || []}
+          onSave={(excludedIds) => onUpdateCompositions(item.id, excludedIds)}
+          onUpdateNotes={(notes) => onUpdateNotes(item.id, notes)}
+          currentNotes={item.notes || ""}
         />
       )}
     </>

@@ -66,6 +66,7 @@ const settingsFormSchema = z.object({
     .min(1, { message: "validation:required" })
     .max(5, { message: "validation:maxLengthShort" }), // Example: make currency symbol required
   date_format: z.string().optional(), // Could use z.enum if you have predefined formats
+  country_code: z.string().optional(), // Default country code
   global_low_stock_threshold: z.coerce.number().int().min(0).optional(),
   invoice_prefix: z.string().optional(),
   purchase_order_prefix: z.string().optional(),
@@ -112,6 +113,7 @@ const SettingsPage: React.FC = () => {
       company_email: "",
       currency_symbol: "$",
       date_format: "YYYY-MM-DD",
+      country_code: "968",
       global_low_stock_threshold: 10,
       invoice_prefix: "INV-",
       purchase_order_prefix: "PO-",
@@ -154,6 +156,7 @@ const SettingsPage: React.FC = () => {
         company_email: settings.company_email || "",
         currency_symbol: settings.currency_symbol || "$",
         date_format: settings.date_format || "YYYY-MM-DD",
+        country_code: settings.country_code || "968",
         global_low_stock_threshold: settings.global_low_stock_threshold ?? 10,
         invoice_prefix: settings.invoice_prefix || "INV-",
         purchase_order_prefix: settings.purchase_order_prefix || "PO-",
@@ -443,6 +446,22 @@ const SettingsPage: React.FC = () => {
                           </FormControl>
                           <FormDescription>
                             {t("settings:dateFormatDesc")}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="country_code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings:countryCode", { defaultValue: "Default Country Code" })}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="968" />
+                          </FormControl>
+                          <FormDescription>
+                            {t("settings:countryCodeDesc", { defaultValue: "The default country code used throughout the application" })}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

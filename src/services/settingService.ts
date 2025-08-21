@@ -12,6 +12,7 @@ export interface AppSettings {
     company_logo_url: string | null;
     currency_symbol: string;
     date_format: string; // e.g., 'YYYY-MM-DD', 'MM/DD/YYYY'
+    country_code: string; // Default country code for the application
     global_low_stock_threshold: number;
     invoice_prefix: string;
     purchase_order_prefix: string;

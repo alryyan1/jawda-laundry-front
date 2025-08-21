@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -74,8 +73,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* Order Details Card */}
-      <Card className="border-l-4 border-l-purple-500">
-        <CardContent className="p-4">
+      <div className="border-l-4 border-l-purple-500 border rounded-lg bg-card">
+        <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <FileText className="h-5 w-5 text-purple-600" />
@@ -99,19 +98,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("pickupDate", { ns: "orders", defaultValue: "Pickup Date" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.pickup_date
-                    ? new Date(order.pickup_date).toLocaleString(i18n.language)
-                    : t("notSet", { ns: "common", defaultValue: "Not set" })}
-                </div>
-              </div>
-            </div>
+      
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
@@ -139,12 +126,12 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Payment Status Card */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardContent className="p-4">
+      <div className="border-l-4 border-l-blue-500 border rounded-lg bg-card">
+        <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-blue-600" />
@@ -246,39 +233,11 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
             </Button>
 
             {/* WhatsApp Text Button */}
-            {onWhatsAppTextClick && order.customer?.phone && (
-              <Button
-                onClick={onWhatsAppTextClick}
-                disabled={isProcessing || order.whatsapp_text_sent || isSendingMessage}
-                variant={order.whatsapp_text_sent ? "default" : "outline"}
-                className={cn(
-                  "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
-                  order.whatsapp_text_sent 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "border-gray-300 hover:bg-gray-50"
-                )}
-              >
-                {isSendingMessage ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : order.whatsapp_text_sent ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <WhatsAppIcon className="h-4 w-4" />
-                )}
-                <span className="text-sm">
-                  {isSendingMessage 
-                    ? t("sending", { ns: "common", defaultValue: "Sending..." })
-                    : order.whatsapp_text_sent 
-                    ? t("messageSent", { ns: "orders", defaultValue: "Message Sent" })
-                    : t("sendMessage", { ns: "orders", defaultValue: "Send Message" })
-                  }
-                </span>
-              </Button>
-            )}
+         
           </div>
          
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Payment History Toggle Button */}
       <Button
@@ -304,8 +263,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 
       {/* Payment History Card - Conditionally Rendered */}
       {showPaymentHistory && (
-        <Card className="flex-1">
-          <CardContent className="p-4 h-full flex flex-col">
+        <div className="flex-1 border rounded-lg bg-card">
+          <div className="p-4 h-full flex flex-col">
             <ScrollArea className="flex-1">
               {payments.length > 0 ? (
                 <div className="space-y-3">
@@ -401,8 +360,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 {t("viewReceipt", { ns: "orders", defaultValue: "View Receipt" })}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

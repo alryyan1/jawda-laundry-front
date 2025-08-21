@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { CheckCircle, Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
@@ -45,8 +45,8 @@ export const OrderSuccessComponent: React.FC<OrderSuccessComponentProps> = ({
       </div>
 
       {/* Order Details Card */}
-      <Card className="w-full max-w-md mb-8">
-        <CardContent className="p-6">
+      <div className="w-full max-w-md mb-8 border rounded-lg bg-card">
+        <div className="p-6">
           <div className="space-y-4">
             {/* Order Number */}
             <div className="text-center">
@@ -91,8 +91,8 @@ export const OrderSuccessComponent: React.FC<OrderSuccessComponentProps> = ({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Create New Order Button */}
       <Button

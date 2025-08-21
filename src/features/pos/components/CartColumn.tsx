@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { CartItemComponent, type CartItem } from "./CartItem";
 import { useSettings } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
+import type { Order } from "@/types";
 
 interface CartColumnProps {
   items: CartItem[];
@@ -16,6 +17,9 @@ interface CartColumnProps {
   onUpdateQuantity: (id: string, quantity: number) => void;
   onUpdateDimensions: (id: string, dimensions: { length?: number; width?: number }) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateCompositions: (id: string, excludedIds: number[]) => void;
+  onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
+  selectedOrder?: Order | null;
   onCheckout: () => void;
   onCancelOrder?: () => void;
   isProcessing: boolean;
@@ -32,6 +36,9 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onUpdateQuantity,
   onUpdateDimensions,
   onUpdateNotes,
+  onUpdateCompositions,
+  onSaveNotesToBackend,
+  selectedOrder,
   onCheckout,
   onCancelOrder,
   isProcessing,
@@ -165,6 +172,9 @@ export const CartColumn: React.FC<CartColumnProps> = ({
                 onUpdateQuantity={onUpdateQuantity}
                 onUpdateDimensions={onUpdateDimensions}
                 onUpdateNotes={onUpdateNotes}
+                onUpdateCompositions={onUpdateCompositions}
+                onSaveNotesToBackend={onSaveNotesToBackend}
+                selectedOrder={selectedOrder}
                 isReadOnly={isReadOnly || mode === 'order_view'}
               />
             ))
