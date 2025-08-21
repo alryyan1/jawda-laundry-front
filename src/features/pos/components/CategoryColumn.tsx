@@ -70,7 +70,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     // Get unique category IDs from customer's products with pricing rules
     const customerCategoryIds = new Set(
       customerProductsWithPricingRules.product_types
-        .map(productType => productType.category?.id)
+        .map((productType: any) => productType.category?.id)
         .filter(Boolean)
     );
 
@@ -124,10 +124,11 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 } as React.CSSProperties}
               >
                 <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden" style={{height: 84}}>
-                  {category.image_url || getDefaultImageForCategoryName(category.name) ? (
+                  {/* If image_url exists, use it; otherwise, use online fallback */}
+                  {(category.image_url ?? getDefaultImageForCategoryName(category.name)) ? (
                     <>
                       <img 
-                        src={category.image_url || getDefaultImageForCategoryName(category.name)!}
+                        src={category.image_url ?? getDefaultImageForCategoryName(category.name)!}
                         referrerPolicy="no-referrer"
                         crossOrigin="anonymous"
                         onError={(e) => {
