@@ -10,7 +10,7 @@ i18n
   .init({
     supportedLngs: ['en', 'ar'],
     fallbackLng: 'en',
-    debug: process.env.NODE_ENV === 'development',
+    // debug: process.env.NODE_ENV === 'development',
     ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports','dining'],
     defaultNS: 'common',
     interpolation: {

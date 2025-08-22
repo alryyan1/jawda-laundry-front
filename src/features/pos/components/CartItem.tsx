@@ -1,5 +1,5 @@
 // src/features/pos/components/CartItem.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,9 @@ import {
   Ruler,
   AlertCircle,
   List,
-  Check,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import type { ServiceOffering, ProductType, Order } from "@/types";
+import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
@@ -40,6 +39,7 @@ export interface CartItem {
   _quoteError?: string | null;
   _quotedSubTotal?: number;
   _isExistingOrderItem?: boolean; // Flag to identify existing order items
+  _orderItemId?: string | number; // ID of the original order item in the database
   _isAdding?: boolean; // Flag to show loading state while adding to backend
   _isDeleting?: boolean; // Flag to show loading state while deleting from backend
 }
@@ -55,7 +55,6 @@ interface CartItemProps {
   onUpdateNotes: (id: string, notes: string) => void;
   onUpdateCompositions: (id: string, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
-  selectedOrder?: Order | null;
   isReadOnly?: boolean;
 }
 
@@ -67,7 +66,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   onUpdateNotes,
   onUpdateCompositions,
   onSaveNotesToBackend,
-  selectedOrder,
   isReadOnly = false,
 }) => {
   // Only use the isReadOnly prop, don't make existing order items read-only
@@ -91,30 +89,50 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
     }
   };
 
-  const handleNotesChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Debounced notes saving
+  const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newNotes = e.target.value;
+    console.log('handleNotesChange', newNotes);
     
     // Update local state immediately for responsive UI
     onUpdateNotes(item.id, newNotes);
     
-    // If this is an existing order item and we have the save function, save to backend
-    if (item._isExistingOrderItem && onSaveNotesToBackend && selectedOrder) {
-      try {
-        // Find the corresponding order item in the selected order
-        const orderItem = selectedOrder.items?.find(oi => 
-          oi.serviceOffering?.id === item.serviceOffering.id &&
-          oi.quantity === item.quantity
-        );
-        
-        if (orderItem) {
-          await onSaveNotesToBackend(orderItem.id, newNotes);
+    // Clear existing timeout
+    if (notesTimeoutRef.current) {
+      clearTimeout(notesTimeoutRef.current);
+    }
+    
+    // If this is an existing order item and we have the save function, debounce the save
+    if (item._isExistingOrderItem && onSaveNotesToBackend && item._orderItemId) {
+      setIsSavingNotes(true);
+      
+      // Set a new timeout to save after 1 second of no typing
+      notesTimeoutRef.current = setTimeout(async () => {
+        try {
+          console.log('saving notes to backend for order item ID:', item._orderItemId);
+          await onSaveNotesToBackend(item._orderItemId!, newNotes);
+          console.log('Notes saved successfully');
+        } catch (error) {
+          console.error('Failed to save notes to backend:', error);
+          // Optionally show a toast error here
+        } finally {
+          setIsSavingNotes(false);
         }
-      } catch (error) {
-        console.error('Failed to save notes to backend:', error);
-        // Optionally show a toast error here
-      }
+      }, 1000); // 1 second debounce
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notesTimeoutRef.current) {
+        clearTimeout(notesTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -346,13 +364,20 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             <Label className="text-xs mb-1">
               {t("itemNotesOptional", { ns: "orders" })}
             </Label>
-                         <Textarea
-               value={item.notes || ""}
-               onChange={handleNotesChange}
-               placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
-               className="h-16 resize-none text-xs"
-               disabled={effectiveReadOnly || item._isQuoting}
-             />
+            <div className="relative">
+              <Textarea
+                value={item.notes || ""}
+                onChange={handleNotesChange}
+                placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
+                className="h-16 resize-none text-xs"
+                disabled={effectiveReadOnly || item._isQuoting}
+              />
+              {isSavingNotes && (
+                <div className="absolute top-1 right-1">
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Quote Error Display */}

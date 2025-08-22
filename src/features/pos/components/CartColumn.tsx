@@ -63,6 +63,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   const itemsToShow = selectedItemId 
     ? items.filter(item => item.id === selectedItemId)
     : items;
+console.log(itemsToShow,'itemsToShow',items,'items')
 
   // Handle avatar click
   const handleAvatarClick = (itemId: string) => {

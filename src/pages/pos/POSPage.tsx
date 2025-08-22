@@ -406,37 +406,22 @@ const POSPage: React.FC = () => {
 
     try {
       // If it's an existing order item, delete from backend first
-      if (item._isExistingOrderItem && selectedOrder) {
-        console.log('Looking for existing order item in selected order...');
+      if (item._isExistingOrderItem && item._orderItemId) {
+        console.log('Deleting order item from backend:', item._orderItemId);
         
-        // Find the actual order item ID from the selected order
-        // Use a more flexible matching approach - match by service offering and quantity first
-        const orderItem = selectedOrder.items?.find(orderItem => 
-          orderItem.serviceOffering?.id === item.serviceOffering.id &&
-          orderItem.quantity === item.quantity
-        );
-
-        console.log('Found order item:', orderItem);
-
-        if (orderItem) {
-          console.log('Deleting order item from backend:', orderItem.id);
-          
-          // Delete from backend
-          const response = await deleteOrderItem(orderItem.id);
-          
-          console.log('Backend response:', response);
-          
-          // Update the selected order with the updated order from backend
-          setSelectedOrder(response.order);
-          
-          // Invalidate queries to refresh data
-          queryClient.invalidateQueries({ queryKey: ["orders"] });
-          queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-          
-          toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
-        } else {
-          console.warn('Order item not found in selected order, treating as new item');
-        }
+        // Delete from backend using stored order item ID
+        const response = await deleteOrderItem(item._orderItemId);
+        
+        console.log('Backend response:', response);
+        
+        // Update the selected order with the updated order from backend
+        setSelectedOrder(response.order);
+        
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+        
+        toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
       } else {
         console.log('Item is not an existing order item, removing from cart only');
       }
@@ -465,17 +450,9 @@ const POSPage: React.FC = () => {
     if (!item) return;
 
     // If this is an existing order item, save quantity to database
-    if (item._isExistingOrderItem && selectedOrder) {
-      // Find the corresponding order item in the selected order
-      const orderItem = selectedOrder.items?.find(oi => 
-        oi.serviceOffering?.id === item.serviceOffering.id &&
-        oi.quantity === item.quantity
-      );
-      
-      if (orderItem) {
-        // Save quantity to database
-        updateOrderItemQuantityInDB(orderItem.id, quantity);
-      }
+    if (item._isExistingOrderItem && item._orderItemId) {
+      // Save quantity to database using stored order item ID
+      updateOrderItemQuantityInDB(item._orderItemId, quantity);
     }
 
     // Trigger immediate quote for dimension-based items when quantity changes
@@ -528,20 +505,12 @@ const POSPage: React.FC = () => {
     if (!item) return;
 
     // If this is an existing order item, save dimensions to database
-    if (item._isExistingOrderItem && selectedOrder) {
-      // Find the corresponding order item in the selected order
-      const orderItem = selectedOrder.items?.find(oi => 
-        oi.serviceOffering?.id === item.serviceOffering.id &&
-        oi.quantity === item.quantity
-      );
-      
-      if (orderItem) {
-        // Save dimensions to database
-        updateOrderItemDimensionsInDB(orderItem.id, {
-          length_meters: dimensions.length || null,
-          width_meters: dimensions.width || null,
-        });
-      }
+    if (item._isExistingOrderItem && item._orderItemId) {
+      // Save dimensions to database using stored order item ID
+      updateOrderItemDimensionsInDB(item._orderItemId, {
+        length_meters: dimensions.length || null,
+        width_meters: dimensions.width || null,
+      });
     }
 
     // Trigger immediate quote for dimension-based items
@@ -654,6 +623,7 @@ const POSPage: React.FC = () => {
         _isQuoting: false,
         _quotedSubTotal: item.sub_total,
         _isExistingOrderItem: true, // Mark as existing order item
+        _orderItemId: item.id, // Store the original order item ID
       }));
       
       setCartItems(cartItemsFromOrder);
@@ -834,6 +804,7 @@ const POSPage: React.FC = () => {
             _isQuoting: false,
             _quotedSubTotal: newOrderItem.sub_total,
             _isExistingOrderItem: true, // Mark as existing order item since it's now saved to backend
+            _orderItemId: newOrderItem.id, // Store the original order item ID
           };
           return [...filtered, realCartItem];
         }

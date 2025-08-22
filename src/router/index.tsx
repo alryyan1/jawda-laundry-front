@@ -98,6 +98,7 @@ const ServiceActionsListPage = React.lazy(
   () => import("@/pages/services/service-actions/ServiceActionsListPage")
 );
 const CustomerLedgerPage = React.lazy(() => import('@/pages/customers/CustomerLedgerPage'));
+const KitchenChefPage = React.lazy(() => import('@/pages/kitchen/KitchenChefPage'));
 const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
 const DailyRevenuePage = React.lazy(() => import('@/pages/reports/DailyRevenuePage'));
 const CostSummaryPage = React.lazy(() => import('@/pages/reports/CostSummaryPage'));
@@ -291,6 +292,15 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <POSPage />
+              </React.Suspense>
+            ),
+          },
+          // Kitchen Chef Route
+          {
+            path: "kitchen",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <KitchenChefPage />
               </React.Suspense>
             ),
           },

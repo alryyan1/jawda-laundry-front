@@ -22,7 +22,7 @@ const AuthLayout = () => {
     <div 
       className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden"
       style={{
-        backgroundImage: 'url(/assets/restaurant-bg.svg)',
+        backgroundImage: 'url(./assets/restaurant-bg.svg)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
