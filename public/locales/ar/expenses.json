@@ -9,6 +9,7 @@
   "expenseName": "اسم المصروف",
   "expenseDate": "تاريخ المصروف",
   "recordedBy": "مسجل بواسطة",
+  
   "category": "الفئة",
   "amount": "المبلغ",
   "paymentMethod": "طريقة الدفع",

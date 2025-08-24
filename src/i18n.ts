@@ -9,7 +9,9 @@ i18n
   .use(initReactI18next) // Pass i18n instance to react-i18next
   .init({
     supportedLngs: ['en', 'ar'],
+    lng: 'en', // Set default language to English
     fallbackLng: 'en',
+    debug:true,
     // debug: process.env.NODE_ENV === 'development',
     ns: ['common', 'orders', 'customers', 'services', 'auth', 'permissionGroup', 'expenses','purchases','suppliers','permissions','reports','dining'],
     defaultNS: 'common',
@@ -22,6 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng', // Custom localStorage key
     },
   });
 
@@ -29,6 +32,13 @@ i18n
 i18n.on('languageChanged', (lng) => {
   document.documentElement.lang = lng;
   document.documentElement.dir = i18n.dir(lng);
+});
+
+// Ensure English is set as default language on app start
+i18n.on('initialized', () => {
+  if (!localStorage.getItem('i18nextLng')) {
+    i18n.changeLanguage('en');
+  }
 });
 
 export default i18n;

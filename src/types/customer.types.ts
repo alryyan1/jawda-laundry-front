@@ -13,9 +13,9 @@ export interface CustomerType {
 
 export interface Customer {
   id: number;
-  name:string;
-  car_plate_number?: string | null;
-  phone: string; // Now required
+  name: string; // Will always have a value (either provided or "no customer")
+  car_plate_number: string; // Only car plate number is required
+  phone?: string | null; // Now optional
   email?: string | null; // Now optional
   address?: string | null;
   notes?: string | null;
@@ -30,9 +30,9 @@ export interface Customer {
 
 // Form data for creating/editing customers
 export interface CustomerFormData {
-    name: string;
-    car_plate_number?: string;
-    phone: string;
+    name?: string; // Optional in form, but backend will set to "no customer" if empty
+    car_plate_number: string; // Only car plate number is required
+    phone?: string;
     address?: string;
     notes?: string;
     is_default?: boolean; // New field for default customer

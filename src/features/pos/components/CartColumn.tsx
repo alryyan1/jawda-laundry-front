@@ -59,10 +59,17 @@ export const CartColumn: React.FC<CartColumnProps> = ({
 
   const total = items.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
 
+  // Sort items by newest first (by _addedAt timestamp, fallback to array order for items without timestamp)
+  const sortedItems = [...items].sort((a, b) => {
+    const aTime = a._addedAt || 0;
+    const bTime = b._addedAt || 0;
+    return bTime - aTime; // Newest first
+  });
+
   // Determine which items to display
   const itemsToShow = selectedItemId 
-    ? items.filter(item => item.id === selectedItemId)
-    : items;
+    ? sortedItems.filter(item => item.id === selectedItemId)
+    : sortedItems;
 console.log(itemsToShow,'itemsToShow',items,'items')
 
   // Handle avatar click
@@ -165,7 +172,7 @@ console.log(itemsToShow,'itemsToShow',items,'items')
               <p>{t("cartIsEmpty", { ns: "orders" })}</p>
             </div>
           ) : (
-            itemsToShow.map((item) => (
+            itemsToShow.map((item, index) => (
               <CartItemComponent
                 key={item.id}
                 item={item}
@@ -175,8 +182,8 @@ console.log(itemsToShow,'itemsToShow',items,'items')
                 onUpdateNotes={onUpdateNotes}
                 onUpdateCompositions={onUpdateCompositions}
                 onSaveNotesToBackend={onSaveNotesToBackend}
-                selectedOrder={selectedOrder}
                 isReadOnly={isReadOnly || mode === 'order_view'}
+                itemNumber={index + 1}
               />
             ))
           )}

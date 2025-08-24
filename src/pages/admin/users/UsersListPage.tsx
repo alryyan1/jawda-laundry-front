@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { DataTable } from '@/components/shared/DataTable';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
 import { UserFormModal } from '@/features/admin/users/components/UserFormModal';
-import { UserNavigationPermissionsModal } from '@/features/admin/users/components/UserNavigationPermissionsModal';
+
 import { getUsers, deleteUser } from '@/api/adminService';
 import type { User, PaginatedResponse } from '@/types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -44,9 +44,7 @@ const UsersListPage: React.FC = () => {
 
     // Modal states
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [isNavigationModalOpen, setIsNavigationModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [managingNavigationUser, setManagingNavigationUser] = useState<User | null>(null);
     const [itemToDelete, setItemToDelete] = useState<User | null>(null);
 
     // Pagination and search
@@ -97,8 +95,7 @@ const UsersListPage: React.FC = () => {
     };
 
     const handleOpenNavigationModal = (user: User) => {
-        setManagingNavigationUser(user);
-        setIsNavigationModalOpen(true);
+
     };
 
     const handleUserModalClose = () => {
@@ -107,10 +104,7 @@ const UsersListPage: React.FC = () => {
         refetch(); // Refresh data when modal closes
     };
 
-    const handleNavigationModalClose = () => {
-        setIsNavigationModalOpen(false);
-        setManagingNavigationUser(null);
-    };
+
 
     // Table columns
     const columns: ColumnDef<User>[] = useMemo(() => [
@@ -237,17 +231,7 @@ const UsersListPage: React.FC = () => {
                         className="h-9 w-full sm:w-auto sm:max-w-xs"
                     />
                     
-                    {can('navigation:view') && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate('/admin/navigation')}
-                            className="h-9"
-                        >
-                            <Settings className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                            {t('manageNavigation')}
-                        </Button>
-                    )}
+
                 </div>
             </PageHeader>
 
@@ -269,14 +253,7 @@ const UsersListPage: React.FC = () => {
                 />
             )}
 
-            {/* User Navigation Permissions Modal */}
-            {can('user-navigation:manage') && (
-                <UserNavigationPermissionsModal
-                    isOpen={isNavigationModalOpen}
-                    onOpenChange={handleNavigationModalClose}
-                    user={managingNavigationUser}
-                />
-            )}
+
             
             {/* Delete Confirmation Dialog */}
             {can('user:delete') && (

@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -22,14 +20,7 @@ import type { CustomerFormData, Customer, CustomerType } from '@/types';
 import { createCustomer } from '@/api/customerService';
 import { getCustomerTypes } from '@/api/customerTypeService';
 
-// Updated Zod schema
-const customerSchema = z.object({
-  name: z.string().nonempty({ message: "validation.nameRequired" }).min(2, { message: "validation.nameMin" }),
-  phone: z.string().nonempty({ message: "validation.phoneRequired" }).min(7, {message: "validation.phoneInvalid"}), // Phone is now required
-  address: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
-  customer_type_id: z.string().optional().or(z.literal('')),
-});
+
 
 // Update CustomerFormData type if it's separate
 // export interface CustomerFormData {
@@ -58,9 +49,33 @@ const NewCustomerPage: React.FC = () => {
     const customerTypesArray = customerTypes || [];
 
     const { control, register, handleSubmit, formState: { errors }, setValue } = useForm<CustomerFormData>({
-        resolver: zodResolver(customerSchema),
-        defaultValues: { name: '', phone: '', address: '', notes: '', customer_type_id: '' },
+        defaultValues: { name: '', car_plate_number: '', phone: '', address: '', notes: '', customer_type_id: '' },
     });
+
+    // Custom validation functions that evaluate translations at validation time
+    const validateCarPlateNumber = (value: string) => {
+        if (!value || value.trim() === '') {
+            return t('validation.carPlateNumberRequired', { ns: 'validation' });
+        }
+        if (value.length < 1) {
+            return t('validation.carPlateNumberMin', { ns: 'validation' });
+        }
+        return true;
+    };
+
+    const validateName = (value: string) => {
+        if (value && value.trim() !== '' && value.length < 2) {
+            return t('validation.nameMin', { ns: 'validation' });
+        }
+        return true;
+    };
+
+    const validatePhone = (value: string) => {
+        if (value && value.trim() !== '' && value.length < 7) {
+            return t('validation.phoneInvalid', { ns: 'validation' });
+        }
+        return true;
+    };
 
     const mutation = useMutation<Customer, Error, CustomerFormData>({
         mutationFn: createCustomer,
@@ -101,18 +116,41 @@ const NewCustomerPage: React.FC = () => {
                     </CardHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <CardContent className="space-y-6">
-                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">{t('name')}<span className="text-destructive">*</span></Label>
-                                    <Input id="name" {...register('name')} />
-                                    {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="phone">{t('phone', {ns:'customers'})}<span className="text-destructive">*</span></Label>
-                                    <Input id="phone" type="tel" {...register('phone')} />
-                                    {errors.phone && <p className="text-sm text-destructive">{t(errors.phone.message as string)}</p>}
-                                </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="car_plate_number">{t('carPlateNumber', { ns: 'customers', defaultValue: 'Car Plate Number' })}<span className="text-destructive">*</span></Label>
+                                <Input 
+                                    id="car_plate_number" 
+                                    {...register('car_plate_number', { 
+                                        validate: validateCarPlateNumber
+                                    })} 
+                                    placeholder={t('carPlateNumberPlaceholder', { ns: 'customers', defaultValue: 'Enter car plate number' })} 
+                                />
+                                {errors.car_plate_number && <p className="text-sm text-destructive">{errors.car_plate_number.message}</p>}
                             </div>
+                            
+                                                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                 <div className="grid gap-2">
+                                     <Label htmlFor="name">{t('name')}</Label>
+                                     <Input 
+                                         id="name" 
+                                         {...register('name', { 
+                                             validate: validateName
+                                         })} 
+                                     />
+                                     {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                                 </div>
+                                 <div className="grid gap-2">
+                                     <Label htmlFor="phone">{t('phone', {ns:'customers'})}</Label>
+                                     <Input 
+                                         id="phone" 
+                                         type="tel" 
+                                         {...register('phone', { 
+                                             validate: validatePhone
+                                         })} 
+                                     />
+                                     {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+                                 </div>
+                             </div>
                             
                             {/* Customer Type Field with Quick Add Button */}
                             <div className="grid gap-2">

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, MapPin, Users, Search } from 'lucide-react';
 
@@ -24,10 +25,17 @@ const RestaurantTablesListPage: React.FC = () => {
   const [deletingTable, setDeletingTable] = useState<RestaurantTable | null>(null);
 
   // Fetch tables
-  const { data: tables = [], isLoading } = useQuery({
+  const { data: tables = [], isLoading, error } = useQuery({
     queryKey: ['restaurant-tables', filters],
     queryFn: () => restaurantTableService.getAll(filters),
   });
+
+
+
+  console.log(tables,'tables')
+
+
+
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -89,8 +97,9 @@ const RestaurantTablesListPage: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: ColumnDef<RestaurantTable>[] = useMemo(() => [
     {
+      id: 'number',
       accessorKey: 'number',
       header: t('tableNumber', { ns: 'admin' }),
       cell: ({ row }: any) => (
@@ -101,10 +110,12 @@ const RestaurantTablesListPage: React.FC = () => {
       ),
     },
     {
+      id: 'name',
       accessorKey: 'name',
       header: t('tableName', { ns: 'admin' }),
     },
     {
+      id: 'capacity',
       accessorKey: 'capacity',
       header: t('capacity', { ns: 'admin' }),
       cell: ({ row }: any) => (
@@ -115,6 +126,7 @@ const RestaurantTablesListPage: React.FC = () => {
       ),
     },
     {
+      id: 'status',
       accessorKey: 'status',
       header: t('status', { ns: 'common' }),
       cell: ({ row }: any) => (
@@ -124,6 +136,7 @@ const RestaurantTablesListPage: React.FC = () => {
       ),
     },
     {
+      id: 'is_active',
       accessorKey: 'is_active',
       header: t('active', { ns: 'common' }),
       cell: ({ row }: any) => (
@@ -154,7 +167,7 @@ const RestaurantTablesListPage: React.FC = () => {
         </div>
       ),
     },
-  ];
+  ], [t]);
 
   return (
     <div className="space-y-6">
@@ -194,7 +207,6 @@ const RestaurantTablesListPage: React.FC = () => {
             columns={columns}
             data={tables}
             isLoading={isLoading}
-            searchKey="name"
           />
         </CardContent>
       </Card>

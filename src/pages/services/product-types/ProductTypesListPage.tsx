@@ -579,15 +579,7 @@ const ProductTypesListPage: React.FC = () => {
                   <Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {t("edit")}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedProductType(productType);
-                    setCompositionsDialogOpen(true);
-                  }}
-                >
-                  <List className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-                  {t('manageCompositions', { ns: 'services', defaultValue: 'Manage Compositions' })}
-                </DropdownMenuItem>
+        
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive focus:bg-destructive/10"

@@ -74,15 +74,15 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Username Field */}
-      <div className="space-y-2">
-        <Label htmlFor="login-username" className="text-sm font-medium text-foreground">
+      <div className="space-y-1.5">
+        <Label htmlFor="login-username" className="text-xs font-medium text-foreground">
           {t("username", { ns: "common" })}
         </Label>
         <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <UserIcon className="h-5 w-5 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+            <UserIcon className="h-4 w-4 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
           </div>
           <Input
             id="login-username"
@@ -95,7 +95,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             {...register("username")}
             aria-invalid={errors.username ? "true" : "false"}
             className={cn(
-              "pl-10 h-12 border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
+              "pl-8 h-10 text-sm border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
               errors.username && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
             )}
           />
@@ -109,13 +109,13 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       </div>
 
       {/* Password Field */}
-      <div className="space-y-2">
-        <Label htmlFor="login-password" className="text-sm font-medium text-foreground">
+      <div className="space-y-1.5">
+        <Label htmlFor="login-password" className="text-xs font-medium text-foreground">
           {t("password", { ns: "common" })}
         </Label>
         <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
+          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+            <Lock className="h-4 w-4 text-muted-foreground group-focus-within:text-orange-500 transition-colors" />
           </div>
           <Input
             id="login-password"
@@ -125,7 +125,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             {...register("password")}
             aria-invalid={errors.password ? "true" : "false"}
             className={cn(
-              "pl-10 pr-12 h-12 border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
+              "pl-8 pr-10 h-10 text-sm border-2 transition-all duration-200 focus:border-orange-500 focus:ring-orange-500/20",
               errors.password && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
             )}
           />
@@ -133,7 +133,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 text-muted-foreground hover:text-orange-500 transition-colors"
+            className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-orange-500 transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={
               showPassword
@@ -142,9 +142,9 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             }
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4" />
+              <EyeOff className="h-3.5 w-3.5" />
             ) : (
-              <Eye className="h-4 w-4" />
+              <Eye className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
@@ -159,17 +159,17 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       {/* Submit Button */}
       <Button
         type="submit"
-        className="w-full h-12 text-sm font-medium bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+        className="w-full h-10 text-sm font-medium bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
         disabled={isSubmitting}
       >
         {isSubmitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
             {t("loggingIn", { ns: "auth" })}
           </>
         ) : (
           <>
-            <ChefHat className="mr-2 h-4 w-4" />
+            <ChefHat className="mr-2 h-3.5 w-3.5" />
             {t("login", { ns: "common" })}
           </>
         )}

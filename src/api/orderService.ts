@@ -346,6 +346,16 @@ export const updateOrderDetails = async (orderId: string | number, payload: Orde
 };
 
 /**
+ * Updates the order type for a specific order
+ */
+export const updateOrderType = async (orderId: string | number, orderType: 'in_house' | 'take_away' | 'delivery'): Promise<Order> => {
+    const { data } = await apiClient.patch<{ order: Order }>(`/orders/${orderId}/order-type`, {
+        order_type: orderType
+    });
+    return data.order;
+};
+
+/**
  * Sends a WhatsApp message to the customer about their order.
  */
 export const sendOrderWhatsAppMessage = async (

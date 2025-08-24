@@ -30,7 +30,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({ control, e
   const customerOptions: ComboboxOption[] = React.useMemo(() =>
     customersResponse?.data.map(cust => ({
       value: cust.id.toString(),
-      label: `${cust.name} (${cust.phone || cust.email || t('notAvailable', {ns:'common'})})`
+      label: `${cust.name} (${cust.phone || 'No phone'}) - ${cust.car_plate_number}`
     })) || [],
     [customersResponse, t]
   );

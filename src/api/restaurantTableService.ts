@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from '../lib/axios';
 import { 
   RestaurantTable, 
   CreateRestaurantTableRequest, 
@@ -17,7 +17,7 @@ export const restaurantTableService = {
     if (filters?.search) params.append('search', filters.search);
     
     const response = await apiClient.get(`/restaurant-tables?${params.toString()}`);
-    return response.data;
+    return response.data.data;
   },
 
   // Get available tables only

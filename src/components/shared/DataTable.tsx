@@ -56,6 +56,10 @@ export function DataTable<TData, TValue>({
   isLoading,
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation('common');
+  
+
+  
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})

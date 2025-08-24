@@ -16,12 +16,14 @@ import {
   List,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import type { ServiceOffering, ProductType } from "@/types";
+import type { ServiceOffering, ProductType, ProductTypeComposition } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CartItemCompositionsDialog } from "./CartItemCompositionsDialog";
+import { useQuery } from "@tanstack/react-query";
+import { getProductTypeCompositions } from "@/api/productTypeCompositionService";
+import { Popover, Chip, List as MuiList, ListItem, ListItemText, Typography, Box } from "@mui/material";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -42,6 +44,7 @@ export interface CartItem {
   _orderItemId?: string | number; // ID of the original order item in the database
   _isAdding?: boolean; // Flag to show loading state while adding to backend
   _isDeleting?: boolean; // Flag to show loading state while deleting from backend
+  _addedAt?: number; // Timestamp when item was added to cart
 }
 
 interface CartItemProps {
@@ -56,6 +59,7 @@ interface CartItemProps {
   onUpdateCompositions: (id: string, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
   isReadOnly?: boolean;
+  itemNumber?: number; // Cart item number for display
 }
 
 export const CartItemComponent: React.FC<CartItemProps> = ({
@@ -67,18 +71,83 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   onUpdateCompositions,
   onSaveNotesToBackend,
   isReadOnly = false,
+  itemNumber,
 }) => {
   // Only use the isReadOnly prop, don't make existing order items read-only
   const effectiveReadOnly = isReadOnly;
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
   const { getSetting } = useSettings();
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
-  const [isCompositionsDialogOpen, setIsCompositionsDialogOpen] = useState(false);
+  const [compositionsAnchorEl, setCompositionsAnchorEl] = useState<HTMLElement | null>(null);
 
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'OMR');
 
   const isDimensionBased = item.productType.is_dimension_based;
+
+  // Fetch product compositions
+  const { data: compositionsData, isLoading: compositionsLoading } = useQuery({
+    queryKey: ["productTypeCompositions", item.productType.id],
+    queryFn: () => getProductTypeCompositions(item.productType.id),
+    enabled: !!item.productType.id,
+  });
+
+  const compositions: ProductTypeComposition[] = compositionsData?.data || [];
+
+  // Handle composition popover
+  const handleCompositionsClick = (event: React.MouseEvent<HTMLElement>) => {
+    setCompositionsAnchorEl(event.currentTarget);
+  };
+
+  const handleCompositionsClose = () => {
+    setCompositionsAnchorEl(null);
+  };
+
+  const handleCompositionToggle = (composition: ProductTypeComposition) => {
+    const compositionId = composition.product_composition_id || composition.id;
+    const isCurrentlyExcluded = item.excludedCompositionIds?.includes(compositionId) || false;
+    
+    let newExcludedIds: number[];
+    if (isCurrentlyExcluded) {
+      // Remove from excluded
+      newExcludedIds = item.excludedCompositionIds?.filter(id => id !== compositionId) || [];
+    } else {
+      // Add to excluded
+      newExcludedIds = [...(item.excludedCompositionIds || []), compositionId];
+    }
+    
+    // Update compositions
+    onUpdateCompositions(item.id, newExcludedIds);
+    
+    // Update notes with excluded compositions
+    const excludedCompositions = compositions.filter(c => 
+      newExcludedIds.includes(c.product_composition_id || c.id)
+    );
+    
+    let newNotes = item.notes || "";
+    
+    // Remove any existing composition notes (both with and without ❌)
+    const lines = newNotes.split('\n').filter(line => 
+      !line.includes('Excluded:') && 
+      !line.includes('لا يتضمن:') &&
+      !line.includes('❌')
+    );
+    
+    if (excludedCompositions.length > 0) {
+      // Add each excluded composition with ❌ prefix
+      excludedCompositions.forEach(comp => {
+        lines.push(`❌ ${comp.name}`);
+      });
+    }
+    
+    newNotes = lines.join('\n').trim();
+    onUpdateNotes(item.id, newNotes);
+    
+    // Save to database immediately if this is an existing order item
+    if (item._isExistingOrderItem && onSaveNotesToBackend && item._orderItemId) {
+      onSaveNotesToBackend(item._orderItemId, newNotes);
+    }
+  };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -181,9 +250,16 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
         {/* Header */}
           <div className="flex items-center  justify-center p-1 border-b">
           <div className="flex-1 pr-2">
-            <Badge variant="info" className="text-xs mb-1">
+            <div className="flex items-center gap-2 mb-1">
+              {itemNumber && (
+                <Badge variant="secondary" className="text-xs font-bold">
+                  #{itemNumber}
+                </Badge>
+              )}
+              <Badge variant="info" className="text-xs">
               {item.serviceOffering.display_name}
             </Badge>
+            </div>
             <p className=" text-2xl">
               {item.productType.name}
             </p>
@@ -199,18 +275,18 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             )}
           </div>
           <div className="flex items-center gap-1">
-            {!effectiveReadOnly && (
+        
               <Button
                 variant="outline"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setIsCompositionsDialogOpen(true)}
+                onClick={handleCompositionsClick}
                 disabled={item._isQuoting}
                 title={t("itemCompositions", { ns: "orders", defaultValue: "Item Compositions" }) as string}
               >
                 <List className="h-4 w-4" />
               </Button>
-            )}
+            
             {!effectiveReadOnly && (
               <Button
                 variant="ghost"
@@ -366,11 +442,12 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             </Label>
             <div className="relative">
               <Textarea
+              style={{
+                border: '1px solid #e0e0e0',
+              }}
                 value={item.notes || ""}
                 onChange={handleNotesChange}
-                placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
-                className="h-16 resize-none text-xs"
-                disabled={effectiveReadOnly || item._isQuoting}
+                className="border-1 "
               />
               {isSavingNotes && (
                 <div className="absolute top-1 right-1">
@@ -405,17 +482,90 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
         />
       )}
 
-      {item.productType && !effectiveReadOnly && (
-        <CartItemCompositionsDialog
-          isOpen={isCompositionsDialogOpen}
-          onOpenChange={setIsCompositionsDialogOpen}
-          productType={item.productType}
-          excludedCompositionIds={item.excludedCompositionIds || []}
-          onSave={(excludedIds) => onUpdateCompositions(item.id, excludedIds)}
-          onUpdateNotes={(notes) => onUpdateNotes(item.id, notes)}
-          currentNotes={item.notes || ""}
-        />
-      )}
+        {/* MUI Popover for Compositions */}
+        <Popover
+          open={Boolean(compositionsAnchorEl)}
+          anchorEl={compositionsAnchorEl}
+          onClose={handleCompositionsClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+        >
+          <Box sx={{ width: 300, maxHeight: 400, p: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <List className="h-5 w-5" />
+              {t("itemCompositions", { ns: "orders", defaultValue: "Item Compositions" })}
+              <Chip 
+                label={item.productType.name} 
+                size="small" 
+                sx={{ ml: 'auto' }}
+              />
+            </Typography>
+            
+            {compositionsLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </Box>
+            ) : compositions.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {t("noCompositionsAvailable", { ns: "services", defaultValue: "No compositions available" })}
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                  {t("tapToIncludeExclude", { ns: "orders", defaultValue: "Tap to include/exclude each composition" })}
+                </Typography>
+                <MuiList sx={{ maxHeight: 300, overflow: 'auto' }}>
+                  {compositions.map((composition) => {
+                    const compositionId = composition.product_composition_id || composition.id;
+                    const isExcluded = item.excludedCompositionIds?.includes(compositionId) || false;
+                    
+                    return (
+                      <ListItem
+                        key={composition.id}
+                        component="div"
+                        onClick={() => handleCompositionToggle(composition)}
+                        sx={{
+                          border: 1,
+                          borderColor: isExcluded ? 'error.light' : 'success.light',
+                          bgcolor: isExcluded ? 'error.50' : 'success.50',
+                          mb: 1,
+                          borderRadius: 1,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            bgcolor: isExcluded ? 'error.100' : 'success.100',
+                          }
+                        }}
+                      >
+                        <ListItemText
+                          primary={composition.name}
+                          primaryTypographyProps={{
+                            fontSize: '0.875rem',
+                            fontWeight: 500
+                          }}
+                        />
+                        <Chip
+                          label={isExcluded ? t("excluded", { ns: "orders", defaultValue: "Excluded" }) : t("included", { ns: "orders", defaultValue: "Included" })}
+                          color={isExcluded ? "error" : "success"}
+                          size="small"
+                          icon={isExcluded ? <X className="h-3 w-3" /> : <List className="h-3 w-3" />}
+                        />
+                      </ListItem>
+                    );
+                  })}
+                </MuiList>
+              </>
+            )}
+          </Box>
+        </Popover>
+      
     </>
   );
 };

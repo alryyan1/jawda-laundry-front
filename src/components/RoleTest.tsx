@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
-import { getUserNavigation } from '@/api/navigationService';
+import { getUserNavigation, type SimpleNavigationItem } from '@/api/navigationService';
 
 const RoleTest: React.FC = () => {
   const { user } = useAuthStore();
@@ -34,16 +34,9 @@ const RoleTest: React.FC = () => {
 
       <div>
         <h3 className="font-semibold">Navigation Items ({navigationItems.length}):</h3>
-        {navigationItems.map((item) => (
-          <div key={item.id} className="ml-4 mb-2">
-            <p>• {item.key}: {item.title.en}</p>
-            {item.children && item.children.length > 0 && (
-              <div className="ml-4">
-                {item.children.map((child) => (
-                  <p key={child.id}>  - {child.key}: {child.title.en}</p>
-                ))}
-              </div>
-            )}
+        {navigationItems.map((item: SimpleNavigationItem) => (
+          <div key={item.key} className="ml-4 mb-2">
+            <p>• {item.key}: {item.title.en} - Route: {item.route}</p>
           </div>
         ))}
       </div>

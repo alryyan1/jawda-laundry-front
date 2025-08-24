@@ -16,11 +16,11 @@ import UserFormPage from "@/pages/admin/users/UserFormPage";
 import RolesListPage from "@/pages/admin/roles/RolesListPage";
 import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
 import RestaurantTablesListPage from "@/pages/admin/RestaurantTablesListPage";
-import NavigationManagementPage from "@/pages/admin/NavigationManagementPage";
+
 import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
-import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
+
 import POSPage from '@/pages/pos/POSPage';
 import DiningManagementPage from '@/pages/dining/DiningManagementPage';
 
@@ -171,10 +171,6 @@ export const router = createHashRouter([
           {
             path: 'expenses',
             element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpensesListPage /></React.Suspense>,
-          },
-          { // --- ADD THE NEW EXPENSE CATEGORIES ROUTE HERE ---
-            path: 'admin/expense-categories',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpenseCategoriesListPage /></React.Suspense>,
           },
           {
             path: 'reports',
@@ -422,16 +418,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "admin/navigation",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <ErrorBoundary componentName="NavigationManagementPage">
-                  <NavigationManagementPage />
-                </ErrorBoundary>
-              </React.Suspense>
-            ),
-          },
+
           // Test error route commented out as TestErrorPage doesn't exist
           // {
           //   path: "test-error",

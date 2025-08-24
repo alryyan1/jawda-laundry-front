@@ -3,7 +3,8 @@ import apiClient from './apiClient';
 import type { Customer, PaginatedResponse } from '@/types'; // Ensure PaginatedResponse is correctly defined/imported
 
 export interface CustomerFormData {
-    name: string;
+    name?: string; // Optional in form, but backend will set to "no customer" if empty
+    car_plate_number: string; // Only car plate number is required
     email?: string;
     phone?: string;
     address?: string;

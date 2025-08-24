@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -21,17 +19,15 @@ import type { CustomerFormData, Customer, CustomerType } from '@/types';
 import { getCustomerById, updateCustomer } from '@/api/customerService';
 import { getCustomerTypes } from '@/api/customerTypeService';
 
-// Zod schema
-const customerSchema = z.object({
-  name: z.string().nonempty({ message: "validation.nameRequired" }).min(2, { message: "validation.nameMin" }),
-  email: z.string().email({ message: "validation.emailInvalid" }).optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  address: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
-  customer_type_id: z.union([z.string(), z.number(), z.null()]).optional(),
-});
-
-type CustomerFormValues = z.infer<typeof customerSchema>;
+type CustomerFormValues = {
+  name: string;
+  car_plate_number: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+  customer_type_id?: string | number | null;
+};
 
 const EditCustomerPage: React.FC = () => {
     const { t } = useTranslation(['common', 'customers', 'validation']);
@@ -53,14 +49,41 @@ const EditCustomerPage: React.FC = () => {
     });
 
     // --- Form Setup ---
-    const { control, register, handleSubmit, formState: { errors, isDirty }, reset, setValue } = useForm<CustomerFormValues>({
-        resolver: zodResolver(customerSchema),
-    });
+    const { control, register, handleSubmit, formState: { errors, isDirty }, reset, setValue } = useForm<CustomerFormValues>();
+
+    // Custom validation functions that evaluate translations at validation time
+    const validateCarPlateNumber = (value: string) => {
+        if (!value || value.trim() === '') {
+            return t('validation.carPlateNumberRequired', { ns: 'validation' });
+        }
+        if (value.length < 1) {
+            return t('validation.carPlateNumberMin', { ns: 'validation' });
+        }
+        return true;
+    };
+
+    const validateName = (value: string) => {
+        if (value && value.trim() !== '' && value.length < 2) {
+            return t('validation.nameMin', { ns: 'validation' });
+        }
+        return true;
+    };
+
+    const validateEmail = (value: string) => {
+        if (value && value.trim() !== '') {
+            const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+            if (!emailRegex.test(value)) {
+                return t('validation.emailInvalid', { ns: 'validation' });
+            }
+        }
+        return true;
+    };
 
     useEffect(() => {
         if (existingCustomer) {
             reset({
                 name: existingCustomer.name,
+                car_plate_number: existingCustomer.car_plate_number || '',
                 email: existingCustomer.email || '',
                 phone: existingCustomer.phone || '',
                 address: existingCustomer.address || '',
@@ -146,18 +169,40 @@ const EditCustomerPage: React.FC = () => {
                     </CardHeader>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <CardContent className="space-y-4">
-                            {/* Name, Email, Phone fields */}
-                             <div className="grid gap-1.5">
-                                <Label htmlFor="name">{t('name')}<span className="text-destructive">*</span></Label>
-                                <Input id="name" {...register('name')} />
-                                {errors.name && <p className="text-sm text-destructive">{t(errors.name.message as string)}</p>}
-                            </div>
+                                                         {/* Name, Email, Phone fields */}
+                                                           <div className="grid gap-1.5">
+                                  <Label htmlFor="name">{t('name')}</Label>
+                                                                    <Input 
+                                       id="name" 
+                                       {...register('name', { 
+                                           validate: validateName
+                                       })} 
+                                   />
+                                  {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                              </div>
+                                                         <div className="grid gap-1.5">
+                                 <Label htmlFor="car_plate_number">{t('carPlateNumber', { ns: 'customers', defaultValue: 'Car Plate Number' })}<span className="text-destructive">*</span></Label>
+                                                                   <Input 
+                                      id="car_plate_number" 
+                                      {...register('car_plate_number', { 
+                                          validate: validateCarPlateNumber
+                                      })} 
+                                      placeholder={t('carPlateNumberPlaceholder', { ns: 'customers', defaultValue: 'Enter car plate number' })} 
+                                  />
+                                 {errors.car_plate_number && <p className="text-sm text-destructive">{errors.car_plate_number.message}</p>}
+                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="email">{t('emailOptional')}</Label>
-                                    <Input id="email" type="email" {...register('email')} />
-                                    {errors.email && <p className="text-sm text-destructive">{t(errors.email.message as string)}</p>}
-                                </div>
+                                                                 <div className="grid gap-1.5">
+                                     <Label htmlFor="email">{t('emailOptional')}</Label>
+                                                                           <Input 
+                                          id="email" 
+                                          type="email" 
+                                          {...register('email', { 
+                                              validate: validateEmail
+                                          })} 
+                                      />
+                                     {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+                                 </div>
                                 <div className="grid gap-1.5">
                                     <Label htmlFor="phone">{t('phoneOptional', {ns:'customers'})}</Label>
                                     <Input id="phone" type="tel" {...register('phone')} />

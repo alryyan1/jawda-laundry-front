@@ -605,7 +605,7 @@ const POSPage: React.FC = () => {
     
     // Convert order items to cart items and populate cart only if order has items
     if (order.items && order.items.length > 0) {
-      const cartItemsFromOrder: CartItem[] = order.items.map(item => ({
+      const cartItemsFromOrder: CartItem[] = order.items.map((item, index) => ({
         id: uuidv4(), // Generate new ID for cart item
         productType: {
           id: item.serviceOffering?.product_type_id || 0,
@@ -624,6 +624,7 @@ const POSPage: React.FC = () => {
         _quotedSubTotal: item.sub_total,
         _isExistingOrderItem: true, // Mark as existing order item
         _orderItemId: item.id, // Store the original order item ID
+        _addedAt: Date.now() - (order.items.length - index) * 1000, // Assign timestamps in reverse order (newest first)
       }));
       
       setCartItems(cartItemsFromOrder);
@@ -724,6 +725,7 @@ const POSPage: React.FC = () => {
         : offering.default_price || 0,
       _isQuoting: false,
       _isAdding: true, // Flag to show loading state
+      _addedAt: Date.now(), // Add timestamp for sorting
     };
 
     // Add temporary item to cart with loading state
@@ -805,6 +807,7 @@ const POSPage: React.FC = () => {
             _quotedSubTotal: newOrderItem.sub_total,
             _isExistingOrderItem: true, // Mark as existing order item since it's now saved to backend
             _orderItemId: newOrderItem.id, // Store the original order item ID
+            _addedAt: Date.now(), // Add timestamp for sorting
           };
           return [...filtered, realCartItem];
         }
@@ -1149,22 +1152,27 @@ const POSPage: React.FC = () => {
   return (
     <div style={{
       userSelect: 'none',
-    }} className="flex flex-col h-[calc(100vh-64px)]  mx-2">
+    }} className="flex flex-col h-[calc(100vh-64px)]  ">
                <POSHeader
           selectedCustomerId={selectedCustomerId}
           onCustomerSelected={handleCustomerSelected}
           onNewCustomerClick={() => setIsCustomerModalOpen(true)}
           selectedOrder={selectedOrder}
           onCalculatorClick={() => setIsCalculatorOpen(true)}
-          onPdfClick={() => setIsPdfDialogOpen(true)}
           onOrderSelect={setSelectedOrder}
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={setSelectedCategoryId}
           isNewOrderMode={isNewOrderMode}
           onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
+          orderType={orderType}
+          onOrderTypeChange={setOrderType}
+          selectedTableId={selectedTableId}
+          onTableIdChange={setSelectedTableId}
+          isProcessing={isProcessing}
+
         />
 
-      <main className="flex-1 container mx-auto mt-1 overflow-hidden">
+      <main className="flex-1  mt-1 overflow-hidden">
         <div className="flex gap-2 h-full">
           {/* Show product columns only when a customer is selected */}
           {(selectedCustomerId || selectedOrder?.customer) ? (
@@ -1204,15 +1212,7 @@ const POSPage: React.FC = () => {
                         </Button>
                       </div>
                       
-                      {/* Show helpful message when customer is selected but cart is empty (iPad) */}
-                      {(selectedCustomerId || selectedOrder?.customer) && cartItems.length === 0 && (
-                        <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs z-10">
-                          <div className="flex items-center gap-2 text-sm text-primary">
-                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                            <span>{t("addItemsToCart", { ns: "orders", defaultValue: "Add items to see cart" })}</span>
-                          </div>
-                        </div>
-                      )}
+
 
                                              {/* Products */}
                        <div className="flex-1 flex flex-col p-1">
@@ -1227,6 +1227,7 @@ const POSPage: React.FC = () => {
                                isProcessing={isProcessing}
                                isSendingInvoice={isSendingInvoice}
                                isSendingMessage={isSendingMessage}
+                               onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
                              />
                            ) : (
                              // Show ProductColumn when order is not received
@@ -1312,6 +1313,7 @@ const POSPage: React.FC = () => {
                                isProcessing={isProcessing}
                                isSendingInvoice={isSendingInvoice}
                                isSendingMessage={isSendingMessage}
+                               onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
                              />
                            ) : (
                              // Show ProductColumn when order is not completed
@@ -1342,15 +1344,7 @@ const POSPage: React.FC = () => {
                 {/* Removed ServiceOfferingColumn - now handled by dialog */}
               </div>
               
-              {/* Show helpful message when customer is selected but cart is empty */}
-              {(selectedCustomerId || selectedOrder?.customer) && cartItems.length === 0 && (
-                <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs">
-                  <div className="flex items-center gap-2 text-sm text-primary">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <span>{t("addItemsToCart", { ns: "orders", defaultValue: "Add items to see cart" })}</span>
-                  </div>
-                </div>
-              )}
+
            
                            {/* Right Section: Cart - Only show when there are items */}
                            {cartItems.length > 0 && (
@@ -1381,19 +1375,19 @@ const POSPage: React.FC = () => {
               )}
             </>
                      ) : (
-              /* No customer selected - show empty state */
+              /* No order selected - show empty state */
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">👤</div>
+                  <div className="text-6xl mb-4">📋</div>
                   <h3 className="text-lg font-semibold mb-2">
-                    {t("noCustomerSelected", { ns: "orders", defaultValue: "No Customer Selected" })}
+                    {t("noOrderSelected", { ns: "orders", defaultValue: "No Order Selected or Create New Order" })}
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    {t("selectCustomerToStart", { ns: "orders", defaultValue: "Please select a customer to start adding items to your order" })}
+                    {t("selectOrderToStart", { ns: "orders", defaultValue: "Please select an existing order or create a new one to start adding items" })}
                   </p>
                   <div className="flex flex-col gap-2 items-center">
                     <p className="text-sm text-muted-foreground">
-                      {t("useCustomerSelection", { ns: "orders", defaultValue: "Use the customer selection in the header to choose a customer" })}
+                      {t("useOrderSelection", { ns: "orders", defaultValue: "Use the order selection in the header or create a new order" })}
                     </p>
                   </div>
                 </div>

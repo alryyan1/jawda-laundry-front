@@ -29,6 +29,7 @@ export interface AppSettings {
     pos_auto_send_whatsapp_invoice: boolean;
     pos_auto_send_whatsapp_text: boolean;
     pos_auto_send_receive_order_message: boolean;
+    pos_show_item_notes_in_pdf: boolean;
     // App branding settings
     app_name: string;
     app_description: string;

@@ -4,103 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Connection Test</title>
-    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
-        #log { background: #f8f9fa; padding: 10px; border-radius: 5px; max-height: 300px; overflow-y: auto; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
     <h1>WebSocket Connection Test</h1>
     
-    <div id="status" class="status info">Initializing...</div>
-    
-    <div>
+    <div id="config">
+        <h2>Configuration</h2>
+        <p><strong>Pusher Key:</strong> <span id="pusher-key">Loading...</span></p>
+        <p><strong>Cluster:</strong> <span id="pusher-cluster">Loading...</span></p>
+        <p><strong>Scheme:</strong> <span id="pusher-scheme">Loading...</span></p>
+    </div>
+
+    <div id="connection-status">
+        <h2>Connection Status</h2>
+        <div id="status-message" class="status info">Initializing...</div>
+    </div>
+
+    <div id="events">
+        <h2>Event Log</h2>
+        <div id="event-log" class="log"></div>
+    </div>
+
+    <div id="test-buttons">
+        <h2>Test Buttons</h2>
         <button onclick="testConnection()">Test Connection</button>
         <button onclick="clearLog()">Clear Log</button>
     </div>
-    
-    <div id="log"></div>
 
     <script>
-        const log = document.getElementById('log');
-        const status = document.getElementById('status');
-        
-        function addLog(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            log.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            log.scrollTop = log.scrollHeight;
-        }
-        
-        function clearLog() {
-            log.innerHTML = '';
-        }
-        
-        function updateStatus(message, type) {
-            status.textContent = message;
-            status.className = `status ${type}`;
-        }
-        
-        // Pusher configuration
-        const pusherKey = 'd2492ab7c1ca847f1dcc';
-        const pusherCluster = 'ap2';
-        
-        addLog(`Initializing Pusher with key: ${pusherKey}, cluster: ${pusherCluster}`);
-        
-        // Enable pusher logging
-        Pusher.logToConsole = true;
-        
-        const pusher = new Pusher(pusherKey, {
-            cluster: pusherCluster
+        // Configuration
+        const PUSHER_KEY = 'a441e6a4328382368f6d';
+        const PUSHER_CLUSTER = 'ap2';
+        const PUSHER_SCHEME = 'https';
+
+        // Update config display
+        document.getElementById('pusher-key').textContent = PUSHER_KEY;
+        document.getElementById('pusher-cluster').textContent = PUSHER_CLUSTER;
+        document.getElementById('pusher-scheme').textContent = PUSHER_SCHEME;
+
+        // Initialize Pusher
+        const pusher = new Pusher(PUSHER_KEY, {
+            cluster: PUSHER_CLUSTER,
+            wsHost: `ws-${PUSHER_CLUSTER}.pusher.com`,
+            wsPort: 80,
+            wssPort: 443,
+            forceTLS: PUSHER_SCHEME === 'https',
+            enabledTransports: ['ws', 'wss'],
+            disableStats: true,
         });
-        
-        // Test connection
-        function testConnection() {
-            addLog('Testing Pusher connection...');
-            
-            const channel = pusher.subscribe('pos-updates');
-            
-            channel.bind('pusher:subscription_succeeded', function() {
-                addLog('✅ Successfully subscribed to pos-updates channel', 'success');
-                updateStatus('Connected to Pusher!', 'success');
-            });
-            
-            channel.bind('pusher:subscription_error', function(status) {
-                addLog(`❌ Subscription error: ${status}`, 'error');
-                updateStatus('Connection failed!', 'error');
-            });
-            
-            channel.bind('.order.created', function(data) {
-                addLog(`📨 Received order.created event: ${JSON.stringify(data)}`, 'success');
-            });
-            
-            channel.bind('.order.updated', function(data) {
-                addLog(`📨 Received order.updated event: ${JSON.stringify(data)}`, 'success');
-            });
-            
-            // Test connection state
-            pusher.connection.bind('connected', function() {
-                addLog('✅ Pusher connected successfully', 'success');
-            });
-            
-            pusher.connection.bind('error', function(err) {
-                addLog(`❌ Pusher connection error: ${err}`, 'error');
-            });
-            
-            pusher.connection.bind('disconnected', function() {
-                addLog('⚠️ Pusher disconnected', 'error');
-            });
+
+        // Connection event handlers
+        pusher.connection.bind('connecting', () => {
+            log('Connecting to Pusher...', 'info');
+            updateStatus('Connecting...', 'info');
+        });
+
+        pusher.connection.bind('connected', () => {
+            log('Connected to Pusher successfully!', 'success');
+            updateStatus('Connected', 'success');
+        });
+
+        pusher.connection.bind('disconnected', () => {
+            log('Disconnected from Pusher', 'error');
+            updateStatus('Disconnected', 'error');
+        });
+
+        pusher.connection.bind('error', (err) => {
+            log('Pusher connection error: ' + JSON.stringify(err), 'error');
+            updateStatus('Connection Error', 'error');
+        });
+
+        // Subscribe to the pos-updates channel
+        const channel = pusher.subscribe('pos-updates');
+
+        // Listen for order events
+        channel.bind('order.created', (data) => {
+            log('Order Created Event: ' + JSON.stringify(data, null, 2), 'success');
+        });
+
+        channel.bind('order.updated', (data) => {
+            log('Order Updated Event: ' + JSON.stringify(data, null, 2), 'info');
+        });
+
+        // Subscription event handlers
+        channel.bind('pusher:subscription_succeeded', () => {
+            log('Successfully subscribed to pos-updates channel', 'success');
+        });
+
+        channel.bind('pusher:subscription_error', (status) => {
+            log('Failed to subscribe to pos-updates channel: ' + JSON.stringify(status), 'error');
+        });
+
+        // Helper functions
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('event-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> <span style="color: ${type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue'};">${message}</span>`;
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
         }
-        
-        // Auto-test on page load
-        window.onload = function() {
-            setTimeout(testConnection, 1000);
-        };
+
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+
+        function testConnection() {
+            log('Testing connection...', 'info');
+            if (pusher.connection.state === 'connected') {
+                log('Connection is active and working!', 'success');
+            } else {
+                log('Connection is not active. Current state: ' + pusher.connection.state, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('event-log').innerHTML = '';
+        }
+
+        // Initial log
+        log('WebSocket test page loaded', 'info');
+        log('Pusher configuration: ' + JSON.stringify({
+            key: PUSHER_KEY,
+            cluster: PUSHER_CLUSTER,
+            scheme: PUSHER_SCHEME
+        }), 'info');
     </script>
 </body>
 </html> 

@@ -11,6 +11,7 @@ import {
   deleteComposition
 } from "@/api/productTypeCompositionService";
 import { getProductCompositions } from "@/api/productCompositionService";
+import { AddCompositionDialog } from "./AddCompositionDialog";
 
 import {
   Dialog,
@@ -25,6 +26,8 @@ import {
   List,
   Loader2,
   Save,
+  Plus,
+  Search,
 } from "lucide-react";
 
 interface ManageCompositionsDialogProps {
@@ -48,6 +51,8 @@ export function ManageCompositionsDialog({
 
   const [compositionsWithStatus, setCompositionsWithStatus] = useState<CompositionWithStatus[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch all available compositions
   const { data: allCompositionsResponse, isLoading: isLoadingAllCompositions } = useQuery({
@@ -69,17 +74,19 @@ export function ManageCompositionsDialog({
       const allCompositions = allCompositionsResponse.data;
       const currentAssignments = currentAssignmentsResponse.data;
       
-      const compositionsWithStatus = allCompositions.map((comp: ProductComposition): CompositionWithStatus => {
-        const assignment = currentAssignments.find((a: ProductTypeComposition) => 
-          a.product_composition_id === comp.id
-        );
-        
-        return {
-          ...comp,
-          isAssigned: !!assignment,
-          assignmentId: assignment?.id,
-        };
-      });
+      const compositionsWithStatus = allCompositions
+        .map((comp: ProductComposition): CompositionWithStatus => {
+          const assignment = currentAssignments.find((a: ProductTypeComposition) => 
+            a.product_composition_id === comp.id
+          );
+          
+          return {
+            ...comp,
+            isAssigned: !!assignment,
+            assignmentId: assignment?.id,
+          };
+        })
+        .sort((a, b) => b.id - a.id); // Sort by ID in descending order
 
       setCompositionsWithStatus(compositionsWithStatus);
     }
@@ -144,8 +151,23 @@ export function ManageCompositionsDialog({
     }
   };
 
+  const handleCompositionAdded = (newComposition: any) => {
+    // Add the new composition to the list with isAssigned = false
+    const newCompositionWithStatus: CompositionWithStatus = {
+      ...newComposition,
+      isAssigned: false,
+    };
+    
+    setCompositionsWithStatus(prev => [...prev, newCompositionWithStatus].sort((a, b) => b.id - a.id));
+  };
+
+  // Filter compositions based on search term
+  const filteredCompositions = compositionsWithStatus.filter((composition) =>
+    composition.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const isLoading = isLoadingAllCompositions || isLoadingAssignments;
-  const assignedCount = compositionsWithStatus.filter(c => c.isAssigned).length;
+  const assignedCount = filteredCompositions.filter(c => c.isAssigned).length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -158,15 +180,26 @@ export function ManageCompositionsDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Header with Save Button */}
+          {/* Header with Save Button and Add New Button */}
           <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {t("assignedCompositionsCount", { 
-                ns: "services", 
-                defaultValue: "{{count}} of {{total}} compositions assigned", 
-                count: assignedCount,
-                total: compositionsWithStatus.length
-              })}
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                {t("assignedCompositionsCount", { 
+                  ns: "services", 
+                  defaultValue: "{{count}} of {{total}} compositions assigned", 
+                  count: assignedCount,
+                  total: filteredCompositions.length
+                })}
+              </div>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)} 
+                disabled={isLoading} 
+                size="sm" 
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("addNew", { defaultValue: "Add New" })}
+              </Button>
             </div>
             <Button onClick={handleSave} disabled={isSaving || isLoading} size="sm">
               {isSaving ? (
@@ -183,20 +216,43 @@ export function ManageCompositionsDialog({
             </Button>
           </div>
 
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder={t("searchCompositions", { 
+                ns: "services", 
+                defaultValue: "Search compositions..." 
+              })}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+            />
+          </div>
+
           {/* Compositions Checklist */}
           {isLoading ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">{t("loading", { defaultValue: "Loading..." })}</span>
             </div>
-          ) : compositionsWithStatus.length === 0 ? (
+          ) : filteredCompositions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <List className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>{t("noCompositionsAvailable", { ns: "services", defaultValue: "No compositions available" })}</p>
+              <p>
+                {searchTerm 
+                  ? t("noCompositionsFound", { 
+                      ns: "services", 
+                      defaultValue: "No compositions found matching your search" 
+                    })
+                  : t("noCompositionsAvailable", { ns: "services", defaultValue: "No compositions available" })
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {compositionsWithStatus.map((composition) => (
+              {filteredCompositions.map((composition) => (
                 <div key={composition.id} className="flex items-center space-x-2 py-1">
                   <Checkbox
                     id={`composition-${composition.id}`}
@@ -217,6 +273,13 @@ export function ManageCompositionsDialog({
           )}
         </div>
       </DialogContent>
+
+      {/* Add New Composition Dialog */}
+      <AddCompositionDialog
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onCompositionAdded={handleCompositionAdded}
+      />
     </Dialog>
   );
 }

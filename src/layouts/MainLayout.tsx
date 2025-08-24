@@ -31,6 +31,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+
   import {
     Home,
     Package,
@@ -54,13 +55,20 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     TrendingUp,
-    Coffee,
-  Loader2,
-  Lamp,
+    Loader2,
+    Lamp,
+    Table,
+    Zap,
+    Calendar,
+    TrendingDown,
+    FileText,
+    FileBarChart,
+    Grid3x3,
+    Tags,
+    FolderOpen,
   } from "lucide-react";
 
-import { getUserNavigation } from "@/api/navigationService";
-import type { NavigationItem } from "@/types/navigation.types";
+import { getUserNavigation, type SimpleNavigationItem } from "@/api/navigationService";
 import { useEffect, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -104,7 +112,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   TrendingUp,
   // Navigation item icon mappings
   LayoutDashboard: Home,
-      Briefcase: Utensils, // Changed from Shirt to Utensils
+  Briefcase: Utensils, // Changed from Shirt to Utensils
   Receipt: DollarSign,
   Truck: Users,
   BarChart3: ChartBar,
@@ -112,12 +120,16 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Plus: Package,
   List: Package,
   UserPlus: Users,
-  Grid3x3: Layers,
-  Tags: Box,
-  FolderOpen: DollarSign,
-  TrendingDown: TrendingUp,
-  FileText: ChartBar,
+  Grid3x3,
+  Tags,
+  FolderOpen,
+  TrendingDown,
+  FileText,
   UtensilsCrossed: Utensils,
+  Table,
+  Zap,
+  Calendar,
+  FileBarChart,
 };
 
 // Real-time connection status lamp
@@ -227,6 +239,22 @@ const MainLayout: React.FC = () => {
     setIsSearchVisible(isPOSRoute);
   }, [location.pathname, setIsSearchVisible]);
 
+  // Handle window resize to manage sidebar state
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        // On mobile/tablet, collapse sidebar by default
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Fetch settings for app branding
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -234,8 +262,9 @@ const MainLayout: React.FC = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const [collapsedStates, setCollapsedStates] = useState<Record<number, boolean>>({});
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+      const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>({});
 
   // Fetch user navigation
   const { data: navigationItems = [], isLoading: isNavigationLoading, error: navigationError } = useQuery({
@@ -264,11 +293,25 @@ const MainLayout: React.FC = () => {
   };
 
   // Toggle collapsible state
-  const toggleCollapsible = (itemId: number) => {
+  const toggleCollapsible = (itemKey: string) => {
     setCollapsedStates(prev => ({
       ...prev,
-      [itemId]: !(prev[itemId] !== undefined ? prev[itemId] : true) // Default to true (collapsed)
+      [itemKey]: !(prev[itemKey] !== undefined ? prev[itemKey] : true) // Default to true (collapsed)
     }));
+  };
+
+  // Handle navigation item click - collapse sidebar on mobile/tablet or when expanded
+  const handleNavigationClick = () => {
+    // Collapse sidebar on mobile/tablet when navigation item is clicked
+    if (window.innerWidth < 1024) { // lg breakpoint - includes iPad
+      setIsSidebarCollapsed(true);
+    } else if (!isSidebarCollapsed) {
+      // On desktop, collapse sidebar if it's currently expanded
+      // Add a small delay to make the transition feel more natural
+      setTimeout(() => {
+        setIsSidebarCollapsed(true);
+      }, 100);
+    }
   };
 
   // Get icon component for navigation item
@@ -278,7 +321,7 @@ const MainLayout: React.FC = () => {
   };
 
   // Get title for navigation item
-  const getItemTitle = (item: NavigationItem) => {
+  const getItemTitle = (item: SimpleNavigationItem) => {
     return item.title[i18n.language as keyof typeof item.title] || item.title.en;
   };
 
@@ -395,7 +438,7 @@ const MainLayout: React.FC = () => {
       );
     }
 
-    const renderNavigationItem = (item: NavigationItem, level: number = 0) => {
+    const renderNavigationItem = (item: SimpleNavigationItem, level: number = 0) => {
       const IconComponent = getIconComponent(item.icon);
       const title = getItemTitle(item);
       const hasChildren = item.children && item.children.length > 0;
@@ -403,30 +446,44 @@ const MainLayout: React.FC = () => {
       const isSubItemActive = hasChildren && item.children?.some(child => 
         location.pathname === child.route
       );
-      const isCollapsed = collapsedStates[item.id] !== undefined ? collapsedStates[item.id] : true; // Default to true (collapsed)
-      // console.log(item,'item')
+      const isCollapsed = collapsedStates[item.key] !== undefined ? collapsedStates[item.key] : true; // Default to true (collapsed)
+
       if (hasChildren) {
         return collapsed ? (
           <Button
-            key={item.id}
+            key={item.key}
             variant={isSubItemActive ? "secondary" : "ghost"}
             className="w-full justify-center px-2"
             title={title}
-            onClick={() => toggleCollapsible(item.id)}
+            onClick={() => {
+              toggleCollapsible(item.key);
+              if (mobile && closeSheet) {
+                closeSheet();
+              } else {
+                handleNavigationClick();
+              }
+            }}
           >
             <IconComponent className="h-4 w-4" />
           </Button>
         ) : (
           <Collapsible
-            key={item.id}
+            key={item.key}
             open={!isCollapsed}
-            onOpenChange={() => toggleCollapsible(item.id)}
+            onOpenChange={() => toggleCollapsible(item.key)}
             className="w-full"
           >
             <CollapsibleTrigger asChild>
               <Button
                 variant={isSubItemActive ? "secondary" : "ghost"}
                 className="w-full justify-between"
+                onClick={() => {
+                  if (mobile && closeSheet) {
+                    closeSheet();
+                  } else {
+                    handleNavigationClick();
+                  }
+                }}
               >
                 <span className="flex items-center">
                   <IconComponent
@@ -452,11 +509,17 @@ const MainLayout: React.FC = () => {
 
       return (
         <Button
-          key={item.id}
+          key={item.key}
           variant={isActive ? "secondary" : "ghost"}
           className={`w-full justify-start ${collapsed ? "justify-center px-2" : ""}`}
           asChild
-          onClick={() => mobile && closeSheet?.()}
+          onClick={() => {
+            if (mobile && closeSheet) {
+              closeSheet();
+            } else {
+              handleNavigationClick();
+            }
+          }}
           title={collapsed ? title : undefined}
         >
           <Link to={item.route || "#"}>
@@ -491,12 +554,12 @@ const MainLayout: React.FC = () => {
       isMenuPage 
         ? "grid-cols-1" 
         : isSidebarCollapsed 
-          ? "md:grid-cols-[60px_1fr]" 
-          : "md:grid-cols-[132px_1fr] lg:grid-cols-[250px_1fr]"
+          ? "lg:grid-cols-[60px_1fr]" 
+          : "lg:grid-cols-[200px_1fr] xl:grid-cols-[250px_1fr]"
     }`}>
       {/* Desktop Sidebar - Hidden on MenuPage */}
       {!isMenuPage && (
-        <div className="hidden border-r bg-background md:block dark:bg-muted/40">
+        <div className="hidden border-r bg-background lg:block dark:bg-muted/40">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <div className="flex items-center justify-between w-full">
@@ -542,7 +605,7 @@ const MainLayout: React.FC = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0 md:hidden"
+                className="shrink-0 lg:hidden"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">
@@ -593,7 +656,7 @@ const MainLayout: React.FC = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex flex-1 flex-col gap-4 md:gap-6   bg-muted/20 dark:bg-background overflow-y-auto">
+        <main className="flex flex-1 flex-col gap-1 md:gap-6   bg-muted/20 dark:bg-background overflow-y-auto">
           <Outlet />
         </main>
       </div>

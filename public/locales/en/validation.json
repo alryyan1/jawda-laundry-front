@@ -11,6 +11,9 @@
     "usernameInvalid": "Username can only contain letters, numbers, underscores, and hyphens.",
     "categoryRequired": "Category is required.",
     "productTypeRequired": "Meal type is required.",
+    "name": "Name",
+  "notesOptional": "Notes (optional)",
+  "cancel": "Cancel",
     "serviceActionRequired": "Service action is required.",
     "pricingStrategyRequired": "Pricing strategy is required.",
     "pricingStrategyInvalid": "Invalid pricing strategy selected.",
@@ -39,6 +42,10 @@
     "url": "Please enter a valid URL.",
     "required": "This field is required.",
     "phoneNumber": "Please enter a valid phone number (numbers only).",
+    "phoneRequired": "Phone number is required.",
+    "phoneInvalid": "Please enter a valid phone number (at least 7 digits).",
     "countryCode": "Please enter a valid country code (numbers only).",
-    "atLeastOneRoleRequired": "At least one role must be selected."
+    "atLeastOneRoleRequired": "At least one role must be selected.",
+    "carPlateNumberRequired": "Car plate number is required.",
+    "carPlateNumberMin": "Car plate number must be at least 1 character."
   }

@@ -1,8 +1,18 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { 
   CreditCard, 
@@ -14,10 +24,15 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  Printer
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import type { Order, Payment } from "@/types";
+import { ORDER_STATUSES } from "@/lib/constants";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { OrderStatusBadgeComponent } from './OrderStatusBadge';
+import { updateOrderStatus } from "@/api/orderService";
+import type { Order, Payment, OrderStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface ActionsComponentProps {
@@ -29,6 +44,7 @@ interface ActionsComponentProps {
   isProcessing: boolean;
   isSendingInvoice?: boolean;
   isSendingMessage?: boolean;
+  onOrderUpdate?: (updatedOrder: Order) => void;
 }
 
 export const ActionsComponent: React.FC<ActionsComponentProps> = ({
@@ -40,9 +56,49 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   isProcessing,
   isSendingInvoice = false,
   isSendingMessage = false,
+  onOrderUpdate,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
+  const { can } = useAuth();
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+
+  // Mutation for updating order status
+  const updateStatusMutation = useMutation<
+    { order: Order },
+    Error,
+    { orderId: string | number; status: OrderStatus }
+  >({
+    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
+    onSuccess: async (response) => {
+      toast.success(t("orderStatusUpdatedSuccess", {
+        ns: "orders",
+        status: t(`status_${response.order.status}`, { ns: "orders" }),
+      }));
+      
+      // Update the selected order if it's the same one
+      if (order && order.id === response.order.id) {
+        onOrderUpdate?.(response.order);
+        
+        // If the order was completed, automatically reset to new order mode after a short delay
+        if (response.order.status === 'completed') {
+          setTimeout(() => {
+            onOrderUpdate?.(null as Order);
+          }, 2000); // 2 second delay to show completion status
+        }
+      }
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || t("orderStatusUpdateFailed", { ns: "orders" })
+      );
+    },
+  });
+
+  const handleStatusChange = (newStatus: OrderStatus) => {
+    if (order && newStatus !== order.status) {
+      updateStatusMutation.mutate({ orderId: order.id, status: newStatus });
+    }
+  };
 
   // Calculate payment totals from actual payments array
   const totalAmount = order.total_amount || 0;
@@ -71,7 +127,69 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   const paymentStatus = getPaymentStatusDisplay();
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <ScrollArea className="flex flex-col h-[calc(100vh-200px)] space-y-4">
+      {/* Order Status and Actions Card */}
+      <div className="border-l-4 border-l-green-500 border rounded-lg bg-card">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-green-600" />
+              {t("orderStatus", { ns: "orders", defaultValue: "Order Status" })}
+            </h3>
+            <OrderStatusBadgeComponent
+              status={order.status}
+              className="text-sm px-2 py-1"
+            />
+          </div>
+          
+          {/* Status Change Section */}
+          {can("order:update-status") && (
+            <div className="flex items-center gap-2 mb-3">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                {t("changeStatus", { ns: "orders", defaultValue: "Change Status" })}:
+              </Label>
+              <Select
+                value={order.status}
+                onValueChange={(newStatus: OrderStatus) =>
+                  handleStatusChange(newStatus)
+                }
+                disabled={updateStatusMutation.isPending || order.status === 'completed' || order.status === 'cancelled'}
+              >
+                <SelectTrigger className="w-32 h-8">
+                  <SelectValue
+                    placeholder={t("changeStatus", { ns: "orders" })}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {t(`status.${status}`, { ns: "services" })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {updateStatusMutation.isPending && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+            </div>
+          )}
+
+          {/* Print and Download Actions */}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={onPdfClick}
+              variant="outline"
+              className="flex-1 h-8"
+              disabled={isProcessing}
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              {t("printReceipt", { ns: "orders", defaultValue: "Print Receipt" })}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Order Details Card */}
       <div className="border-l-4 border-l-purple-500 border rounded-lg bg-card">
         <div className="p-4">
@@ -363,6 +481,6 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           </div>
         </div>
       )}
-    </div>
+    </ScrollArea>
   );
 }; 

@@ -210,7 +210,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
               <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !selectedOrder?.customer && !customersResponse?.data?.some(c => c.is_default) ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
                 <Autocomplete
                   options={customersResponse?.data || []}
-                  getOptionLabel={(option) => `${option.name} (${option.phone})`}
+                  getOptionLabel={(option) => `${option.name} (${option.phone || 'No phone'}) - ${option.car_plate_number}`}
                   value={getCurrentCustomer()}
                   onChange={(_, newValue) => {
                     handleCustomerSelect(newValue);
@@ -222,7 +222,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                     const searchTerm = inputValue.toLowerCase();
                     return options.filter(option => 
                       option.name.toLowerCase().includes(searchTerm) ||
-                      option.phone.toLowerCase().includes(searchTerm)
+                      (option.phone && option.phone.toLowerCase().includes(searchTerm)) ||
+                      option.car_plate_number.toLowerCase().includes(searchTerm)
                     );
                   }}
                   renderInput={(params) => (
@@ -250,7 +251,9 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                     <li {...props}>
                       <div>
                         <div className="font-medium">{option.name}</div>
-                        <div className="text-sm text-gray-500">{option.phone}</div>
+                        <div className="text-sm text-gray-500">
+                          {option.phone || 'No phone'} - {option.car_plate_number}
+                        </div>
                       </div>
                     </li>
                   )}
