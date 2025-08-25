@@ -300,18 +300,9 @@ const MainLayout: React.FC = () => {
     }));
   };
 
-  // Handle navigation item click - collapse sidebar on mobile/tablet or when expanded
+  // Handle navigation item click - do not auto-collapse sidebar
   const handleNavigationClick = () => {
-    // Collapse sidebar on mobile/tablet when navigation item is clicked
-    if (window.innerWidth < 1024) { // lg breakpoint - includes iPad
-      setIsSidebarCollapsed(true);
-    } else if (!isSidebarCollapsed) {
-      // On desktop, collapse sidebar if it's currently expanded
-      // Add a small delay to make the transition feel more natural
-      setTimeout(() => {
-        setIsSidebarCollapsed(true);
-      }, 100);
-    }
+    return;
   };
 
   // Get icon component for navigation item

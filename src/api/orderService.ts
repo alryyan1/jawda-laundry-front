@@ -212,13 +212,15 @@ export const recordOrderPayment = async (orderId: string | number, paymentData: 
  * Gets a price quote for a potential order item.
  */
 export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<QuoteItemResponse> => {
-    const quoteApiPayload = {
-        ...payload,
+    const quoteApiPayload: any = {
         service_offering_id: Number(payload.service_offering_id),
-        customer_id: Number(payload.customer_id),
+        quantity: Number(payload.quantity),
         length_meters: payload.length_meters ? Number(payload.length_meters) : null,
         width_meters: payload.width_meters ? Number(payload.width_meters) : null,
     };
+    if (payload.customer_id) {
+        quoteApiPayload.customer_id = Number(payload.customer_id);
+    }
     const { data } = await apiClient.post<QuoteItemResponse>('/orders/quote-item', quoteApiPayload);
     return data;
 };

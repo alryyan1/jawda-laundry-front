@@ -32,7 +32,7 @@ export interface RecordPaymentFormData {
 
 export interface QuoteItemPayload {
     service_offering_id: number;
-    customer_id: string;
+    customer_id?: string | null;
     quantity: number;
     length_meters?: number;
     width_meters?: number;

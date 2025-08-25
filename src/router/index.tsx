@@ -58,9 +58,6 @@ const NewCustomerPage = React.lazy(
 const EditCustomerPage = React.lazy(
   () => import("@/pages/customers/EditCustomerPage")
 );
-const CustomerPriceListPage = React.lazy(
-  () => import("@/pages/customers/CustomerPriceListPage")
-);
 
 // Order Pages
 const OrdersListPage = React.lazy(
@@ -97,7 +94,6 @@ const ProductTypeCompositionsPage = React.lazy(
 const ServiceActionsListPage = React.lazy(
   () => import("@/pages/services/service-actions/ServiceActionsListPage")
 );
-const CustomerLedgerPage = React.lazy(() => import('@/pages/customers/CustomerLedgerPage'));
 const KitchenChefPage = React.lazy(() => import('@/pages/kitchen/KitchenChefPage'));
 const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
 const DailyRevenuePage = React.lazy(() => import('@/pages/reports/DailyRevenuePage'));
@@ -252,18 +248,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "customers/:id/ledger",
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><CustomerLedgerPage /></React.Suspense>,
-          },
-          {
-            path: "customers/:customerId/price-list",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <CustomerPriceListPage />
-              </React.Suspense>
-            ),
-          },
+          
           // Orders
           {
             path: "orders",

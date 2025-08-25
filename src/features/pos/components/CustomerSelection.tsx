@@ -62,8 +62,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
         defaultValue: "Customer updated successfully" 
       }));
       onOrderUpdate?.(updatedOrder);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      // queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
     },
     onError: (error) => {
       console.error('Failed to update order customer:', error);

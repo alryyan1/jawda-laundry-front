@@ -39,14 +39,12 @@ import {
     MoreHorizontal,
     Edit3,
     Loader2,
-    FileText,
     Star,
     StarOff,
     Mail,
     Phone,
     Calendar,
     ShoppingBag,
-    DollarSign,
 } from 'lucide-react';
 
 const CustomersListPage: React.FC = () => {
@@ -164,14 +162,7 @@ const CustomersListPage: React.FC = () => {
                                 {t('edit')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/ledger`)}>
-                                <FileText className="mr-2 h-4 w-4" />
-                                {t('ledger')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/price-list`)}>
-                                <DollarSign className="mr-2 h-4 w-4" />
-                                {t('priceList', { defaultValue: 'Price List' })}
-                            </DropdownMenuItem>
+                            
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -365,14 +356,7 @@ const CustomersListPage: React.FC = () => {
                                                         {t('edit')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/ledger`)}>
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        {t('ledger')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/price-list`)}>
-                                                        <DollarSign className="mr-2 h-4 w-4" />
-                                                        {t('priceList', { defaultValue: 'Price List' })}
-                                                    </DropdownMenuItem>
+                                                    
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>

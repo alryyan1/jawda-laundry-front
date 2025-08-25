@@ -47,12 +47,4 @@ export const deleteCustomer = async (id: string | number): Promise<{ message: st
     return data;
 };
 
-
-// src/api/customerService.ts
-// ...
-import type { CustomerLedger } from '@/types';
-
-export const getCustomerLedger = async (customerId: number | string): Promise<CustomerLedger> => {
-    const { data } = await apiClient.get<{ data: CustomerLedger }>(`/customers/${customerId}/ledger`);
-    return data.data;
-};
+// Ledger functionality removed

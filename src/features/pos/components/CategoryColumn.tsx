@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/tooltip";
 
 import { getProductCategories } from "@/api/productCategoryService";
-import { pricingRuleService } from "@/api/pricingRuleService";
 import type { ProductCategory } from "@/types";
 
 interface CategoryColumnProps {
@@ -31,28 +30,14 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     queryFn: getProductCategories,
   });
 
-  const { data: customerProductsWithPricingRules, isLoading: isLoadingCustomerProducts } = useQuery({
-    queryKey: ["customerProductsWithPricingRules", selectedCustomerId],
-    queryFn: () => pricingRuleService.getCustomerProductsWithPricingRules(parseInt(selectedCustomerId!)),
-    enabled: !!selectedCustomerId,
-  });
+  // Removed customer-specific pricing rules usage
+  const isLoadingCustomerProducts = false;
 
   // Determine which categories to show
   const categoriesToShow = React.useMemo(() => {
-    if (!selectedCustomerId || !customerProductsWithPricingRules?.product_types?.length) {
-      return allCategories;
-    }
-
-    // Get unique category IDs from customer's products with pricing rules
-    const customerCategoryIds = new Set(
-      customerProductsWithPricingRules.product_types
-        .map(productType => productType.category?.id)
-        .filter(Boolean)
-    );
-
-    // Filter categories to only show those that have customer products with pricing rules
-    return allCategories.filter(category => customerCategoryIds.has(category.id));
-  }, [selectedCustomerId, customerProductsWithPricingRules, allCategories]);
+    // Always show all categories
+    return allCategories;
+  }, [allCategories]);
 
   const isLoading = isLoadingAllCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
 

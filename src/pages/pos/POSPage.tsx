@@ -30,7 +30,7 @@ import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
-import { pricingRuleService, type ServiceOfferingWithPricing } from "@/api/pricingRuleService";
+ 
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
@@ -107,43 +107,7 @@ const POSPage: React.FC = () => {
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
 
-  // Fetch customer service offerings with pricing rules if customer is selected
-  const { data: customerServiceOfferings = [] } = useQuery({
-    queryKey: ["customerServiceOfferings", selectedCustomerId],
-    queryFn: async () => {
-      if (!selectedCustomerId) return [];
-      
-      try {
-        // Get all customer pricing rules using the dedicated endpoint
-        const pricingRulesResponse = await pricingRuleService.getAllCustomerPricingRules(parseInt(selectedCustomerId));
-        const pricingRules = pricingRulesResponse.pricing_rules || [];
-        
-        // Convert service offerings with pricing to ServiceOffering format
-        const customerOfferings: ServiceOffering[] = pricingRules
-          .map((rule: ServiceOfferingWithPricing) => ({
-            id: rule.id,
-            product_type_id: rule.product_type_id,
-            service_action_id: rule.service_action_id,
-            name: `${rule.productType.name} - ${rule.serviceAction.name}`,
-            display_name: `${rule.productType.name} - ${rule.serviceAction.name}`,
-            description: undefined,
-            default_price: parseFloat(rule.default_price),
-            default_price_per_sq_meter: parseFloat(rule.default_price_per_sq_meter),
-            is_active: rule.is_active,
-            serviceAction: rule.serviceAction,
-            productType: rule.productType,
-            created_at: rule.created_at,
-            updated_at: rule.updated_at,
-          } as unknown as ServiceOffering));
-        
-        return customerOfferings;
-      } catch (error) {
-        console.error('Failed to fetch customer service offerings:', error);
-        return [];
-      }
-    },
-    enabled: !!selectedCustomerId,
-  });
+  // Removed customer-specific pricing rules usage
 
   // Fetch all service offerings for order creation (fallback)
   const { data: allServiceOfferings = [] } = useQuery<ServiceOffering[], Error>({
@@ -152,10 +116,8 @@ const POSPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Determine which service offerings to use
-  const serviceOfferingsToUse = selectedCustomerId && customerServiceOfferings.length > 0 
-    ? customerServiceOfferings 
-    : allServiceOfferings;
+  // Always use general service offerings
+  const serviceOfferingsToUse = allServiceOfferings;
 
   // Fetch dining tables for in-house orders
   useQuery<DiningTable[], Error>({
@@ -458,14 +420,14 @@ const POSPage: React.FC = () => {
     // Trigger immediate quote for dimension-based items when quantity changes
     // Use selectedCustomerId or customer from selected order
     const customerId = selectedCustomerId || selectedOrder?.customer?.id?.toString();
-    if (item.productType.is_dimension_based && customerId && quantity > 0) {
+    if (item.productType.is_dimension_based && quantity > 0) {
       const lengthNum = item.length_meters || 0;
       const widthNum = item.width_meters || 0;
       
       if (lengthNum > 0 && widthNum > 0) {
         const quotePayload: QuoteItemPayload = {
           service_offering_id: item.serviceOffering.id,
-          customer_id: customerId,
+          customer_id: customerId || undefined,
           quantity: quantity,
           length_meters: lengthNum,
           width_meters: widthNum,
@@ -516,14 +478,14 @@ const POSPage: React.FC = () => {
     // Trigger immediate quote for dimension-based items
     // Use selectedCustomerId or customer from selected order
     const customerId = selectedCustomerId || selectedOrder?.customer?.id?.toString();
-    if (item.productType.is_dimension_based && customerId && item.quantity > 0) {
+    if (item.productType.is_dimension_based && item.quantity > 0) {
       const lengthNum = dimensions.length || 0;
       const widthNum = dimensions.width || 0;
       
       if (lengthNum > 0 && widthNum > 0) {
         const quotePayload: QuoteItemPayload = {
           service_offering_id: item.serviceOffering.id,
-          customer_id: customerId,
+          customer_id: customerId || undefined,
           quantity: item.quantity,
           length_meters: lengthNum,
           width_meters: widthNum,
@@ -1070,14 +1032,14 @@ const POSPage: React.FC = () => {
   useEffect(() => {
     // Use selectedCustomerId or customer from selected order
     const customerId = selectedCustomerId || selectedOrder?.customer?.id?.toString();
-    if (!debouncedCartItems || debouncedCartItems.length === 0 || !customerId) return;
+    if (!debouncedCartItems || debouncedCartItems.length === 0) return;
 
     debouncedCartItems.forEach((item) => {
       if (!item._isQuoting && item.quantity > 0) {
         let readyToQuote = true;
         const quotePayload: QuoteItemPayload = {
           service_offering_id: item.serviceOffering.id,
-          customer_id: customerId,
+          customer_id: customerId || undefined,
           quantity: item.quantity,
         };
 
@@ -1237,7 +1199,6 @@ const POSPage: React.FC = () => {
                                    categoryId={selectedCategoryId}
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
-                                   selectedCustomerId={selectedCustomerId}
                                    cartItems={cartItems}
                                  />
                                ) : (
@@ -1245,7 +1206,6 @@ const POSPage: React.FC = () => {
                                    categoryId={selectedCategoryId}
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
-                                   selectedCustomerId={selectedCustomerId}
                                    cartItems={cartItems}
                                  />
                                )}
@@ -1291,7 +1251,6 @@ const POSPage: React.FC = () => {
                   <CategoryColumn
                     onSelectCategory={handleSelectCategory}
                     selectedCategoryId={selectedCategoryId}
-                    selectedCustomerId={selectedCustomerId}
                   />
                     </div>
                   </div>
@@ -1331,7 +1290,6 @@ const POSPage: React.FC = () => {
                                    categoryId={selectedCategoryId}
                                    onSelectProduct={handleSelectProduct}
                                    activeProductId={selectedProductType?.id.toString()}
-                                   selectedCustomerId={selectedCustomerId}
                                    cartItems={cartItems}
                                  />
                                )}
