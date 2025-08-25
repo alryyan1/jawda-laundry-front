@@ -70,7 +70,6 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                   '--tw-gradient-to': selectedCategoryId === category.id.toString() ? '#0284C7' : materialColors.grey[100],
                 } as React.CSSProperties}
               >
-                <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
                   {category.image_url ? (
                     <>
                       <img 
@@ -93,7 +92,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                       </span>
                     </div>
                   )}
-                </div>
+               
                 {/* <span className="text-sm font-medium line-clamp-1 p-1">
                   {category.name}
                 </span> */}

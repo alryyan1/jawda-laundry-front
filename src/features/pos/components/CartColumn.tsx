@@ -245,7 +245,7 @@ console.log(itemsToShow,'itemsToShow',items,'items')
                   <TooltipTrigger asChild>
                     <div>
                       <Button
-                        variant="ghost"
+                        variant="default"
                         className="w-full h-12 text-base font-semibold"
                         onClick={onCancelOrder}
                         disabled={isProcessing || paymentStatus === 'paid'}
