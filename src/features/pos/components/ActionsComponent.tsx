@@ -40,11 +40,9 @@ interface ActionsComponentProps {
   onPaymentClick: () => void;
   onInvoiceClick: () => void;
   onPdfClick: () => void;
-  onWhatsAppTextClick?: () => void;
   isProcessing: boolean;
   isSendingInvoice?: boolean;
-  isSendingMessage?: boolean;
-  onOrderUpdate?: (updatedOrder: Order) => void;
+  onOrderUpdate?: (updatedOrder: Order | null) => void;
 }
 
 export const ActionsComponent: React.FC<ActionsComponentProps> = ({
@@ -52,10 +50,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   onPaymentClick,
   onInvoiceClick,
   onPdfClick,
-  onWhatsAppTextClick,
   isProcessing,
   isSendingInvoice = false,
-  isSendingMessage = false,
   onOrderUpdate,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
@@ -82,7 +78,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         // If the order was completed, automatically reset to new order mode after a short delay
         if (response.order.status === 'completed') {
           setTimeout(() => {
-            onOrderUpdate?.(null as Order);
+            onOrderUpdate?.(null);
           }, 2000); // 2 second delay to show completion status
         }
       }
@@ -127,9 +123,10 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   const paymentStatus = getPaymentStatusDisplay();
 
   return (
-    <ScrollArea className="flex flex-col h-[calc(100vh-200px)] space-y-4">
-      {/* Order Status and Actions Card */}
-      <div className="border-l-4 border-l-green-500 border rounded-lg bg-card">
+    <ScrollArea className="h-[calc(100vh-200px)] max-w-[400px] w-full">
+      <div className="flex flex-col space-y-3 divide-y divide-gray-200 dark:divide-gray-800">
+      {/* Order Status and Actions Section */}
+      <div className="shadow-sm rounded-md bg-white dark:bg-gray-900">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -180,7 +177,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               size="sm"
               onClick={onPdfClick}
               variant="outline"
-              className="flex-1 h-8"
+              className="flex-1 h-8 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
               disabled={isProcessing}
             >
               <Printer className="h-4 w-4 mr-1" />
@@ -190,8 +187,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         </div>
       </div>
 
-      {/* Order Details Card */}
-      <div className="border-l-4 border-l-purple-500 border rounded-lg bg-card">
+      {/* Order Details Section */}
+      <div className="shadow-sm rounded-md bg-white dark:bg-gray-900">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -247,8 +244,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         </div>
       </div>
 
-      {/* Payment Status Card */}
-      <div className="border-l-4 border-l-blue-500 border rounded-lg bg-card">
+      {/* Payment Status Section */}
+      <div className="shadow-sm rounded-md bg-white">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -270,27 +267,27 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           
           {/* Payment Summary */}
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
+            <div className="text-center p-3">
               <div className="text-sm text-muted-foreground mb-1">
                 {t("totalAmount", { ns: "orders", defaultValue: "Total" })}
               </div>
-              <div className="text-lg font-bold text-gray-900">
+              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {formatCurrency(totalAmount, "USD", i18n.language, 3)}
               </div>
             </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-center p-3">
               <div className="text-sm text-muted-foreground mb-1">
                 {t("paidAmount", { ns: "orders", defaultValue: "Paid" })}
               </div>
-              <div className="text-lg font-bold text-green-700">
+              <div className="text-lg font-bold text-green-700 dark:text-green-400">
                 {formatCurrency(paidAmount, "USD", i18n.language, 3)}
               </div>
             </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
+            <div className="text-center p-3">
               <div className="text-sm text-muted-foreground mb-1">
                 {t("remainingAmount", { ns: "orders", defaultValue: "Due" })}
               </div>
-              <div className="text-lg font-bold text-red-700">
+              <div className="text-lg font-bold text-red-700 dark:text-red-400">
                 {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
               </div>
             </div>
@@ -330,7 +327,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
                 order.whatsapp_pdf_sent 
                   ? "bg-green-600 hover:bg-green-700 text-white" 
-                  : "border-gray-300 hover:bg-gray-50"
+                  : "border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
               )}
             >
               {isSendingInvoice ? (
@@ -361,7 +358,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
       <Button
         onClick={() => setShowPaymentHistory(!showPaymentHistory)}
         variant="outline"
-        className="w-full h-12 flex items-center justify-between px-4 font-medium border-gray-300 hover:bg-gray-50"
+        className="w-full h-12 flex items-center justify-between px-4 font-medium border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
       >
         <div className="flex items-center gap-3">
           <FileText className="h-5 w-5 text-gray-600" />
@@ -381,13 +378,13 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
 
       {/* Payment History Card - Conditionally Rendered */}
       {showPaymentHistory && (
-        <div className="flex-1 border rounded-lg bg-card">
+        <div className="flex-1 shadow-sm rounded-md bg-white dark:bg-gray-900">
           <div className="p-4 h-full flex flex-col">
             <ScrollArea className="flex-1">
               {payments.length > 0 ? (
                 <div className="space-y-3">
                   {payments.map((payment: Payment, index: number) => (
-                    <div key={payment.id || index} className="p-4 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                    <div key={payment.id || index} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -401,7 +398,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100">
                               {formatCurrency(payment.amount, "USD", i18n.language, 3)}
                             </div>
                             <div className="text-sm text-muted-foreground">
@@ -414,7 +411,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                         </div>
                         <Badge 
                           variant="outline" 
-                          className="text-xs font-medium border-gray-300"
+                          className="text-xs font-medium border-gray-300 dark:border-gray-700"
                         >
                           {payment.method}
                         </Badge>
@@ -442,7 +439,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                         )}
                         
                         {payment.notes && (
-                          <div className="text-xs italic bg-gray-50 p-2 rounded">
+                          <div className="text-xs italic bg-gray-50 dark:bg-gray-800 p-2 rounded">
                             "{payment.notes}"
                           </div>
                         )}
@@ -452,13 +449,13 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
-                  <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
                     <DollarSign className="h-8 w-8 text-gray-400" />
                   </div>
-                  <h4 className="font-medium text-gray-900 mb-2">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
                     {t("noPaymentsYet", { ns: "orders", defaultValue: "No payments recorded yet" })}
                   </h4>
-                  <p className="text-sm text-gray-500 max-w-xs">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
                     {t("recordFirstPayment", { ns: "orders", defaultValue: "Record the first payment using the button above" })}
                   </p>
                 </div>
@@ -466,12 +463,12 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
             </ScrollArea>
 
             {/* Quick Actions Footer */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button
                 onClick={onPdfClick}
                 variant="outline"
                 size="sm"
-                className="w-full h-10 flex items-center justify-center gap-2 font-medium"
+                className="w-full h-10 flex items-center justify-center gap-2 font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                 disabled={isProcessing}
               >
                 <Download className="h-4 w-4" />
@@ -481,6 +478,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           </div>
         </div>
       )}
+      </div>
     </ScrollArea>
   );
 }; 

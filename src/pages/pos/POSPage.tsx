@@ -38,8 +38,10 @@ import { getTodayDate } from "@/lib/dateUtils";
 
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Dialog,
@@ -101,8 +103,9 @@ const POSPage: React.FC = () => {
   const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
   const [isNewOrderMode, setIsNewOrderMode] = useState(false);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const debouncedCartItems = useDebounce(cartItems, 500);
+  const [isNarrow, setIsNarrow] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 800 : false);
+  const [isCartDialogOpen, setIsCartDialogOpen] = useState(false);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -988,46 +991,6 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleSendWhatsAppText = async () => {
-    if (!selectedOrder) {
-      toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
-      return;
-    }
-
-    if (!selectedOrder.customer?.phone) {
-      toast.error(t("customerPhoneRequired", { ns: "orders", defaultValue: "Customer phone number is required to send WhatsApp message" }));
-      return;
-    }
-
-    try {
-      setIsSendingMessage(true);
-      
-      // Call the backend API to send WhatsApp text message
-      const response = await apiClient.post(`/orders/${selectedOrder.id}/send-whatsapp-message`, {
-        message: `Hello ${selectedOrder.customer.name}, your order #${selectedOrder.id} is ready for pickup. Thank you for choosing our service!`
-      });
-      
-      toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }), {
-        description: response.data?.message
-      });
-    } catch (error: unknown) {
-      console.error('Failed to send WhatsApp message:', error);
-      
-      // Extract detailed error message from backend response
-      const errorResponse = error as { response?: { data?: { details?: string; message?: string } } };
-      const errorMessage = errorResponse?.response?.data?.details || 
-                          errorResponse?.response?.data?.message || 
-                          (error as Error)?.message || 
-                          t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" });
-      
-      toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }), {
-        description: errorMessage
-      });
-    } finally {
-      setIsSendingMessage(false);
-    }
-  };
-
   // Effect for quoting items
   useEffect(() => {
     // Use selectedCustomerId or customer from selected order
@@ -1077,6 +1040,7 @@ const POSPage: React.FC = () => {
       // iPad screens are typically 768px to 1024px wide
       const isIpad = width >= 768 && width <= 1024;
       setIsIpadView(isIpad);
+      setIsNarrow(width < 800);
     };
 
     checkIpadView();
@@ -1128,11 +1092,37 @@ const POSPage: React.FC = () => {
           onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
           orderType={orderType}
           onOrderTypeChange={setOrderType}
-          selectedTableId={selectedTableId}
-          onTableIdChange={setSelectedTableId}
-          isProcessing={isProcessing}
-
         />
+
+      {/* Narrow screens: open Cart in a dialog */}
+      {isNarrow && (
+        <div className="px-2 pt-1 flex items-center gap-2">
+          {isIpadView && !showCategoriesOnIpad && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBackToCategories}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsCartDialogOpen(true)}
+            disabled={cartItems.length === 0}
+            className="flex items-center gap-2"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {t("viewCart", { ns: "orders", defaultValue: "View Cart" })}
+            {cartItems.length > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs">{cartItems.length}</Badge>
+            )}
+          </Button>
+        </div>
+      )}
 
       <main className="flex-1  mt-1 overflow-hidden">
         <div className="flex gap-2 h-full">
@@ -1162,21 +1152,11 @@ const POSPage: React.FC = () => {
                   {!showCategoriesOnIpad && (
                     <div className="relative flex-1 flex gap-2">
                     <>
-                      {/* Back Button */}
-                      <div className="absolute top-4 left-4 z-10">
-                        <Button
-                          size="sm"
-                          onClick={handleBackToCategories}
-                          className="flex items-center gap-2"
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                          {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
-                        </Button>
-                      </div>
-                      
-
-
-                                             {/* Products */}
+                      {/* Back Button overlay removed; handled in narrow controls row */}
+                       
+ 
+ 
+                                              {/* Products */}
                        <div className="flex-1 flex flex-col p-1">
                            {selectedOrder?.received ? (
                              // Show ActionsComponent when order is received
@@ -1185,10 +1165,8 @@ const POSPage: React.FC = () => {
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
                                onInvoiceClick={handleSendInvoice}
                                onPdfClick={() => setIsPdfDialogOpen(true)}
-                               onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
                                isSendingInvoice={isSendingInvoice}
-                               isSendingMessage={isSendingMessage}
                                onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
                              />
                            ) : (
@@ -1213,8 +1191,8 @@ const POSPage: React.FC = () => {
                            )}
                        </div>
 
-                      {/* Cart - Only show when there are items */}
-                      {cartItems.length > 0 && (
+                      {/* Cart - Only show when wide enough and there are items */}
+                      {!isNarrow && cartItems.length > 0 && (
                         <div className="flex-1">
                           <div className="p-1 h-full">
                           <CartColumn
@@ -1225,12 +1203,10 @@ const POSPage: React.FC = () => {
                             onUpdateNotes={handleUpdateNotes}
                             onUpdateCompositions={handleUpdateCompositions}
                             onSaveNotesToBackend={handleSaveNotesToBackend}
-                            selectedOrder={selectedOrder}
                             onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
                             onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                             isProcessing={isProcessing}
                             mode={selectedOrder ? 'order_edit' : 'cart'}
-                            orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
                             isReadOnly={selectedOrder?.received}
                             isReceived={selectedOrder?.received === true}
                             paymentStatus={selectedOrder?.payment_status}
@@ -1268,10 +1244,8 @@ const POSPage: React.FC = () => {
                                onPaymentClick={() => setIsPaymentModalOpen(true)}
                                onInvoiceClick={handleSendInvoice}
                                onPdfClick={() => setIsPdfDialogOpen(true)}
-                               onWhatsAppTextClick={handleSendWhatsAppText}
                                isProcessing={isProcessing}
                                isSendingInvoice={isSendingInvoice}
-                               isSendingMessage={isSendingMessage}
                                onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
                              />
                            ) : (
@@ -1304,8 +1278,8 @@ const POSPage: React.FC = () => {
               
 
            
-                           {/* Right Section: Cart - Only show when there are items */}
-                           {cartItems.length > 0 && (
+                           {/* Right Section: Cart - Only show when wide enough and there are items */}
+                           {!isNarrow && cartItems.length > 0 && (
                              <div className="w-[400px] flex-shrink-0 ">
                                <div className="p-1 h-full">
                              <CartColumn
@@ -1316,12 +1290,10 @@ const POSPage: React.FC = () => {
                                onUpdateNotes={handleUpdateNotes}
                                onUpdateCompositions={handleUpdateCompositions}
                                onSaveNotesToBackend={handleSaveNotesToBackend}
-                               selectedOrder={selectedOrder}
                                onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
                                onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
                                isProcessing={isProcessing}
                                mode={selectedOrder ? 'order_edit' : 'cart'}
-                               orderNumber={selectedOrder?.category_sequences_string || selectedOrder?.daily_order_number?.toString() || selectedOrder?.id?.toString()}
                                isReadOnly={selectedOrder?.received}
                                 isReceived={selectedOrder?.received === true}
                                paymentStatus={selectedOrder?.payment_status}
@@ -1449,6 +1421,33 @@ const POSPage: React.FC = () => {
                   </div>
                 </Button>
               ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cart Dialog for narrow screens */}
+      <Dialog open={isCartDialogOpen} onOpenChange={setIsCartDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("cart", { ns: "orders", defaultValue: "Cart" })}</DialogTitle>
+          </DialogHeader>
+          <div className="p-1">
+            <CartColumn
+              items={cartItems}
+              onRemoveItem={handleRemoveItem}
+              onUpdateQuantity={handleUpdateQuantity}
+              onUpdateDimensions={handleUpdateDimensions}
+              onUpdateNotes={handleUpdateNotes}
+              onUpdateCompositions={handleUpdateCompositions}
+              onSaveNotesToBackend={handleSaveNotesToBackend}
+              onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
+              onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
+              isProcessing={isProcessing}
+              mode={selectedOrder ? 'order_edit' : 'cart'}
+              isReadOnly={selectedOrder?.received}
+              isReceived={selectedOrder?.received === true}
+              paymentStatus={selectedOrder?.payment_status}
+            />
           </div>
         </DialogContent>
       </Dialog>

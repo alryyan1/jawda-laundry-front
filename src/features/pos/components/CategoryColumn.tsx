@@ -59,16 +59,12 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
               <button
                 onClick={() => onSelectCategory(category.id.toString())}
                 className={cn(
-                  "flex flex-col h-[100px] md:h-[80px] lg:h-[100px] rounded-lg transition-all cursor-pointer",
-                  "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5",
+                  "relative overflow-hidden flex flex-col h-[100px] md:h-[80px] lg:h-[100px] rounded-lg transition-all cursor-pointer",
+                  "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5 dark:shadow-black/30",
                   selectedCategoryId === category.id.toString()
-                    ? "from-sky-400 to-sky-600 text-white  ring-sky-400/30"
-                    : "hover:border-sky-400/20",
+                    ? "from-sky-400 to-sky-600 text-white ring-2 ring-sky-400/30"
+                    : "from-gray-50 to-gray-100 text-gray-800 dark:from-slate-800 dark:to-slate-900 dark:text-gray-100 border border-transparent hover:border-sky-400/20",
                 )}
-                style={{
-                  '--tw-gradient-from': selectedCategoryId === category.id.toString() ? '#38BDF8' : materialColors.grey[50],
-                  '--tw-gradient-to': selectedCategoryId === category.id.toString() ? '#0284C7' : materialColors.grey[100],
-                } as React.CSSProperties}
               >
                   {category.image_url ? (
                     <>
@@ -79,7 +75,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                         style={{ objectPosition: 'center' }}
                       />
                       <span
-                        className="absolute left-1/2 bottom-2 whitespace-nowrap overflow-visible -translate-x-1/2 px-2 md:px-1 lg:px-4 py-1 bg-white/80 border border-gray-300 rounded text-xs md:text-xs lg:text-xs font-semibold text-gray-800 shadow"
+                        className="absolute left-1/2 bottom-2 whitespace-nowrap overflow-visible -translate-x-1/2 px-2 md:px-1 lg:px-4 py-1 bg-white/80 dark:bg-black/50 border border-gray-300 dark:border-gray-600 rounded text-xs md:text-xs lg:text-xs font-semibold text-gray-800 dark:text-gray-100 shadow"
                         style={{ pointerEvents: 'none' }}
                       >
                         {category.name}
@@ -87,7 +83,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center p-2">
-                      <span className="text-sm md:text-xs lg:text-sm font-medium text-gray-800 text-center line-clamp-2 overflow-hidden">
+                      <span className="text-sm md:text-xs lg:text-sm font-medium text-gray-800 dark:text-gray-100 text-center line-clamp-2 overflow-hidden">
                         {category.name}
                       </span>
                     </div>

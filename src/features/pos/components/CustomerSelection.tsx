@@ -7,6 +7,7 @@ import { toast } from "sonner";
 // MUI imports
 import { Autocomplete, TextField, CircularProgress } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { alpha } from '@mui/material/styles';
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { getSecondaryColor } = useTheme();
+  const [isDark, setIsDark] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
 
   const { data: customersResponse, isLoading: isLoadingCustomers } = useQuery<
@@ -76,9 +78,19 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
 
 
 
+  // Detect tailwind dark mode class and sync to MUI
+  useEffect(() => {
+    const update = () => setIsDark(document.documentElement.classList.contains('dark'));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
   // MUI theme
   const muiTheme = createTheme({
     palette: {
+      mode: isDark ? 'dark' : 'light',
       primary: {
         main: getSecondaryColor(),
       },
@@ -216,8 +228,20 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                     handleCustomerSelect(newValue);
                   }}
                   sx={
-                    {minWidth: '400px'}
+                    { minWidth: '400px' }
                   }
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      },
+                    },
+                    listbox: { sx: { bgcolor: 'background.paper' } },
+                    popper: { sx: { zIndex: (theme) => theme.zIndex.modal } },
+                  }}
                   filterOptions={(options, { inputValue }) => {
                     const searchTerm = inputValue.toLowerCase();
                     return options.filter(option => 
@@ -236,6 +260,17 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                           : t("selectOrSearchCustomer", { ns: "customers" })
                       }
                       disabled={updateOrderCustomerMutation.isPending}
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: 'background.paper',
+                          color: 'text.primary',
+                          '& fieldset': { borderColor: 'divider' },
+                          '&:hover fieldset': { borderColor: 'primary.main' },
+                          '&.Mui-focused fieldset': { borderColor: 'primary.main', boxShadow: (theme) => `${alpha(theme.palette.primary.main, 0.25)} 0 0 0 3px` },
+                        },
+                        '& .MuiInputLabel-root': { color: 'text.secondary' },
+                      }}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (

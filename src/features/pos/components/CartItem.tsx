@@ -14,6 +14,7 @@ import {
   Ruler,
   AlertCircle,
   List,
+  Mail,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { ServiceOffering, ProductType, ProductTypeComposition } from "@/types";
@@ -79,6 +80,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   const { getSetting } = useSettings();
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
   const [compositionsAnchorEl, setCompositionsAnchorEl] = useState<HTMLElement | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
 
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'OMR');
@@ -286,6 +288,16 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               >
                 <List className="h-4 w-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowNotes(prev => !prev)}
+                disabled={item._isQuoting}
+                title={t("itemNotesOptional", { ns: "orders", defaultValue: "Notes" }) as string}
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
             
             {!effectiveReadOnly && (
               <Button
@@ -435,27 +447,29 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           </div>
 
 
-          {/* Notes Section - Always visible */}
-          <div className="pt-2">
-            <Label className="text-xs mb-1">
-              {t("itemNotesOptional", { ns: "orders" })}
-            </Label>
-            <div className="relative">
-              <Textarea
-              style={{
-                border: '1px solid #e0e0e0',
-              }}
-                value={item.notes || ""}
-                onChange={handleNotesChange}
-                className="border-1 "
-              />
-              {isSavingNotes && (
-                <div className="absolute top-1 right-1">
-                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                </div>
-              )}
+          {/* Notes Section - Toggleable */}
+          {showNotes && (
+            <div className="pt-2">
+              <Label className="text-xs mb-1">
+                {t("itemNotesOptional", { ns: "orders" })}
+              </Label>
+              <div className="relative">
+                <Textarea
+                  style={{
+                    border: '1px solid #e0e0e0',
+                  }}
+                  value={item.notes || ""}
+                  onChange={handleNotesChange}
+                  className="border-1 "
+                />
+                {isSavingNotes && (
+                  <div className="absolute top-1 right-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quote Error Display */}
           {item._quoteError && !item._isQuoting && (

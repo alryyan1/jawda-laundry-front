@@ -9,7 +9,6 @@ import { formatCurrency } from "@/lib/formatters";
 import { CartItemComponent, type CartItem } from "./CartItem";
 import { useSettings } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
-import type { Order } from "@/types";
 
 interface CartColumnProps {
   items: CartItem[];
@@ -19,12 +18,10 @@ interface CartColumnProps {
   onUpdateNotes: (id: string, notes: string) => void;
   onUpdateCompositions: (id: string, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
-  selectedOrder?: Order | null;
   onCheckout: () => void;
   onCancelOrder?: () => void;
   isProcessing: boolean;
   mode?: 'cart' | 'order_view' | 'order_edit';
-  orderNumber?: string;
   isReadOnly?: boolean;
   isReceived?: boolean;
   paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | string | null;
@@ -38,12 +35,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onUpdateNotes,
   onUpdateCompositions,
   onSaveNotesToBackend,
-  selectedOrder,
   onCheckout,
   onCancelOrder,
   isProcessing,
   mode = 'cart',
-  orderNumber,
   isReadOnly = false,
   isReceived = false,
   paymentStatus,
@@ -86,7 +81,7 @@ console.log(itemsToShow,'itemsToShow',items,'items')
     <div 
       className={cn(
         "flex flex-col h-full relative",
-        isReceived && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
+        isReceived && "bg-gradient-to-br from-sky-50 p-2 to-green-50 border border-sky-200 rounded-lg"
       )}
     >
       {/* Cart Items Avatar Header - Positioned at top border */}
@@ -123,7 +118,7 @@ console.log(itemsToShow,'itemsToShow',items,'items')
           </div>
           
           {/* Avatar Numbers */}
-          <div className="flex flex-wrap gap-1">
+          <div className=" top-2 right-2 z-10 flex flex-wrap gap-1">
             {items.map((item, index) => (
               <button
                 key={item.id}
@@ -142,21 +137,6 @@ console.log(itemsToShow,'itemsToShow',items,'items')
               </button>
             ))}
           </div>
-          
-          {/* Order Category Sequence Display */}
-          {orderNumber && (
-            <div className="mt-2 text-center">
-              <div className={cn(
-                "text-lg font-bold",
-                isReceived ? "text-green-700" : "text-sky-700"
-              )}>
-                {orderNumber}
-                {isReceived && (
-                  <span className="ml-2 text-green-600">✓</span>
-                )}
-              </div>
-            </div>
-          )}
           
     
         </div>
