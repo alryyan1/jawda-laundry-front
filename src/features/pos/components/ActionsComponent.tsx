@@ -31,7 +31,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { OrderStatusBadgeComponent } from './OrderStatusBadge';
-import { updateOrderStatus } from "@/api/orderService";
+import { updateOrderStatus, enqueueOrderPrintJob } from "@/api/orderService";
 import type { Order, Payment, OrderStatus } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -182,6 +182,23 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
             >
               <Printer className="h-4 w-4 mr-1" />
               {t("printReceipt", { ns: "orders", defaultValue: "Print Receipt" })}
+            </Button>
+            <Button
+              size="sm"
+              onClick={async () => {
+                try {
+                  await enqueueOrderPrintJob(order.id);
+                  toast.success(t("printJobQueued", { ns: "orders", defaultValue: "Print job queued" }));
+                } catch (e) {
+                  const message = e instanceof Error ? e.message : String(e);
+                  toast.error(message || t("printJobFailed", { ns: "orders", defaultValue: "Failed to queue print job" }));
+                }
+              }}
+              className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white"
+              disabled={isProcessing}
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              {t("sendToPrinter", { ns: "orders", defaultValue: "Send to Printer" })}
             </Button>
           </div>
         </div>

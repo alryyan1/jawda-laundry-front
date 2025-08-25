@@ -381,6 +381,16 @@ export const sendOrderWhatsAppInvoice = async (
 };
 
 /**
+ * Enqueue a print job for POS invoice
+ */
+export const enqueueOrderPrintJob = async (
+  orderId: string | number
+): Promise<{ message: string; job_id: number; order_id: number; pdf_url: string }> => {
+  const { data } = await apiClient.post<{ message: string; job_id: number; order_id: number; pdf_url: string }>(`/orders/${orderId}/print`);
+  return data;
+};
+
+/**
  * Updates the status of a specific order item.
  */
 export const updateOrderItemStatus = async (
