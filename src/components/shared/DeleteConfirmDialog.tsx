@@ -1,16 +1,7 @@
 // src/components/shared/DeleteConfirmDialog.tsx
 import React from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from '@/components/ui/button'; // If trigger is a button
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -47,28 +38,34 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   );
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {dialogDescription}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => onOpenChange(false)} disabled={isPending}>
-            {t('cancel')}
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            disabled={isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />}
-            {t('delete')}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Dialog
+      open={isOpen}
+      onClose={() => onOpenChange(false)}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        className: 'bg-background text-foreground dark:bg-background dark:text-foreground',
+      }}
+    >
+      <DialogTitle>{dialogTitle}</DialogTitle>
+      <DialogContent>
+        <div className="text-sm text-muted-foreground">{dialogDescription}</div>
+      </DialogContent>
+      <DialogActions className="gap-2">
+        <Button onClick={() => onOpenChange(false)} variant="outline" disabled={isPending}>
+          {t('cancel')}
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={isPending}
+          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        >
+          {isPending && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin rtl:ml-2 rtl:mr-0" />
+          )}
+          {t('delete')}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };

@@ -3,11 +3,11 @@
 // Configuration variables for the application
 export const CONFIG = {
   // Schema - HTTP protocol
-  SCHEMA: 'http',
+  SCHEMA: 'https',
   
   // Host - Dynamic based on current device IP
   // HOST: 'intaj-starstechnology.com',
-  HOST: window.location.hostname,
+  HOST:import.meta.env.VITE_HOST ,
   
   // Project folder - Backend directory name
   // PROJECT_FOLDER: 'laundry-backend',
@@ -16,12 +16,12 @@ export const CONFIG = {
   
   // Derived values
   get BASE_URL() {
-    return `${this.SCHEMA}://${this.HOST}/laundry/${this.PROJECT_FOLDER}/public/api`;
+    return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}/public/api`;
     // return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}/public/api`;
   },
   
   get FULL_URL() {
-    return `${this.SCHEMA}://${this.HOST}/laundry/${this.PROJECT_FOLDER}`;
+    return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}`;
     // return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}`;
   }
 } as const;

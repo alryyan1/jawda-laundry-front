@@ -165,6 +165,7 @@ const ExpensesListPage: React.FC = () => {
 
   const MemoizedTableRow = React.memo(({ expense }: { expense: Expense }) => (
     <TableRow key={expense.id}>
+      <TableCell className="text-center font-mono text-xs">{expense.id}</TableCell>
       <TableCell className="text-center">
         <div className="font-medium">{expense.name}</div>
         <div className="text-xs text-muted-foreground truncate max-w-xs">
@@ -305,6 +306,7 @@ const ExpensesListPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[70px] text-center">ID</TableHead>
               <TableHead className="min-w-[250px] text-center">
                 {t("expenseName", { ns: "expenses" })}
               </TableHead>
@@ -321,7 +323,7 @@ const ExpensesListPage: React.FC = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
+                <TableCell colSpan={8} className="h-32 text-center">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
@@ -331,7 +333,7 @@ const ExpensesListPage: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-48 text-center">
+                <TableCell colSpan={8} className="h-48 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <FolderOpen className="h-10 w-10" />
                     <h3 className="font-semibold">

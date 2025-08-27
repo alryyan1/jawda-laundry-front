@@ -9,14 +9,7 @@ import { toast } from "sonner";
 import { format, parse } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField } from "@mui/material";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +19,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+ 
 import {
   Select,
   SelectTrigger,
@@ -87,8 +80,8 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
     queryFn: () => getExpenseCategories().then(cats => Array.isArray(cats) ? cats : []),
   });
 
-  const categoryOptions: ComboboxOption[] = useMemo(
-    () => categories.map((cat) => ({ value: cat.id.toString(), label: cat.name })),
+  const muiCategoryOptions = useMemo(
+    () => categories.map((cat) => ({ id: cat.id, name: cat.name })),
     [categories]
   );
 
@@ -167,20 +160,27 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {editingExpense
-              ? t("editExpenseTitle", { ns: "expenses" })
-              : t("newExpenseTitle", { ns: "expenses" })}
-          </DialogTitle>
-          <DialogDescription>
-            {editingExpense
-              ? t("editExpenseDescription", { ns: "expenses" })
-              : t("newExpenseDescription", { ns: "expenses" })}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+    <Dialog
+      open={isOpen}
+      onClose={() => onOpenChange(false)}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        className: "bg-background text-foreground dark:bg-background dark:text-foreground",
+      }}
+    >
+      <DialogTitle>
+        {editingExpense
+          ? t("editExpenseTitle", { ns: "expenses" })
+          : t("newExpenseTitle", { ns: "expenses" })}
+      </DialogTitle>
+      <DialogContent>
+        <p className="text-sm text-muted-foreground mb-2">
+          {editingExpense
+            ? t("editExpenseDescription", { ns: "expenses" })
+            : t("newExpenseDescription", { ns: "expenses" })}
+        </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           <div className="grid gap-1.5">
             <Label htmlFor="expense-name">
@@ -220,23 +220,31 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
               <Controller
                 name="expense_category_id"
                 control={control}
-                render={({ field }) => (
-                  <Combobox
-                    options={categoryOptions}
-                    value={field.value?.toString() || ""}
-                    onChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
-                    placeholder={
-                      isLoadingCategories
-                        ? t("loading")
-                        : t("selectOrAddCategory", { ns: "expenses" })
-                    }
-                    searchPlaceholder={t("searchCategories", {
-                      ns: "expenses",
-                    })}
-                    emptyResultText={t("noCategoriesFound", { ns: "expenses" })}
-                    allowCustomValue={false} // Don't allow custom values since we need valid IDs
-                  />
-                )}
+                render={({ field }) => {
+                  const selected = muiCategoryOptions.find((opt) => opt.id === field.value) || null;
+                  return (
+                    <Autocomplete
+                      options={muiCategoryOptions}
+                      getOptionLabel={(option) => option.name}
+                      value={selected}
+                      isOptionEqualToValue={(o, v) => o.id === v.id}
+                      onChange={(_, value) => field.onChange(value ? value.id : undefined)}
+                      loading={isLoadingCategories}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder={
+                            isLoadingCategories
+                              ? t("loading")
+                              : t("selectOrAddCategory", { ns: "expenses" })
+                          }
+                          size="small"
+                          fullWidth
+                        />
+                      )}
+                    />
+                  );
+                }}
               />
               {errors.expense_category_id && (
                 <p className="text-sm text-destructive">
@@ -367,7 +375,7 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             )}
           </div>
 
-          <DialogFooter>
+          <DialogActions className="gap-2">
             <Button
               type="button"
               variant="outline"
@@ -387,16 +395,16 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
                 ? t("saveChanges")
                 : t("createExpenseBtn", { ns: "expenses" })}
             </Button>
-          </DialogFooter>
+          </DialogActions>
         </form>
       </DialogContent>
-      
-      {/* Category Creation Modal */}
-      <ExpenseCategoryFormModal
-        isOpen={isCategoryModalOpen}
-        onOpenChange={setIsCategoryModalOpen}
-        onCategoryCreated={handleCategoryCreated}
-      />
     </Dialog>
+    {/* Category Creation Modal */}
+    <ExpenseCategoryFormModal
+      isOpen={isCategoryModalOpen}
+      onOpenChange={setIsCategoryModalOpen}
+      onCategoryCreated={handleCategoryCreated}
+    />
+    </>
   );
 };

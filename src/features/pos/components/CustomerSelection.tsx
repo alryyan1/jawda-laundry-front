@@ -228,7 +228,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                     handleCustomerSelect(newValue);
                   }}
                   sx={
-                    { minWidth: '400px' }
+                    { minWidth: '200px' }
                   }
                   slotProps={{
                     paper: {
