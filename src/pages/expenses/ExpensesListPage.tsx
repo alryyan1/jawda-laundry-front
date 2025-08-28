@@ -17,6 +17,8 @@ import {
   getExpenses,
   deleteExpense,
   getExpenseCategories,
+  downloadExpensesExcel,
+  openExpensesPdf,
 } from "@/api/expenseService";
 import type { Expense, PaginatedResponse } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -299,6 +301,36 @@ const ExpensesListPage: React.FC = () => {
               setFilters((prev) => ({ ...prev, dateRange: range }))
             }
           />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const payload = {
+                search: filters.search,
+                category: filters.category,
+                date_from: filters.dateRange?.from ? format(filters.dateRange.from, "yyyy-MM-dd") : undefined,
+                date_to: filters.dateRange?.to ? format(filters.dateRange.to, "yyyy-MM-dd") : undefined,
+              };
+              downloadExpensesExcel(payload).catch(() => toast.error(t("exportFailed", { ns: "expenses", defaultValue: "Export failed" })));
+            }}
+          >
+            {t("exportExcel", { ns: "expenses", defaultValue: "Export Excel" })}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const payload = {
+                search: filters.search,
+                category: filters.category,
+                date_from: filters.dateRange?.from ? format(filters.dateRange.from, "yyyy-MM-dd") : undefined,
+                date_to: filters.dateRange?.to ? format(filters.dateRange.to, "yyyy-MM-dd") : undefined,
+              };
+              openExpensesPdf(payload);
+            }}
+          >
+            {t("exportPdf", { ns: "expenses", defaultValue: "Export PDF" })}
+          </Button>
         </CardContent>
       </Card>
 

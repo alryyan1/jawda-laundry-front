@@ -8,14 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -103,22 +96,26 @@ export const ExpenseCategoryFormModal: React.FC<ExpenseCategoryFormModalProps> =
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {t("newCategoryTitle", { 
-              ns: "expenses", 
-              defaultValue: "New Expense Category" 
-            })}
-          </DialogTitle>
-          <DialogDescription>
-            {t("newCategoryDescription", { 
-              ns: "expenses", 
-              defaultValue: "Add a new expense category to organize your expenses." 
-            })}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog
+      open={isOpen}
+      onClose={onOpenChange}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{ className: "bg-background text-foreground" }}
+    >
+      <DialogTitle>
+        {t("newCategoryTitle", {
+          ns: "expenses",
+          defaultValue: "New Expense Category",
+        })}
+      </DialogTitle>
+      <DialogContent>
+        <p className="text-sm text-muted-foreground mb-2">
+          {t("newCategoryDescription", {
+            ns: "expenses",
+            defaultValue: "Add a new expense category to organize your expenses.",
+          })}
+        </p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           {/* Name Field */}
           <div className="grid gap-1.5">
@@ -157,7 +154,7 @@ export const ExpenseCategoryFormModal: React.FC<ExpenseCategoryFormModalProps> =
             />
           </div>
 
-          <DialogFooter>
+          <DialogActions className="gap-2">
             <Button
               type="button"
               variant="outline"
@@ -170,12 +167,12 @@ export const ExpenseCategoryFormModal: React.FC<ExpenseCategoryFormModalProps> =
               {mutation.isPending && (
                 <Loader2 className="animate-spin h-4 w-4 mr-2" />
               )}
-              {t("createCategoryBtn", { 
-                ns: "expenses", 
-                defaultValue: "Create Category" 
+              {t("createCategoryBtn", {
+                ns: "expenses",
+                defaultValue: "Create Category",
               })}
             </Button>
-          </DialogFooter>
+          </DialogActions>
         </form>
       </DialogContent>
     </Dialog>

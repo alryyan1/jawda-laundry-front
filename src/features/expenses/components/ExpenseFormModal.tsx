@@ -9,26 +9,14 @@ import { toast } from "sonner";
 import { format, parse } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Autocomplete, TextField, Select as MUISelect, MenuItem } from "@mui/material";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+// Using MUI DatePicker instead of shadcn popover/calendar
  
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, CalendarIcon, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+ 
+import { Loader2, Plus } from "lucide-react";
 
 import type { Expense, ExpenseFormData } from "@/types";
 import {
@@ -37,6 +25,9 @@ import {
   getExpenseCategories,
 } from "@/api/expenseService";
 import { EXPENSE_PAYMENT_METHODS } from "@/lib/constants";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { ExpenseCategoryFormModal } from "./ExpenseCategoryFormModal";
 
 // Zod schema for form validation
@@ -282,20 +273,19 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
                 name="payment_method"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="payment_method">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(EXPENSE_PAYMENT_METHODS as readonly string[]).map(
-                        (opt) => (
-                          <SelectItem key={opt} value={opt}>
-                            {t(`method_${opt}`, { ns: "expenses" })}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <MUISelect
+                    id="payment_method"
+                    value={field.value}
+                    onChange={(e) => field.onChange((e.target as HTMLInputElement).value)}
+                    size="small"
+                    fullWidth
+                  >
+                    {(EXPENSE_PAYMENT_METHODS as readonly string[]).map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {t(`method_${opt}`, { ns: "expenses" })}
+                      </MenuItem>
+                    ))}
+                  </MUISelect>
                 )}
               />
               {errors.payment_method && (
@@ -309,45 +299,19 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
                 {t("expenseDate", { ns: "expenses" })}
                 <span className="text-destructive">*</span>
               </Label>
-              <Controller
-                name="expense_date"
-                control={control}
-                render={({ field }) => (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? (
-                          format(
-                            parse(field.value, "yyyy-MM-dd", new Date()),
-                            "PPP"
-                          )
-                        ) : (
-                          <span>{t("pickADate")}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={
-                          field.value ? new Date(field.value) : undefined
-                        }
-                        onSelect={(date) =>
-                          field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-              />
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <Controller
+                  name="expense_date"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      value={field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : null}
+                      onChange={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                      slotProps={{ textField: { size: "small", fullWidth: true } }}
+                    />
+                  )}
+                />
+              </LocalizationProvider>
               {errors.expense_date && (
                 <p className="text-sm text-destructive">
                   {t(errors.expense_date.message as string)}
