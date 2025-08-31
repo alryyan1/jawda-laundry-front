@@ -264,9 +264,9 @@ const POSPage: React.FC = () => {
         return item;
       }));
       
-      toast.success(t("quantityUpdatedSuccessfully", { ns: "orders", defaultValue: "Quantity updated successfully" }));
+      // Silent success
     } catch {
-      toast.error(t("failedToUpdateQuantity", { ns: "orders", defaultValue: "Failed to update quantity" }));
+      // Silent failure; already logged by caller
     }
   };
 
@@ -713,7 +713,6 @@ const POSPage: React.FC = () => {
       
     } catch (error) {
       console.error('Failed to add item to order:', error);
-      toast.error(t("failedToAddItem", { ns: "orders", defaultValue: "Failed to add item to order" }));
       
       // Remove the temporary item on error
       setCartItems(prev => prev.filter(item => item.id !== tempItemId));
