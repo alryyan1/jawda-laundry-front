@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes } from "@/api/orderService";
+import { createOrder, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderById } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -669,8 +669,13 @@ const POSPage: React.FC = () => {
       // Call the updateOrder API to add item to the existing order
       const updatedOrder = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
       
-      // Update the selected order with the new data
-      setSelectedOrder(updatedOrder.order);
+      // Refresh order items from backend (dedicated fetch)
+      try {
+        const fresh = await getOrderById(updatedOrder.order.id);
+        setSelectedOrder(fresh);
+      } catch {
+        setSelectedOrder(updatedOrder.order);
+      }
       
       // Remove the temporary item and add the real item from the updated order
       setCartItems(prev => {
@@ -804,8 +809,13 @@ const POSPage: React.FC = () => {
       // Use the markOrderReceived endpoint - backend will recalculate total from order items
       const response = await markOrderReceived(selectedOrder.id);
       
-      // Update the selected order with the received status
-      setSelectedOrder(response.order);
+      // Refresh order from backend to get latest items
+      try {
+        const fresh = await getOrderById(response.order.id);
+        setSelectedOrder(fresh);
+      } catch {
+        setSelectedOrder(response.order);
+      }
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -868,8 +878,13 @@ const POSPage: React.FC = () => {
       // Use the dedicated cancel order endpoint
       const response = await cancelOrder(selectedOrder.id);
       
-      // Update the selected order with the cancelled status
-      setSelectedOrder(response.order);
+      // Refresh order from backend after cancellation
+      try {
+        const fresh = await getOrderById(response.order.id);
+        setSelectedOrder(fresh);
+      } catch {
+        setSelectedOrder(response.order);
+      }
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
