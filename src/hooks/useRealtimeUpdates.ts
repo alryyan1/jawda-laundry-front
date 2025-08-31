@@ -59,20 +59,7 @@ export const useRealtimeUpdates = () => {
     queryClient.invalidateQueries({ queryKey: ['orderStatistics'] });
     queryClient.invalidateQueries({ queryKey: ['order', event.order.id] });
     
-    // Show notification for status changes
-    if (event.changes?.status) {
-      toast.info(
-        t('orderStatusUpdated', { 
-          defaultValue: 'Order status updated',
-          orderNumber: event.order.id,
-          status: t(`status_${event.order.status}`, { defaultValue: event.order.status })
-        }),
-        {
-          description: `${event.order.customer.name} - #${event.order.id}`,
-          duration: 4000,
-        }
-      );
-    }
+    // Silent: no toast on order status changes
   }, [queryClient, t]);
 
   useEffect(() => {
