@@ -2,24 +2,19 @@ import React from 'react';
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import apiClient from "@/api/apiClient";
 import { useNewOrder } from "@/context/NewOrderContext";
+import type { Order } from "@/types";
 
 interface CreateEmptyOrderResponse {
-  order: {
-    id: number;
-    status: string;
-    created_at: string;
-    updated_at: string;
-  };
+  order: Order;
   message: string;
 }
 
 export const POSNewOrderButton: React.FC = () => {
   const { t } = useTranslation(["pos"]);
-  const queryClient = useQueryClient();
   const { setNewlyCreatedOrder } = useNewOrder();
 
   const createEmptyOrderMutation = useMutation({
@@ -36,19 +31,15 @@ export const POSNewOrderButton: React.FC = () => {
     },
     onSuccess: (data) => {
       toast.success(t("orderCreatedSuccessfully", { defaultValue: "Order created successfully" }));
-      // Invalidate and refetch orders to update the TodayOrdersColumn
-      queryClient.invalidateQueries({ queryKey: ['orders', 'today'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['todayOrders'] });
       
       // Set the newly created order in context so it can be selected
       setNewlyCreatedOrder(data.order);
       console.log('New order created:', data.order);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Error creating order:', error);
       toast.error(
-        error.response?.data?.message || 
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         t("errorCreatingOrder", { defaultValue: "Error creating order" })
       );
     }
