@@ -213,6 +213,7 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                 forcedCustomer={selectedOrder?.customer || null}
                 selectedOrder={selectedOrder}
                 onOrderUpdate={onOrderUpdate}
+                preventCustomerUpdates={isNewOrderMode} // Prevent customer updates when in new order mode
               />
             )}
 

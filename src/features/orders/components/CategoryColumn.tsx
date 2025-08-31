@@ -1,5 +1,5 @@
 // src/features/orders/components/CategoryColumn.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Layers } from "lucide-react";
+import { loadFromCache, saveToCache, CACHE_KEYS, CACHE_DURATIONS } from "@/lib/cacheUtils";
 
 interface CategoryColumnProps {
   selectedCategoryId: string | null;
@@ -20,16 +21,43 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   onSelectCategory,
 }) => {
   const { t } = useTranslation(["services", "common"]);
+  const [cachedCategories, setCachedCategories] = useState<ProductCategory[]>([]);
+  const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
 
-  // Fetch product categories for the list
-  const { data: categories = [], isLoading } = useQuery<
+  // Load categories from localStorage on component mount
+  useEffect(() => {
+    const cachedCategories = loadFromCache<ProductCategory[]>(
+      CACHE_KEYS.PRODUCT_CATEGORIES, 
+      CACHE_DURATIONS.PRODUCT_CATEGORIES
+    );
+    
+    if (cachedCategories) {
+      setCachedCategories(cachedCategories);
+    }
+    setIsLoadingFromCache(false);
+  }, []);
+
+  // Fetch product categories only when not in cache
+  const { data: fetchedCategories = [], isLoading: isLoadingFromAPI } = useQuery<
     ProductCategory[],
     Error
   >({
     queryKey: ["productCategoriesForSelect"], // This key can be reused across the app
-    queryFn: getProductCategories,
-    staleTime: 10 * 60 * 1000, // Cache categories for 10 minutes
+    queryFn: async () => {
+      const categories = await getProductCategories();
+      
+      // Cache the fetched data in localStorage
+      saveToCache(CACHE_KEYS.PRODUCT_CATEGORIES, categories);
+      
+      return categories;
+    },
+    staleTime: Infinity, // Never refetch automatically
+    enabled: cachedCategories.length === 0, // Only fetch if not in cache
   });
+
+  // Use cached data if available, otherwise use fetched data
+  const categories = cachedCategories.length > 0 ? cachedCategories : fetchedCategories;
+  const isLoading = isLoadingFromCache || (cachedCategories.length === 0 && isLoadingFromAPI);
 
   return (
     <div className="flex flex-col h-full bg-muted/30 border-r dark:bg-card">

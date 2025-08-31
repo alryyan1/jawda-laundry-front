@@ -25,6 +25,7 @@ interface CustomerSelectionProps {
   forcedCustomer?: Customer | null;
   selectedOrder?: Order | null;
   onOrderUpdate?: (updatedOrder: Order) => void;
+  preventCustomerUpdates?: boolean; // Add prop to prevent customer updates
 }
 
 export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
@@ -34,6 +35,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   forcedCustomer = null,
   selectedOrder = null,
   onOrderUpdate,
+  preventCustomerUpdates = false, // Default to false for backward compatibility
 }) => {
   const { t } = useTranslation(["common", "orders", "customers"]);
   const navigate = useNavigate();
@@ -105,7 +107,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
         onCustomerSelected(defaultCustomer.id.toString());
         
         // If we have a selected order without a customer, update it in the backend
-        if (selectedOrder && !selectedOrder.customer) {
+        // BUT only if customer updates are not prevented
+        if (selectedOrder && !selectedOrder.customer && !preventCustomerUpdates) {
           updateOrderCustomerMutation.mutate({
             orderId: selectedOrder.id,
             customerId: defaultCustomer.id.toString(),
@@ -113,7 +116,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
         }
       }
     }
-  }, [selectedCustomerId, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation]);
+  }, [selectedCustomerId, customersResponse?.data, selectedOrder, onCustomerSelected, updateOrderCustomerMutation, preventCustomerUpdates]);
 
   // Handle when a new customer is created and should be selected
   useEffect(() => {
@@ -155,7 +158,8 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     onCustomerSelected(customer.id.toString());
     
     // If we have a selected order, update it in the backend (allow changing customer)
-    if (selectedOrder) {
+    // BUT only if customer updates are not prevented
+    if (selectedOrder && !preventCustomerUpdates) {
       updateOrderCustomerMutation.mutate({
         orderId: selectedOrder.id,
         customerId: customer.id.toString(),

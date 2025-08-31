@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { materialColors } from "@/lib/colors";
+
 import { Loader2 } from "lucide-react";
 import {
   Tooltip,
@@ -13,22 +13,56 @@ import {
 
 import { getProductCategories } from "@/api/productCategoryService";
 import type { ProductCategory } from "@/types";
+import { loadFromCache, saveToCache, CACHE_KEYS, CACHE_DURATIONS } from "@/lib/cacheUtils";
 
 interface CategoryColumnProps {
   onSelectCategory: (categoryId: string) => void;
   selectedCategoryId: string | null;
   selectedCustomerId?: string | null;
+  enabled?: boolean; // Add prop to control when query should run
 }
 
 export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   onSelectCategory,
   selectedCategoryId,
   selectedCustomerId,
+  enabled = true, // Default to true for backward compatibility
 }) => {
-  const { data: allCategories = [], isLoading: isLoadingAllCategories } = useQuery<ProductCategory[], Error>({
+  const [cachedCategories, setCachedCategories] = useState<ProductCategory[]>([]);
+  const [isLoadingFromCache, setIsLoadingFromCache] = useState(true);
+
+  // Load categories from localStorage on component mount
+  useEffect(() => {
+    const cachedCategories = loadFromCache<ProductCategory[]>(
+      CACHE_KEYS.PRODUCT_CATEGORIES, 
+      CACHE_DURATIONS.PRODUCT_CATEGORIES
+    );
+    
+    if (cachedCategories) {
+      setCachedCategories(cachedCategories);
+    }
+    setIsLoadingFromCache(false);
+  }, []);
+
+  // Fetch product categories only when enabled and not in cache
+  const { data: fetchedCategories = [], isLoading: isLoadingFromAPI } = useQuery<ProductCategory[], Error>({
     queryKey: ["productCategories"],
-    queryFn: getProductCategories,
+    queryFn: async () => {
+      const categories = await getProductCategories();
+      
+      // Cache the fetched data in localStorage
+      saveToCache(CACHE_KEYS.PRODUCT_CATEGORIES, categories);
+      
+      return categories;
+    },
+    staleTime: Infinity, // Never refetch automatically
+    enabled: enabled && cachedCategories.length === 0, // Only fetch if not in cache and enabled
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
+
+  // Use cached data if available, otherwise use fetched data
+  const allCategories = cachedCategories.length > 0 ? cachedCategories : fetchedCategories;
+  const isLoadingCategories = isLoadingFromCache || (cachedCategories.length === 0 && isLoadingFromAPI);
 
   // Removed customer-specific pricing rules usage
   const isLoadingCustomerProducts = false;
@@ -39,7 +73,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     return allCategories;
   }, [allCategories]);
 
-  const isLoading = isLoadingAllCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
+  const isLoading = isLoadingCategories || (selectedCustomerId ? isLoadingCustomerProducts : false);
 
   if (isLoading) {
     return (

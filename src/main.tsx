@@ -13,10 +13,18 @@ import { NewOrderProvider } from './context/NewOrderContext.tsx';
 import { DateProvider } from './context/DateContext.tsx';
 import './lib/websocket';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - prevent unnecessary refetches
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      retry: 1, // Only retry once on failure
+    },
+  },
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <Suspense fallback="Loading translations...">
       <SettingsProvider>
         <AppThemeProvider>
@@ -36,5 +44,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </SettingsProvider>
       
     </Suspense>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 );

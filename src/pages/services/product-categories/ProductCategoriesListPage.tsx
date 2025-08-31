@@ -62,7 +62,9 @@ const ProductCategoriesListPage: React.FC = () => {
           name: categoryToDelete?.name || "",
         })
       );
-      queryClient.invalidateQueries({ queryKey: ["productCategories"] });
+              queryClient.invalidateQueries({ queryKey: ["productCategories"] });
+        // Clear localStorage cache to force fresh data
+        localStorage.removeItem('productCategories');
       setCategoryToDelete(null);
     },
     onError: (error) => {

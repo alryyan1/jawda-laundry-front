@@ -95,6 +95,8 @@ export const ProductCategoryFormModal: React.FC<ProductCategoryFormModalProps> =
     onSuccess: (data) => {
       toast.success(editingCategory ? t('categoryUpdatedSuccess', { ns: 'services', name: data.name }) : t('categoryCreatedSuccess', { ns: 'services', name: data.name }));
       queryClient.invalidateQueries({ queryKey: ['productCategories'] });
+      // Clear localStorage cache to force fresh data
+      localStorage.removeItem('productCategories');
       onOpenChange(false); // Close modal on success
     },
     onError: (error) => {
