@@ -374,7 +374,13 @@ const POSPage: React.FC = () => {
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
     setCartItems(prev => prev.map(item => 
-      item.id === id ? { ...item, quantity } : item
+      item.id === id 
+        ? { 
+            ...item, 
+            quantity,
+            _quotedSubTotal: (item.price || 0) * quantity,
+          } 
+        : item
     ));
 
     // Find the cart item
