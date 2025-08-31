@@ -15,8 +15,7 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus, sendOrderWhatsAppMessage } from "@/api/orderService";
-import { toast } from "sonner";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -268,15 +267,7 @@ const OrdersListPage: React.FC = () => {
         };
       });
 
-      // Send WhatsApp notification: Order is ready for pickup
-      try {
-        const message = `Your order #${order.id} is ready for pickup. Thank you!`;
-        await sendOrderWhatsAppMessage(order.id, message);
-        toast.success(t("whatsappMessageSent", { defaultValue: "Pickup message sent" }));
-      } catch {
-        // Non-blocking: show a soft error toast
-        toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
-      }
+      // WhatsApp notification removed - no longer automatically sent
     } catch (error) {
       console.error('Error updating order status:', error);
     } finally {
@@ -562,13 +553,11 @@ const OrdersListPage: React.FC = () => {
                 <TableHead className="w-[60px] text-center font-bold text-lg">ID</TableHead>
                 <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
-                <TableHead className="text-center">{t("deliveredDate", { defaultValue: "Delivered Date" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center w-20">{t("communication", { defaultValue: "Communication" })}</TableHead>
-                <TableHead className="text-center">
-                  {t("actions", { defaultValue: "Actions" })}
-                </TableHead>
+                                 <TableHead className="text-center">{t("orderItems", { defaultValue: "Order Items" })}</TableHead>
+                 <TableHead className="text-center">
+                   {t("actions", { defaultValue: "Actions" })}
+                 </TableHead>
                 <TableHead className="text-center font-bold text-lg">
                   {t("totalAmount", { ns: "orders" })}
                 </TableHead>
@@ -581,39 +570,42 @@ const OrdersListPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && orders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ) : orders.length > 0 ? (
+                             {isLoading && orders.length === 0 ? (
+                 <TableRow>
+                   <TableCell colSpan={9} className="h-32 text-center">
+                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                   </TableCell>
+                 </TableRow>
+               ) : orders.length > 0 ? (
                 orders.map((order) => (
-                  <OrdersTableRow
-                    key={order.id}
-                    order={order}
-                    selectedOrderId={orderItemsDialogOrder?.id ?? null}
-                    onNavigate={(path) => navigate(path)}
-                    onOpenPayments={(o) => setSelectedOrderForPayments(o)}
-                    onRecordPayment={(o) => setSelectedOrderForPayment(o)}
-                    onMarkCompleted={handleMarkCompleted}
-                    onMarkDelivered={handleMarkDelivered}
-                    onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
-                    isCompleting={isCompletingOrderId === order.id}
-                    onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
-                    can={can}
-                    t={t}
-                    currencySymbol={currencySymbol}
-                    language={i18n.language}
-                  />
+                                                           <OrdersTableRow
+                        key={order.id}
+                        order={order}
+                        selectedOrderId={orderItemsDialogOrder?.id ?? null}
+                        onOpenPayments={(o) => setSelectedOrderForPayments(o)}
+                        onRecordPayment={(o) => setSelectedOrderForPayment(o)}
+                        onMarkCompleted={handleMarkCompleted}
+                        onMarkDelivered={handleMarkDelivered}
+                        onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
+                        isCompleting={isCompletingOrderId === order.id}
+                        onOpenItems={(o) => setOrderItemsDialogOrder(o)}
+                        onOpenWhatsApp={(o) => {
+                          // You can implement WhatsApp dialog here if needed
+                          console.log('WhatsApp dialog for order:', o.id);
+                        }}
+                        can={can}
+                        t={t}
+                        currencySymbol={currencySymbol}
+                        language={i18n.language}
+                      />
                 ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
-                    {t("noResults")}
-                  </TableCell>
-                </TableRow>
-              )}
+                             ) : (
+                 <TableRow>
+                   <TableCell colSpan={9} className="h-32 text-center">
+                     {t("noResults")}
+                   </TableCell>
+                 </TableRow>
+               )}
             </TableBody>
           </Table>
         </div>
