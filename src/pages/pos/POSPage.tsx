@@ -30,6 +30,8 @@ import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
+import { getProductCategories } from "@/api/productCategoryService";
+import { loadFromCache, saveToCache, CACHE_KEYS, CACHE_DURATIONS } from "@/lib/cacheUtils";
  
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
@@ -62,6 +64,20 @@ const POSPage: React.FC = () => {
   
   // Initialize real-time updates
   useRealtimeUpdates();
+  
+  // Prefetch categories once so CategoryColumn is ready on order click
+  useEffect(() => {
+    const cached = loadFromCache(CACHE_KEYS.PRODUCT_CATEGORIES, CACHE_DURATIONS.PRODUCT_CATEGORIES);
+    if (!cached) {
+      getProductCategories()
+        .then((cats) => {
+          saveToCache(CACHE_KEYS.PRODUCT_CATEGORIES, cats);
+        })
+        .catch(() => {
+          // ignore prefetch errors
+        });
+    }
+  }, []);
   
   // Auto-select newly created order
   useEffect(() => {
@@ -148,7 +164,6 @@ const POSPage: React.FC = () => {
     onSuccess: async (response) => {
       const createdOrder = handleOrderResponse(response, t("orderCreatedSuccessfully", { ns: "orders" }));
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
       // Update table status to occupied if order has a dining table
       if (createdOrder.table_id) {
@@ -351,7 +366,6 @@ const POSPage: React.FC = () => {
         
         // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["orders"] });
-        queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
         
         toast.success(t("itemRemovedFromOrder", { ns: "orders", defaultValue: "Item removed from order successfully" }));
       } else {
@@ -435,7 +449,6 @@ const POSPage: React.FC = () => {
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
     } catch (error) {
       console.error('Failed to save notes to backend:', error);
