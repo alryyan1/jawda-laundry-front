@@ -146,7 +146,7 @@ const POSPage: React.FC = () => {
   const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
     mutationFn: (orderData: NewOrderFormData) => createOrder(orderData, allServiceOfferings),
     onSuccess: async (response) => {
-      const createdOrder = handleOrderResponse(response, t("orderCreatedSuccessfully", { ns: "orders" }));
+      const createdOrder = handleOrderResponse(response, undefined);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
       
@@ -594,7 +594,7 @@ const POSPage: React.FC = () => {
       
       try {
         const response = await createOrder(newOrderData, allServiceOfferings);
-        const createdOrder = handleOrderResponse(response, t("orderCreatedSuccessfully", { ns: "orders" }));
+        const createdOrder = handleOrderResponse(response, undefined);
         
         // Set the newly created order as selected
         setSelectedOrder(createdOrder);

@@ -30,12 +30,10 @@ export const POSNewOrderButton: React.FC = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(t("orderCreatedSuccessfully", { defaultValue: "Order created successfully" }));
-      
-      // Set the newly created order in context so it can be selected
-      setNewlyCreatedOrder(data.order);
-      console.log('New order created:', data.order);
-    },
+       // Set the newly created order in context so it can be selected
+       setNewlyCreatedOrder(data.order);
+       console.log('New order created:', data.order);
+     },
     onError: (error: unknown) => {
       console.error('Error creating order:', error);
       toast.error(
