@@ -29,7 +29,7 @@ import { Popover, Chip, List as MuiList, ListItem, ListItemText, Typography, Box
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
 export interface CartItem {
-  id: string; // Client-side UUID
+  id: string; // Keep id as string in UI; convert backend numeric id to string when mapping
   productType: ProductType;
   serviceOffering: ServiceOffering;
   quantity: number;
@@ -50,14 +50,14 @@ export interface CartItem {
 
 interface CartItemProps {
   item: CartItem;
-  onRemoveItem: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemoveItem: (id: string | number) => void;
+  onUpdateQuantity: (id: string | number, quantity: number) => void;
   onUpdateDimensions: (
-    id: string,
+    id: string | number,
     dimensions: { length?: number; width?: number }
   ) => void;
-  onUpdateNotes: (id: string, notes: string) => void;
-  onUpdateCompositions: (id: string, excludedIds: number[]) => void;
+  onUpdateNotes: (id: string | number, notes: string) => void;
+  onUpdateCompositions: (id: string | number, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
   isReadOnly?: boolean;
   itemNumber?: number; // Cart item number for display
@@ -254,7 +254,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           <div className="flex-1 pr-2">
             <div className="flex items-center gap-2 mb-1">
               {itemNumber && (
-                <Badge variant="secondary" className="text-xs font-bold">
+              <Badge variant="secondary" className="text-xs font-bold">
                   #{itemNumber}
                 </Badge>
               )}
@@ -263,6 +263,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             </Badge>
             </div>
             <p className=" text-2xl">
+              {console.log('item', item)}
               {item.productType.name}
             </p>
             {item.productType.category && (

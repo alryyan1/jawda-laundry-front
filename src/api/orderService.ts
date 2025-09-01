@@ -106,6 +106,27 @@ export const getOrderItems = async (orderId: string | number): Promise<OrderItem
 };
 
 /**
+ * Add a single order item to an existing order
+ */
+export const addOrderItem = async (
+  orderId: string | number,
+  payload: {
+    service_offering_id: number;
+    quantity: number;
+    product_description_custom?: string | null;
+    length_meters?: number | null;
+    width_meters?: number | null;
+    notes?: string | null;
+  }
+): Promise<{ order_item: OrderItem; order: Order; message: string }> => {
+  const { data } = await apiClient.post<{ order_item: OrderItem; order: Order; message: string }>(
+    `/orders/${orderId}/items`,
+    payload
+  );
+  return data;
+};
+
+/**
  * Response type for order creation with warnings
  */
 export interface OrderResponseWithWarnings {

@@ -9,7 +9,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
 import { useDate } from "@/context/DateContext";
 
-import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, Order, PricingStrategy } from '@/types';
+import type { ProductType, ServiceOffering, OrderItemFormLine, NewOrderFormData, Order, OrderItem as ApiOrderItem } from '@/types';
 import type { DiningTable } from '@/types/dining.types';
 import { CategoryColumn } from '@/features/pos/components/CategoryColumn';
 import { ProductColumn } from '@/features/pos/components/ProductColumn';
@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderItems } from "@/api/orderService";
+import { createOrder, getTodayOrders, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderItems, addOrderItem } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -483,28 +483,32 @@ const POSPage: React.FC = () => {
     // Fetch order items independently
     setIsCartItemsLoading(true);
     getOrderItems(order.id)
-      .then((items) => {
-        const cartItemsFromOrder: CartItem[] = items.map((item: any, index: number) => ({
-          id: uuidv4(),
-          productType: {
-            id: item.serviceOffering?.product_type_id || 0,
-            product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
-            name: item.serviceOffering?.productType?.name || 'Unknown Product',
-            is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
-            is_active: item.serviceOffering?.productType?.is_active || true,
-          } as ProductType,
-          serviceOffering: item.serviceOffering || {} as ServiceOffering,
-          quantity: item.quantity,
-          price: item.calculated_price_per_unit_item,
-          notes: item.notes || undefined,
-          length_meters: item.length_meters || undefined,
-          width_meters: item.width_meters || undefined,
-          _isQuoting: false,
-          _quotedSubTotal: item.sub_total,
-          _isExistingOrderItem: true,
-          _orderItemId: item.id,
-          _addedAt: Date.now() - (items.length - index) * 1000,
-        }));
+      .then((items: ApiOrderItem[]) => {
+        const cartItemsFromOrder: CartItem[] = items.map((item: ApiOrderItem, index: number) => {
+          const unitPrice = Number(item.calculated_price_per_unit_item ?? item.serviceOffering?.default_price ?? 0);
+          const subTotal = Number(item.sub_total ?? unitPrice * Number(item.quantity ?? 1));
+          return {
+            id: String(item.id),
+            productType: {
+              id: item.serviceOffering?.product_type_id || 0,
+              product_category_id: item.serviceOffering?.productType?.category?.id || 0,
+              name: item.serviceOffering?.productType?.name || item.serviceOffering?.display_name || 'Unknown Product',
+              is_dimension_based: Boolean(item.serviceOffering?.productType?.is_dimension_based),
+              is_active: item.serviceOffering?.productType?.is_active ?? true,
+            } as ProductType,
+            serviceOffering: item.serviceOffering || {} as ServiceOffering,
+            quantity: Number(item.quantity ?? 1),
+            price: unitPrice,
+            notes: item.notes || undefined,
+            length_meters: item.length_meters || undefined,
+            width_meters: item.width_meters || undefined,
+            _isQuoting: false,
+            _quotedSubTotal: subTotal,
+            _isExistingOrderItem: true,
+            _orderItemId: item.id,
+            _addedAt: Date.now() - (items.length - index) * 1000,
+          };
+        });
         setCartItems(cartItemsFromOrder);
       })
       .finally(() => setIsCartItemsLoading(false));
@@ -585,24 +589,17 @@ const POSPage: React.FC = () => {
 
 
   const handleAddItemToBackend = async (product: ProductType, offering: ServiceOffering) => {
-    // If no order is selected, create a new order without customer (new order mode)
     if (!selectedOrder) {
-      // Create a new order without customer
       const newOrderData = {
-        customer_id: '', // Empty string for no customer
-        items: [], // Empty items array for new order
+        customer_id: '',
+        items: [],
         order_type: orderType,
         dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
       };
-      
       try {
         const response = await createOrder(newOrderData, allServiceOfferings);
         const createdOrder = handleOrderResponse(response, undefined);
-        
-        // Set the newly created order as selected
         setSelectedOrder(createdOrder);
-        
-        // Now add the item to the newly created order
         await handleAddItemToBackend(product, offering);
         return;
       } catch (error) {
@@ -612,7 +609,7 @@ const POSPage: React.FC = () => {
       }
     }
 
-    // Create a temporary cart item with loading state
+    // Temp skeleton item while backend adds
     const tempItemId = uuidv4();
     const tempItem: CartItem = {
       id: tempItemId,
@@ -621,104 +618,52 @@ const POSPage: React.FC = () => {
       quantity: 1,
       price: offering.default_price || 0,
       _isQuoting: false,
-      _isAdding: true, // Flag to show loading state
-      _addedAt: Date.now(), // Add timestamp for sorting
+      _isAdding: true,
+      _addedAt: Date.now(),
     };
-
-    // Add temporary item to cart with loading state
     setCartItems(prev => [...prev, tempItem]);
 
     try {
-      // Prepare the order data with existing items + new item
-      const existingItems = selectedOrder.items?.map(item => ({
-        id: item.id.toString(),
-        service_offering_id: item.serviceOffering?.id || 0,
-        product_type_id: item.serviceOffering?.productType?.id?.toString() || '',
-        service_action_id: item.serviceOffering?.serviceAction?.id?.toString() || '',
+      await addOrderItem(selectedOrder.id, {
+        service_offering_id: offering.id,
+        quantity: 1,
+        product_description_custom: null,
+        length_meters: null,
+        width_meters: null,
+        notes: null,
+      });
+
+      setIsCartItemsLoading(true);
+      const items = await getOrderItems(selectedOrder.id);
+      // alert('s')
+      console.log('items in pos page', items);
+      const mapped: CartItem[] = items.map((item: ApiOrderItem, index: number) => ({
+        id: String(item.id),
+        productType: {
+          id: item.serviceOffering?.product_type_id || 0,
+          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
+          name: item.serviceOffering?.productType?.name || 'Unknown Product',
+          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
+          is_active: item.serviceOffering?.productType?.is_active || true,
+        } as ProductType,
+        serviceOffering: item.serviceOffering || {} as ServiceOffering,
         quantity: item.quantity,
+        price: item.calculated_price_per_unit_item,
         notes: item.notes || undefined,
         length_meters: item.length_meters || undefined,
         width_meters: item.width_meters || undefined,
-        _derivedServiceOffering: item.serviceOffering,
-        _pricingStrategy: (item.serviceOffering?.productType?.is_dimension_based ? 'dimension_based' : 'fixed') as 'fixed' | 'dimension_based',
-        _quoted_price_per_unit_item: item.calculated_price_per_unit_item,
-        _quoted_sub_total: item.sub_total,
-      })) || [];
-
-      const newItem = {
-        id: tempItemId,
-        service_offering_id: offering.id,
-        product_type_id: product.id.toString(),
-        service_action_id: offering.service_action_id.toString(),
-        quantity: 1,
-        notes: undefined,
-        length_meters: undefined,
-        width_meters: undefined,
-        _derivedServiceOffering: offering,
-        _pricingStrategy: (product.is_dimension_based ? 'dimension_based' : 'fixed') as PricingStrategy,
-        _quoted_price_per_unit_item: tempItem.price,
-        _quoted_sub_total: tempItem.price,
-      };
-
-      const orderData = {
-        customer_id: selectedOrder.customer?.id?.toString() || '',
-        items: [...existingItems, newItem],
-        notes: selectedOrder.notes || undefined,
-        due_date: selectedOrder.due_date || undefined,
-        order_type: selectedOrder.order_type,
-        dining_table_id: selectedOrder.dining_table_id,
-      };
-
-      // Call the updateOrder API to add item to the existing order
-      const updatedOrder = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
-      
-      // Update the selected order with the new data
-      setSelectedOrder(updatedOrder.order);
-      
-      // Remove the temporary item and add the real item from the updated order
-      setCartItems(prev => {
-        const filtered = prev.filter(item => item.id !== tempItemId);
-        // Find the newly added item in the updated order
-        const newOrderItem = updatedOrder.order.items?.find(item => 
-          item.serviceOffering?.id === offering.id && 
-          item.quantity === 1
-        );
-        
-        if (newOrderItem) {
-          const realCartItem: CartItem = {
-            id: uuidv4(), // Generate new ID for cart item
-            productType: {
-              id: newOrderItem.serviceOffering?.product_type_id || 0,
-              product_category_id: newOrderItem.serviceOffering?.productType?.product_category_id || 0,
-              name: newOrderItem.serviceOffering?.productType?.name || 'Unknown Product',
-              is_dimension_based: newOrderItem.serviceOffering?.productType?.is_dimension_based || false,
-              is_active: newOrderItem.serviceOffering?.productType?.is_active || true,
-            } as ProductType,
-            serviceOffering: newOrderItem.serviceOffering || {} as ServiceOffering,
-            quantity: newOrderItem.quantity,
-            price: newOrderItem.calculated_price_per_unit_item,
-            notes: newOrderItem.notes || undefined,
-            length_meters: newOrderItem.length_meters || undefined,
-            width_meters: newOrderItem.width_meters || undefined,
-            _isQuoting: false,
-            _quotedSubTotal: newOrderItem.sub_total,
-            _isExistingOrderItem: true, // Mark as existing order item since it's now saved to backend
-            _orderItemId: newOrderItem.id, // Store the original order item ID
-            _addedAt: Date.now(), // Add timestamp for sorting
-          };
-          return [...filtered, realCartItem];
-        }
-        return filtered;
-      });
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      
+        _isQuoting: false,
+        _quotedSubTotal: item.sub_total,
+        _isExistingOrderItem: true,
+        _orderItemId: item.id,
+        _addedAt: Date.now() - (items.length - index) * 1000,
+      }));
+      setCartItems(mapped);
     } catch (error) {
       console.error('Failed to add item to order:', error);
-      
-      // Remove the temporary item on error
       setCartItems(prev => prev.filter(item => item.id !== tempItemId));
+    } finally {
+      setIsCartItemsLoading(false);
     }
   };
 
