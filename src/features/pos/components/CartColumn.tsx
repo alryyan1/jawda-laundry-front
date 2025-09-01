@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ interface CartColumnProps {
   isReadOnly?: boolean;
   isReceived?: boolean;
   paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | string | null;
+  orderId?: number | string | null;
+  isLoadingItems?: boolean;
 }
 
 export const CartColumn: React.FC<CartColumnProps> = ({
@@ -42,6 +44,8 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   isReadOnly = false,
   isReceived = false,
   paymentStatus,
+  orderId,
+  isLoadingItems = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
   const { getSetting } = useSettings();
@@ -52,7 +56,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'USD');
 
-  const total = items.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0);
+  const total = useMemo(() => items.reduce((sum, item) => sum + (item._quotedSubTotal || (item.price * item.quantity)), 0), [items]);
 
   // Sort items by newest first (by _addedAt timestamp, fallback to array order for items without timestamp)
   const sortedItems = [...items].sort((a, b) => {
@@ -147,7 +151,12 @@ console.log(itemsToShow,'itemsToShow',items,'items')
           "p-1 space-y-4",
           isReceived && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
         )}>
-          {itemsToShow.length === 0 ? (
+          {isLoadingItems ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[120px]">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent mb-2" />
+              <p>{t("loading", { ns: "common", defaultValue: "Loading..." })}</p>
+            </div>
+          ) : itemsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
               <p>{t("cartIsEmpty", { ns: "orders" })}</p>
             </div>

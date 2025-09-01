@@ -24,7 +24,7 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderById } from "@/api/orderService";
+import { createOrder, getTodayOrders, updateOrder, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderItems } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
@@ -105,6 +105,7 @@ const POSPage: React.FC = () => {
   
   const [isNarrow, setIsNarrow] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 800 : false);
   const [isCartDialogOpen, setIsCartDialogOpen] = useState(false);
+  const [isCartItemsLoading, setIsCartItemsLoading] = useState(false);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -479,32 +480,34 @@ const POSPage: React.FC = () => {
       setSelectedTableId(' ');
     }
     
-    // Convert order items to cart items and populate cart only if order has items
-    if (order.items && order.items.length > 0) {
-      const cartItemsFromOrder: CartItem[] = order.items.map((item, index) => ({
-        id: uuidv4(), // Generate new ID for cart item
-        productType: {
-          id: item.serviceOffering?.product_type_id || 0,
-          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
-          name: item.serviceOffering?.productType?.name || 'Unknown Product',
-          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
-          is_active: item.serviceOffering?.productType?.is_active || true,
-        } as ProductType,
-        serviceOffering: item.serviceOffering || {} as ServiceOffering,
-        quantity: item.quantity,
-        price: item.calculated_price_per_unit_item,
-        notes: item.notes || undefined,
-        length_meters: item.length_meters || undefined,
-        width_meters: item.width_meters || undefined,
-        _isQuoting: false,
-        _quotedSubTotal: item.sub_total,
-        _isExistingOrderItem: true, // Mark as existing order item
-        _orderItemId: item.id, // Store the original order item ID
-        _addedAt: Date.now() - (order.items.length - index) * 1000, // Assign timestamps in reverse order (newest first)
-      }));
-      
-      setCartItems(cartItemsFromOrder);
-    }
+    // Fetch order items independently
+    setIsCartItemsLoading(true);
+    getOrderItems(order.id)
+      .then((items) => {
+        const cartItemsFromOrder: CartItem[] = items.map((item: any, index: number) => ({
+          id: uuidv4(),
+          productType: {
+            id: item.serviceOffering?.product_type_id || 0,
+            product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
+            name: item.serviceOffering?.productType?.name || 'Unknown Product',
+            is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
+            is_active: item.serviceOffering?.productType?.is_active || true,
+          } as ProductType,
+          serviceOffering: item.serviceOffering || {} as ServiceOffering,
+          quantity: item.quantity,
+          price: item.calculated_price_per_unit_item,
+          notes: item.notes || undefined,
+          length_meters: item.length_meters || undefined,
+          width_meters: item.width_meters || undefined,
+          _isQuoting: false,
+          _quotedSubTotal: item.sub_total,
+          _isExistingOrderItem: true,
+          _orderItemId: item.id,
+          _addedAt: Date.now() - (items.length - index) * 1000,
+        }));
+        setCartItems(cartItemsFromOrder);
+      })
+      .finally(() => setIsCartItemsLoading(false));
     // If order has no items, cart remains empty (which is correct for new orders)
     
     // Update dining table status to occupied if the order has a table
@@ -669,13 +672,8 @@ const POSPage: React.FC = () => {
       // Call the updateOrder API to add item to the existing order
       const updatedOrder = await updateOrder(selectedOrder.id, orderData, allServiceOfferings);
       
-      // Refresh order items from backend (dedicated fetch)
-      try {
-        const fresh = await getOrderById(updatedOrder.order.id);
-        setSelectedOrder(fresh);
-      } catch {
-        setSelectedOrder(updatedOrder.order);
-      }
+      // Update the selected order with the new data
+      setSelectedOrder(updatedOrder.order);
       
       // Remove the temporary item and add the real item from the updated order
       setCartItems(prev => {
@@ -809,13 +807,8 @@ const POSPage: React.FC = () => {
       // Use the markOrderReceived endpoint - backend will recalculate total from order items
       const response = await markOrderReceived(selectedOrder.id);
       
-      // Refresh order from backend to get latest items
-      try {
-        const fresh = await getOrderById(response.order.id);
-        setSelectedOrder(fresh);
-      } catch {
-        setSelectedOrder(response.order);
-      }
+      // Update the selected order with the received status
+      setSelectedOrder(response.order);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -878,13 +871,8 @@ const POSPage: React.FC = () => {
       // Use the dedicated cancel order endpoint
       const response = await cancelOrder(selectedOrder.id);
       
-      // Refresh order from backend after cancellation
-      try {
-        const fresh = await getOrderById(response.order.id);
-        setSelectedOrder(fresh);
-      } catch {
-        setSelectedOrder(response.order);
-      }
+      // Update the selected order with the cancelled status
+      setSelectedOrder(response.order);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -1112,6 +1100,8 @@ const POSPage: React.FC = () => {
                             isReadOnly={selectedOrder?.received}
                             isReceived={selectedOrder?.received === true}
                             paymentStatus={selectedOrder?.payment_status}
+                            orderId={selectedOrder?.id}
+                            isLoadingItems={isCartItemsLoading}
                           />
                           </div>
                         </div>
@@ -1350,6 +1340,8 @@ const POSPage: React.FC = () => {
               isReadOnly={selectedOrder?.received}
               isReceived={selectedOrder?.received === true}
               paymentStatus={selectedOrder?.payment_status}
+              orderId={selectedOrder?.id}
+              isLoadingItems={isCartItemsLoading}
             />
           </div>
         </DialogContent>

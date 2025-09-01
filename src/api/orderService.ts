@@ -98,6 +98,14 @@ export const getOrderById = async (id: string | number): Promise<Order> => {
 };
 
 /**
+ * Fetch order items independently for a given order ID
+ */
+export const getOrderItems = async (orderId: string | number): Promise<OrderItem[]> => {
+  const { data } = await apiClient.get<{ order_id: number; items: OrderItem[] }>(`/orders/${orderId}/items`);
+  return data.items;
+};
+
+/**
  * Response type for order creation with warnings
  */
 export interface OrderResponseWithWarnings {
