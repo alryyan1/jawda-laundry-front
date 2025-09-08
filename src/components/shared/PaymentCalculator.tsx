@@ -106,7 +106,6 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
             <div className="flex items-center gap-2">
               <DialogTitle className="flex items-center gap-2 text-lg">
                 <Calculator className="h-5 w-5" />
-                {t("paymentCalculator", { defaultValue: "Payment Calculator" })}
                 {(isLoading || isRefetching) && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
@@ -118,7 +117,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                   <span className="text-sm font-semibold">
                     {t("shift", { defaultValue: "Shift" })} #{currentShift.id}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs ">
                     {t("opened", { defaultValue: "Opened" })}: {new Date(currentShift.opened_at).toLocaleString()}{currentShift.closed_at ? `  •  ${t("closed", { defaultValue: "Closed" })}: ${new Date(currentShift.closed_at).toLocaleString()}` : ''}
                   </span>
                 </>
@@ -145,11 +144,9 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                  {t("shiftStatus", { defaultValue: "Shift Status" })}
+                  {t("shiftStatus", { defaultValue: "Shift Status" })} {currentShift?.closed_at ? t("closed", { defaultValue: "Closed" }) : t("open", { defaultValue: "Open" })}
                 </p>
-                <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
-                  {currentShift ? t("openSince", { defaultValue: "Open since" }) + ` ${new Date(currentShift.opened_at).toLocaleString()}` : t("noOpenShift", { defaultValue: "No open shift" })}
-                </p>
+              
                 {currentShift && (
                   <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
                     {t("openingCash", { defaultValue: "Opening cash" })}: {formatCurrency(Number(currentShift.opening_cash || 0), currencySymbol, i18n.language)}

@@ -13,6 +13,7 @@ import { POSSearch } from "@/components/ui/pos-search";
 import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
 import { POSDatePicker } from "@/components/ui/pos-date-picker";
 import { getCurrentShift } from "@/api/orderService";
+import { useCreateEmptyOrder } from "@/hooks/useCreateEmptyOrder";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -53,6 +54,7 @@ import {
     ShoppingCart,
     ChartBar,
     Calculator,
+    Keyboard,
     PanelLeftClose,
     PanelLeftOpen,
     TrendingUp,
@@ -233,12 +235,32 @@ const MainLayout: React.FC = () => {
   const { user, logout: storeLogout } = useAuthStore();
   const { setIsSearchVisible } = useSearch();
   const { setSelectedDate } = useDate();
+  const { createNewOrder, isCreating } = useCreateEmptyOrder();
 
   // Show search when on POS route
   React.useEffect(() => {
     const isPOSRoute = location.pathname === '/pos';
     setIsSearchVisible(isPOSRoute);
   }, [location.pathname, setIsSearchVisible]);
+
+  // Global keyboard: '+' creates a new order on POS route
+  React.useEffect(() => {
+    if (location.pathname !== '/pos') return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isInput = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || (target as HTMLElement).isContentEditable === true);
+      if (isInput) return;
+      const isPlusKey = event.key === '+' || event.code === 'NumpadAdd';
+      if (isPlusKey) {
+        event.preventDefault();
+        if (!isCreating) {
+          createNewOrder();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [location.pathname, createNewOrder, isCreating]);
 
   // Handle window resize to manage sidebar state
   React.useEffect(() => {
@@ -274,6 +296,7 @@ const MainLayout: React.FC = () => {
 
       const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>({});
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   // Fetch user navigation
   const { data: navigationItems = [], isLoading: isNavigationLoading, error: navigationError } = useQuery({
@@ -653,6 +676,14 @@ const MainLayout: React.FC = () => {
                 Shift #{currentShift.id}
               </div>
             )}
+            <Button
+              variant="outline"
+              size="icon"
+              title={t("keyboardShortcuts", { ns: "common", defaultValue: "Keyboard Shortcuts" })}
+              onClick={() => setIsShortcutsOpen(true)}
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
             <RealtimeLamp />
             <LanguageSwitcher />
             <ModeToggle />
@@ -664,6 +695,40 @@ const MainLayout: React.FC = () => {
         <main className="flex flex-1 flex-col gap-1 md:gap-6   bg-muted/20 dark:bg-background overflow-y-auto">
           <Outlet />
         </main>
+
+        {/* Keyboard Shortcuts Dialog */}
+        <Dialog open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t("keyboardShortcuts", { ns: "common", defaultValue: "Keyboard Shortcuts" })}</DialogTitle>
+              <DialogDescription>
+                {t("quickKeysHelp", { ns: "common", defaultValue: "Use these shortcuts to work faster on the POS page." })}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <div className="font-medium">New Order (on POS)</div>
+                <kbd className="px-2 py-1 rounded border bg-muted">+</kbd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="font-medium">Open Payment Calculator (on POS)</div>
+                <kbd className="px-2 py-1 rounded border bg-muted">F9</kbd>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="font-medium">Enter (on POS)</div>
+                  <kbd className="px-2 py-1 rounded border bg-muted">Enter</kbd>
+                </div>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  <li>If selected order is received: opens Record Payment (if permitted)</li>
+                  <li>If an order is selected: receives the order</li>
+                  <li>If creating a new order: creates the order</li>
+                </ul>
+              </div>
+              <div className="text-xs text-muted-foreground">Shortcuts are ignored while typing in inputs/textareas.</div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

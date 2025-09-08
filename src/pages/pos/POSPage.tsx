@@ -666,66 +666,11 @@ const POSPage: React.FC = () => {
       setIsCartItemsLoading(false);
     }
   };
-
-
-
-
-  const handleCheckout = async () => {
-          // If we have a selected order, we should receive it instead of creating a new one
-      if (selectedOrder) {
-        // Receive the selected order
-        await handleReceiveOrder();
-        return;
-      }
-
-    // Otherwise, create a new order (this should rarely happen now with the new workflow)
-    if (!selectedCustomerId) {
-      toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
-      return;
-    }
-
-    if (cartItems.length === 0) {
-      toast.error(t("cartIsEmpty", { ns: "orders" }));
-      return;
-    }
-
-    // Validate table selection for in-house orders
-    if (orderType === 'in_house' && !selectedTableId) {
-      toast.error(t("pleaseSelectTable", { ns: "dining", defaultValue: "Please select a table for in-house orders" }));
-      return;
-    }
-
-    setIsProcessing(true);
-
-    const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
-      id: item.id,
-      service_offering_id: item.serviceOffering.id,
-      product_type_id: item.productType.id.toString(),
-      service_action_id: item.serviceOffering.service_action_id.toString(),
-      quantity: item.quantity,
-      notes: item.notes,
-      length_meters: item.length_meters,
-      width_meters: item.width_meters,
-      _derivedServiceOffering: item.serviceOffering,
-      _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
-      _quoted_price_per_unit_item: item.price,
-      _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
-    }));
-
-    const orderData: NewOrderFormData = {
-      customer_id: selectedCustomerId,
-      items: orderItems,
-      notes: undefined, // TODO: Add UI for order notes
-      due_date: undefined, // TODO: Add UI for due date
-      order_type: orderType,
-      dining_table_id: selectedTableId ? parseInt(selectedTableId) : null, // Use dining_table_id for dining tables
-    };
-
-    console.log('Creating order with dining table ID:', orderData.dining_table_id);
-    createOrderMutation.mutate(orderData);
-  };
-
-  const handleReceiveOrder = async () => {
+  
+  
+  
+  
+  const handleReceiveOrder = React.useCallback(async () => {
     if (!selectedOrder) {
       toast.error(t("noOrderSelected", { ns: "orders", defaultValue: "No order selected" }));
       return;
@@ -796,7 +741,64 @@ const POSPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [selectedOrder, t, settings, queryClient]);
+
+  const handleCheckout = React.useCallback(async () => {
+          // If we have a selected order, we should receive it instead of creating a new one
+      if (selectedOrder) {
+        // Receive the selected order
+        await handleReceiveOrder();
+        return;
+      }
+
+    // Otherwise, create a new order (this should rarely happen now with the new workflow)
+    if (!selectedCustomerId) {
+      toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast.error(t("cartIsEmpty", { ns: "orders" }));
+      return;
+    }
+
+    // Validate table selection for in-house orders
+    if (orderType === 'in_house' && !selectedTableId) {
+      toast.error(t("pleaseSelectTable", { ns: "dining", defaultValue: "Please select a table for in-house orders" }));
+      return;
+    }
+
+    setIsProcessing(true);
+
+    const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
+      id: item.id,
+      service_offering_id: item.serviceOffering.id,
+      product_type_id: item.productType.id.toString(),
+      service_action_id: item.serviceOffering.service_action_id.toString(),
+      quantity: item.quantity,
+      notes: item.notes,
+      length_meters: item.length_meters,
+      width_meters: item.width_meters,
+      _derivedServiceOffering: item.serviceOffering,
+      _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
+      _quoted_price_per_unit_item: item.price,
+      _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
+    }));
+
+    const orderData: NewOrderFormData = {
+      customer_id: selectedCustomerId,
+      items: orderItems,
+      notes: undefined, // TODO: Add UI for order notes
+      due_date: undefined, // TODO: Add UI for due date
+      order_type: orderType,
+      dining_table_id: selectedTableId ? parseInt(selectedTableId) : null, // Use dining_table_id for dining tables
+    };
+
+    console.log('Creating order with dining table ID:', orderData.dining_table_id);
+    createOrderMutation.mutate(orderData);
+  }, [selectedOrder, handleReceiveOrder, selectedCustomerId, cartItems, orderType, selectedTableId, t, createOrderMutation]);
+
+  
 
   const handleCancelOrder = async () => {
     if (!selectedOrder) {
@@ -885,6 +887,13 @@ const POSPage: React.FC = () => {
   // Global keyboard event listener for Enter key
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // F9: Open payment calculator
+      if (event.key === 'F9') {
+        event.preventDefault();
+        setIsCalculatorOpen(true);
+        return;
+      }
+
       // Only trigger if Enter is pressed and not in a text input/textarea
       if (event.key === 'Enter' && !event.shiftKey) {
         const target = event.target as HTMLElement;
@@ -892,6 +901,14 @@ const POSPage: React.FC = () => {
         
         if (!isInput) {
           event.preventDefault();
+          
+          // If order already received, open Record Payment dialog (if allowed)
+          if (selectedOrder?.received && !isProcessing) {
+            if (can && can("order:record-payment")) {
+              setIsPaymentModalOpen(true);
+            }
+            return;
+          }
           
           // Only trigger checkout if we have items and not processing
           if (cartItems.length > 0 && !isProcessing) {
@@ -907,7 +924,7 @@ const POSPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems.length, isProcessing, selectedOrder]);
+  }, [cartItems.length, isProcessing, selectedOrder, can, handleCheckout, handleReceiveOrder]);
 
   return (
     <div style={{
