@@ -454,6 +454,22 @@ export const getOrderStatistics = async (
   return data;
 };
 
+// --- Shifts API ---
+export const getCurrentShift = async () => {
+  const { data } = await apiClient.get<{ shift: any }>(`/shifts/current`);
+  return data.shift as { id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null;
+};
+
+export const openShift = async (payload: { opening_cash?: number; notes?: string }) => {
+  const { data } = await apiClient.post<{ message: string; shift: any }>(`/shifts/open`, payload);
+  return data.shift as { id: number };
+};
+
+export const closeShift = async (payload: { closing_cash?: number; notes?: string }) => {
+  const { data } = await apiClient.post<{ message: string; shift: any }>(`/shifts/close`, payload);
+  return data.shift as { id: number };
+};
+
 export const deleteOrderItem = async (orderItemId: number | string): Promise<{ order: Order; message: string }> => {
   const { data } = await apiClient.delete<{ order: Order; message: string }>(`/order-items/${orderItemId}`);
   return data;

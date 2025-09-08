@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
-import { getOrderStatistics } from "@/api/orderService";
+import { getOrderStatistics, getCurrentShift, openShift, closeShift } from "@/api/orderService";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { getTodayDate } from "@/lib/dateUtils";
 import {
@@ -45,6 +45,10 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   const [selectedDateFrom, setSelectedDateFrom] = useState(dateFrom || getTodayDate());
   const [selectedDateTo, setSelectedDateTo] = useState(dateTo || getTodayDate());
   const [isPaymentMethodsExpanded, setIsPaymentMethodsExpanded] = useState(false);
+  const [currentShift, setCurrentShift] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
+  const [openingCash, setOpeningCash] = useState<string>("");
+  const [closingCash, setClosingCash] = useState<string>("");
+  const [isShiftActionLoading, setIsShiftActionLoading] = useState(false);
 
   // Use selected dates or provided dates or default to today
   const effectiveDateFrom = selectedDateFrom;
@@ -55,6 +59,11 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
     if (dateFrom) setSelectedDateFrom(dateFrom);
     if (dateTo) setSelectedDateTo(dateTo);
   }, [dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getCurrentShift().then(setCurrentShift).catch(() => setCurrentShift(null));
+  }, [isOpen]);
 
   // Fetch order statistics
   const { data: todayStatistics, refetch, isLoading, isRefetching } = useQuery({
@@ -101,7 +110,84 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
             </Button>
           </div>
         </DialogHeader>
-        
+        {/* Shift Controls */}
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 mb-2">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  {t("shiftStatus", { defaultValue: "Shift Status" })}
+                </p>
+                <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                  {currentShift ? t("openSince", { defaultValue: "Open since" }) + ` ${new Date(currentShift.opened_at).toLocaleString()}` : t("noOpenShift", { defaultValue: "No open shift" })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {!currentShift ? (
+                  <>
+                    <Input
+                      placeholder={t("openingCash", { defaultValue: "Opening cash" })}
+                      value={openingCash}
+                      onChange={(e) => setOpeningCash(e.target.value)}
+                      className="h-8 w-28"
+                      type="number"
+                      min="0"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        setIsShiftActionLoading(true);
+                        try {
+                          const cash = openingCash.trim() === '' ? undefined : Number(openingCash);
+                          await openShift({ opening_cash: cash });
+                          const s = await getCurrentShift();
+                          setCurrentShift(s);
+                        } finally {
+                          setIsShiftActionLoading(false);
+                        }
+                      }}
+                      disabled={isShiftActionLoading}
+                      className="h-8"
+                    >
+                      {t("openShift", { defaultValue: "Open Shift" })}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      placeholder={t("closingCash", { defaultValue: "Closing cash" })}
+                      value={closingCash}
+                      onChange={(e) => setClosingCash(e.target.value)}
+                      className="h-8 w-28"
+                      type="number"
+                      min="0"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        setIsShiftActionLoading(true);
+                        try {
+                          const cash = closingCash.trim() === '' ? undefined : Number(closingCash);
+                          await closeShift({ closing_cash: cash });
+                          const s = await getCurrentShift();
+                          setCurrentShift(s);
+                        } finally {
+                          setIsShiftActionLoading(false);
+                        }
+                      }}
+                      disabled={isShiftActionLoading}
+                      className="h-8"
+                    >
+                      {t("closeShift", { defaultValue: "Close Shift" })}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="space-y-3">
           {/* Date Range Selection */}
           <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
