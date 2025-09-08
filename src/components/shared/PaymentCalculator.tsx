@@ -42,20 +42,28 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   // Shift navigation state only
   const [isPaymentMethodsExpanded, setIsPaymentMethodsExpanded] = useState(false);
   const [currentShift, setCurrentShift] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
+  const [openShift, setOpenShift] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
   const [openingCash, setOpeningCash] = useState<string>("");
   const [closingCash, setClosingCash] = useState<string>("");
   const [isShiftActionLoading, setIsShiftActionLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
-    // Prefer current open shift; if none, use latest
+    // Load open shift, and select it; if none, select latest
     getCurrentShift()
       .then(async (s) => {
-        if (s) return s;
-        return await getLatestShift();
+        setOpenShift(s);
+        if (s) {
+          setCurrentShift(s);
+        } else {
+          const latest = await getLatestShift();
+          setCurrentShift(latest);
+        }
       })
-      .then(setCurrentShift)
-      .catch(() => setCurrentShift(null));
+      .catch(() => {
+        setOpenShift(null);
+        setCurrentShift(null);
+      });
   }, [isOpen]);
 
   // Fetch order statistics
@@ -147,7 +155,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {!currentShift ? (
+                {!openShift ? (
                   <>
                     <Input
                       placeholder={t("openingCash", { defaultValue: "Opening cash" })}
@@ -165,6 +173,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                           const cash = openingCash.trim() === '' ? undefined : Number(openingCash);
                           await openShift({ opening_cash: cash });
                           const s = await getCurrentShift();
+                          setOpenShift(s);
                           setCurrentShift(s);
                         } finally {
                           setIsShiftActionLoading(false);
@@ -176,7 +185,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       {t("openShift", { defaultValue: "Open Shift" })}
                     </Button>
                   </>
-                ) : (
+                ) : (currentShift && openShift && currentShift.id === openShift.id ? (
                   <>
                     <Input
                       placeholder={t("closingCash", { defaultValue: "Closing cash" })}
@@ -195,7 +204,8 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                           const cash = closingCash.trim() === '' ? undefined : Number(closingCash);
                           await closeShift({ closing_cash: cash });
                           const s = await getCurrentShift();
-                          setCurrentShift(s);
+                          setOpenShift(s);
+                          setCurrentShift(s || currentShift);
                         } finally {
                           setIsShiftActionLoading(false);
                         }
@@ -206,7 +216,9 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       {t("closeShift", { defaultValue: "Close Shift" })}
                     </Button>
                   </>
-                )}
+                ) : (
+                  <span className="text-xs text-muted-foreground">{t("viewingClosedShift", { defaultValue: "Viewing closed shift" })}</span>
+                ))}
               </div>
             </div>
           </CardContent>
