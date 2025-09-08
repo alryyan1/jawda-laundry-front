@@ -19,6 +19,17 @@ export const POSSearch: React.FC = () => {
         type="search"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const term = (e.currentTarget.value || '').trim();
+            if (term.length > 0) {
+              // Dispatch a global event so POSPage can handle add-to-order
+              window.dispatchEvent(new CustomEvent('pos-search-enter', { detail: { term } }));
+              // Optionally clear search box after action
+              setSearchTerm('');
+            }
+          }
+        }}
         placeholder={t("searchProductsByNameOrId", { ns: "services" })}
         className="pl-9 bg-muted/50 dark:bg-muted/20 border-border/50 focus:border-primary"
       />

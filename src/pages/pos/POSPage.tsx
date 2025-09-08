@@ -923,8 +923,52 @@ const POSPage: React.FC = () => {
     };
 
     window.addEventListener('keydown', handleKeyDown);
+    const handleSearchEnter = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { term?: string };
+      const term = (detail?.term || '').toLowerCase();
+      if (!term) return;
+
+      // Only proceed if we can add items
+      if (selectedOrder?.received) return;
+
+      // Determine if we have customer or are in new order mode
+      const hasCustomer = selectedOrder?.customer || selectedCustomerId;
+      if (!hasCustomer && !isNewOrderMode) return;
+
+      // Find first matching product by name or id
+      const product = serviceOfferingsToUse
+        .map(o => o.productType)
+        .filter(Boolean) as ProductType[];
+      const productTypesById = new Map<number, ProductType>();
+      serviceOfferingsToUse.forEach(o => {
+        if (o.productType) productTypesById.set(o.productType.id, o.productType);
+      });
+
+      let matchedProduct: ProductType | null = null;
+      // Try match by numeric id first
+      const idNum = Number(term);
+      if (!Number.isNaN(idNum)) {
+        matchedProduct = productTypesById.get(idNum) || null;
+      }
+      // Fallback to name contains
+      if (!matchedProduct) {
+        matchedProduct = Array.from(productTypesById.values()).find(p => p.name?.toLowerCase().includes(term)) || null;
+      }
+
+      if (!matchedProduct) return;
+
+      // Offerings for that product
+      const offerings = serviceOfferingsToUse.filter(o => o.product_type_id === matchedProduct!.id);
+      if (offerings.length === 0) return;
+
+      const chosenOffering = offerings.length === 1 ? offerings[0] : offerings[0];
+      // Add to backend
+      handleSelectProduct(matchedProduct);
+    };
+
+    window.addEventListener('pos-search-enter', handleSearchEnter as EventListener);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems.length, isProcessing, selectedOrder, can, handleCheckout, handleReceiveOrder]);
+  }, [cartItems.length, isProcessing, selectedOrder, can, handleCheckout, handleReceiveOrder, selectedCustomerId, isNewOrderMode, serviceOfferingsToUse]);
 
   return (
     <div style={{

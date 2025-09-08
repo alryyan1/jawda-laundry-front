@@ -32,7 +32,7 @@ export const useCreateEmptyOrder = () => {
       // console.debug('New order created via hook:', data.order);
       // Refresh TodayOrdersColumn (and any related lists)
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      // queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error: unknown) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

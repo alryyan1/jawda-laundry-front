@@ -40,7 +40,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   const currencySymbol = getSetting('currency_symbol', '$');
 
   // Shift navigation state only
-  const [isPaymentMethodsExpanded, setIsPaymentMethodsExpanded] = useState(false);
+  const [isPaymentMethodsExpanded, setIsPaymentMethodsExpanded] = useState(true);
   const [currentShift, setCurrentShift] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
   const [openShiftInfo, setOpenShiftInfo] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
   const [openingCash, setOpeningCash] = useState<string>("");
@@ -105,7 +105,19 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
           <div className="grid grid-cols-3 items-center">
             <div className="flex items-center gap-2">
               <DialogTitle className="flex items-center gap-2 text-lg">
-                <Calculator className="h-5 w-5" />
+              <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={!currentShift}
+                  onClick={async () => {
+                    if (!currentShift) return;
+                    const prev = await getPreviousShift(currentShift.id);
+                    if (prev) setCurrentShift(prev);
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
                 {(isLoading || isRefetching) && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
@@ -126,15 +138,19 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
               )}
             </div>
             <div className="flex items-center justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refetch()}
-                disabled={isLoading || isRefetching}
-                className="h-8 w-8 p-0"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              </Button>
+            <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={!currentShift}
+                  onClick={async () => {
+                    if (!currentShift) return;
+                    const nxt = await getNextShift(currentShift.id);
+                    if (nxt) setCurrentShift(nxt);
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
             </div>
           </div>
         </DialogHeader>
@@ -160,7 +176,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       placeholder={t("openingCash", { defaultValue: "Opening cash" })}
                       value={openingCash}
                       onChange={(e) => setOpeningCash(e.target.value)}
-                      className="h-8 w-28"
+                      className="h-8 "
                       type="number"
                       min="0"
                     />
@@ -193,7 +209,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       placeholder={t("closingCash", { defaultValue: "Closing cash" })}
                       value={closingCash}
                       onChange={(e) => setClosingCash(e.target.value)}
-                      className="h-8 w-28"
+                      className="h-8 "
                       type="number"
                       min="0"
                     />
@@ -228,41 +244,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
 
         <div className="space-y-3">
           {/* Shift Navigator Card */}
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={!currentShift}
-                  onClick={async () => {
-                    if (!currentShift) return;
-                    const prev = await getPreviousShift(currentShift.id);
-                    if (prev) setCurrentShift(prev);
-                  }}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-center">
-                  <div className="text-2xl font-bold leading-none">{currentShift ? `#${currentShift.id}` : '--'}</div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  disabled={!currentShift}
-                  onClick={async () => {
-                    if (!currentShift) return;
-                    const nxt = await getNextShift(currentShift.id);
-                    if (nxt) setCurrentShift(nxt);
-                  }}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+     
 
           {/* Total Paid Summary */}
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
