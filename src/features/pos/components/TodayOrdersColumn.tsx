@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import MuiBadge from '@mui/material/Badge';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
-import { getOrders, getLatestShift } from "@/api/orderService";
+import { getLatestShift, getOrdersByShift } from "@/api/orderService";
 import { useDate } from "@/context/DateContext";
 import type { Order } from "@/types";
 
@@ -85,8 +85,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   const { data: orders = [], isLoading, refetch, isRefetching } = useQuery<Order[], Error>({
     queryKey: ["todayOrders", shiftId],
     queryFn: async () => {
-      const res = await getOrders(1, 100, { shiftId: shiftId ?? undefined });
-      return res.data;
+      return await getOrdersByShift(shiftId!);
     },
     enabled: shiftId !== null,
   });

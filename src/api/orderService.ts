@@ -458,6 +458,13 @@ export const getOrderStatistics = async (
   return data;
 };
 
+export const getOrdersByShift = async (
+  shiftId: number
+): Promise<Order[]> => {
+  const { data } = await apiClient.get<Order[]>(`/shifts/${shiftId}/orders`);
+  return data;
+};
+
 // --- Shifts API ---
 export const getCurrentShift = async () => {
   const { data } = await apiClient.get<{ shift: any }>(`/shifts/current`);
