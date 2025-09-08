@@ -20,9 +20,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
 
 interface PaymentCalculatorProps {
   isOpen: boolean;
@@ -91,14 +90,34 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Calculator className="h-5 w-5" />
-              {t("paymentCalculator", { defaultValue: "Payment Calculator" })}
-              {(isLoading || isRefetching) && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </DialogTitle>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <Calculator className="h-5 w-5" />
+                {t("paymentCalculator", { defaultValue: "Payment Calculator" })}
+                {(isLoading || isRefetching) && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="dateFrom"
+                  type="date"
+                  value={selectedDateFrom}
+                  max={selectedDateTo}
+                  onChange={(e) => setSelectedDateFrom(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <Input
+                  id="dateTo"
+                  type="date"
+                  value={selectedDateTo}
+                  min={selectedDateFrom}
+                  onChange={(e) => setSelectedDateTo(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -189,62 +208,6 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
         </Card>
 
         <div className="space-y-3">
-          {/* Date Range Selection */}
-          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <Label className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                  {t("selectDateRange", { defaultValue: "Select Date Range" })}
-                </Label>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="dateFrom" className="text-xs text-blue-600 dark:text-blue-400">
-                    {t("from", { defaultValue: "From" })}
-                  </Label>
-                  <Input
-                    id="dateFrom"
-                    type="date"
-                    value={selectedDateFrom}
-                    max={selectedDateTo}
-                    onChange={(e) => setSelectedDateFrom(e.target.value)}
-                    className="text-sm h-8"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="dateTo" className="text-xs text-blue-600 dark:text-blue-400">
-                    {t("to", { defaultValue: "To" })}
-                  </Label>
-                  <Input
-                    id="dateTo"
-                    type="date"
-                    value={selectedDateTo}
-                    min={selectedDateFrom}
-                    onChange={(e) => setSelectedDateTo(e.target.value)}
-                    className="text-sm h-8"
-                  />
-                </div>
-              </div>
-              <div className="mt-2 flex justify-between items-center">
-                <span className="text-xs text-blue-600 dark:text-blue-400">
-                  {t("dateRange", { defaultValue: "Date Range" })}: {selectedDateFrom} - {selectedDateTo}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const today = getTodayDate();
-                    setSelectedDateFrom(today);
-                    setSelectedDateTo(today);
-                  }}
-                  className="text-xs h-6 px-2"
-                >
-                  {t("today", { defaultValue: "Today" })}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Total Paid Summary */}
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 border-green-200 dark:border-green-800">
