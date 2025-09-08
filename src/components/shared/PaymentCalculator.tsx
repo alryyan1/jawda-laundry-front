@@ -4,9 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
-import { getOrderStatistics, getCurrentShift, openShift, closeShift } from "@/api/orderService";
+import { getOrderStatistics, getCurrentShift, openShift, closeShift, getPreviousShift, getNextShift, getLatestShift } from "@/api/orderService";
 import { PAYMENT_METHODS } from "@/lib/constants";
-import { getTodayDate } from "@/lib/dateUtils";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaymentCalculatorProps {
   isOpen: boolean;
@@ -40,34 +39,29 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   const { getSetting } = useSettings();
   const currencySymbol = getSetting('currency_symbol', '$');
 
-  // State for date inputs
-  const [selectedDateFrom, setSelectedDateFrom] = useState(dateFrom || getTodayDate());
-  const [selectedDateTo, setSelectedDateTo] = useState(dateTo || getTodayDate());
+  // Shift navigation state only
   const [isPaymentMethodsExpanded, setIsPaymentMethodsExpanded] = useState(false);
   const [currentShift, setCurrentShift] = useState<{ id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null>(null);
   const [openingCash, setOpeningCash] = useState<string>("");
   const [closingCash, setClosingCash] = useState<string>("");
   const [isShiftActionLoading, setIsShiftActionLoading] = useState(false);
 
-  // Use selected dates or provided dates or default to today
-  const effectiveDateFrom = selectedDateFrom;
-  const effectiveDateTo = selectedDateTo;
-
-  // Update selected dates when props change
-  useEffect(() => {
-    if (dateFrom) setSelectedDateFrom(dateFrom);
-    if (dateTo) setSelectedDateTo(dateTo);
-  }, [dateFrom, dateTo]);
-
   useEffect(() => {
     if (!isOpen) return;
-    getCurrentShift().then(setCurrentShift).catch(() => setCurrentShift(null));
+    // Prefer current open shift; if none, use latest
+    getCurrentShift()
+      .then(async (s) => {
+        if (s) return s;
+        return await getLatestShift();
+      })
+      .then(setCurrentShift)
+      .catch(() => setCurrentShift(null));
   }, [isOpen]);
 
   // Fetch order statistics
   const { data: todayStatistics, refetch, isLoading, isRefetching } = useQuery({
-    queryKey: ["orderStatistics", effectiveDateFrom, effectiveDateTo, currentShift?.id ?? null],
-    queryFn: () => getOrderStatistics(effectiveDateFrom, effectiveDateTo, currentShift?.id ?? undefined),
+    queryKey: ["orderStatistics", currentShift?.id ?? null],
+    queryFn: () => getOrderStatistics(undefined, undefined, currentShift?.id ?? undefined),
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     enabled: isOpen, // Only fetch when dialog is open
@@ -107,23 +101,38 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="dateFrom"
-                  type="date"
-                  value={selectedDateFrom}
-                  max={selectedDateTo}
-                  onChange={(e) => setSelectedDateFrom(e.target.value)}
-                  className="h-8 text-sm"
-                />
-                <Input
-                  id="dateTo"
-                  type="date"
-                  value={selectedDateTo}
-                  min={selectedDateFrom}
-                  onChange={(e) => setSelectedDateTo(e.target.value)}
-                  className="h-8 text-sm"
-                />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={!currentShift}
+                  onClick={async () => {
+                    if (!currentShift) return;
+                    const prev = await getPreviousShift(currentShift.id);
+                    if (prev) setCurrentShift(prev);
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={!currentShift}
+                  onClick={async () => {
+                    if (!currentShift) return;
+                    const nxt = await getNextShift(currentShift.id);
+                    if (nxt) setCurrentShift(nxt);
+                  }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                {currentShift && (
+                  <span className="text-xs text-muted-foreground">
+                    #{currentShift.id}
+                  </span>
+                )}
               </div>
             </div>
             <Button
