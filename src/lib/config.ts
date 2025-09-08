@@ -3,7 +3,7 @@
 // Configuration variables for the application
 export const CONFIG = {
   // Schema - HTTP protocol
-  SCHEMA: 'https',
+  SCHEMA: 'http',
   
   // Host - Dynamic based on current device IP
   // HOST: 'intaj-starstechnology.com',

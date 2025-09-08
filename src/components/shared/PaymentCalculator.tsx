@@ -200,7 +200,11 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       disabled={isShiftActionLoading}
                       className="h-8"
                     >
-                      {t("openShift", { defaultValue: "Open Shift" })}
+                      {isShiftActionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        t("openShift", { defaultValue: "Open Shift" })
+                      )}
                     </Button>
                   </>
                 ) : (currentShift && openShiftInfo && currentShift.id === openShiftInfo.id ? (
@@ -231,7 +235,11 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                       disabled={isShiftActionLoading}
                       className="h-8"
                     >
-                      {t("closeShift", { defaultValue: "Close Shift" })}
+                      {isShiftActionLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        t("closeShift", { defaultValue: "Close Shift" })
+                      )}
                     </Button>
                   </>
                 ) : (
