@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { materialColors } from "@/lib/colors";
 
-import { Calendar, Check } from "lucide-react";
+import { Calendar, Check, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 // --- MUI Import ---
 import MuiBadge from '@mui/material/Badge';
@@ -72,7 +73,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   const { t } = useTranslation(["common", "orders"]);
   const { selectedDate } = useDate();
 
-  const { data: orders = [], isLoading } = useQuery<Order[], Error>({
+  const { data: orders = [], isLoading, refetch, isRefetching } = useQuery<Order[], Error>({
     queryKey: ["todayOrders", selectedDate],
     queryFn: () => getTodayOrders(selectedDate),
   });
@@ -110,6 +111,18 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
   return (
     <MuiThemeProvider theme={muiTheme}>
       <div className="w-[120px] bg-background rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
+        {/* Refresh */}
+        <div className="p-1 border-b flex items-center justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="h-7 w-7 p-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
 
 
         {/* Orders List */}
