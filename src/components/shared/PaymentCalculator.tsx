@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
@@ -46,6 +46,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   const [openingCash, setOpeningCash] = useState<string>("");
   const [closingCash, setClosingCash] = useState<string>("");
   const [isShiftActionLoading, setIsShiftActionLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,6 +176,9 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                           const s = await getCurrentShift();
                           setOpenShiftInfo(s);
                           setCurrentShift(s);
+                          // Invalidate latest shift and today orders so TodayOrdersColumn updates
+                          queryClient.invalidateQueries({ queryKey: ["latest-shift"] });
+                          queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
                         } finally {
                           setIsShiftActionLoading(false);
                         }

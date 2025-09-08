@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -72,11 +72,15 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
 }) => {
   const { t } = useTranslation(["common", "orders"]);
   const { selectedDate } = useDate();
-  const [shiftId, setShiftId] = useState<number | null>(null);
 
-  useEffect(() => {
-    getLatestShift().then((s) => setShiftId(s?.id ?? null)).catch(() => setShiftId(null));
-  }, []);
+  // Keep latest shift in a react-query so others can invalidate
+  const { data: latestShift } = useQuery<{ id: number } | null, Error>({
+    queryKey: ["latest-shift"],
+    queryFn: getLatestShift,
+    refetchOnWindowFocus: false,
+  });
+
+  const shiftId = latestShift?.id ?? null;
 
   const { data: orders = [], isLoading, refetch, isRefetching } = useQuery<Order[], Error>({
     queryKey: ["todayOrders", shiftId],
