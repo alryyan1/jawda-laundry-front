@@ -148,6 +148,11 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
                 <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
                   {currentShift ? t("openSince", { defaultValue: "Open since" }) + ` ${new Date(currentShift.opened_at).toLocaleString()}` : t("noOpenShift", { defaultValue: "No open shift" })}
                 </p>
+                {currentShift && (
+                  <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                    {t("openingCash", { defaultValue: "Opening cash" })}: {formatCurrency(Number(currentShift.opening_cash || 0), currencySymbol, i18n.language)}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {!currentShift ? (
@@ -286,46 +291,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
             )}
           </Card>
 
-          {/* Orders Summary */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">
-                {t("ordersSummary", { defaultValue: "Orders Summary" })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("totalOrders", { defaultValue: "Total Orders" })}
-                </span>
-                <span className="text-sm font-semibold">
-                  {todayStatistics?.totalOrders || 0}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t("totalAmountPaid", { defaultValue: "Total Amount Paid" })}
-                </span>
-                <span className="text-sm font-semibold text-green-600 dark:text-green-500">
-                  {formatCurrency(totalPaid, currencySymbol, i18n.language)}
-                </span>
-              </div>
-              {todayStatistics && (
-                <div className="flex justify-between border-t pt-1.5">
-                  <span className="text-sm font-medium">
-                    {t("averagePerOrder", { defaultValue: "Average Per Order" })}
-                  </span>
-                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
-                    {formatCurrency(
-                      todayStatistics.averagePerOrder, 
-                      currencySymbol, 
-                      i18n.language
-                    )}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      
         </div>
       </DialogContent>
     </Dialog>
