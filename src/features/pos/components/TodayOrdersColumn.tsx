@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import MuiBadge from '@mui/material/Badge';
 import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 
-import { getTodayOrders } from "@/api/orderService";
+import { getOrders, getLatestShift } from "@/api/orderService";
 import { useDate } from "@/context/DateContext";
 import type { Order } from "@/types";
 
@@ -72,10 +72,19 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
 }) => {
   const { t } = useTranslation(["common", "orders"]);
   const { selectedDate } = useDate();
+  const [shiftId, setShiftId] = useState<number | null>(null);
+
+  useEffect(() => {
+    getLatestShift().then((s) => setShiftId(s?.id ?? null)).catch(() => setShiftId(null));
+  }, []);
 
   const { data: orders = [], isLoading, refetch, isRefetching } = useQuery<Order[], Error>({
-    queryKey: ["todayOrders", selectedDate],
-    queryFn: () => getTodayOrders(selectedDate),
+    queryKey: ["todayOrders", shiftId],
+    queryFn: async () => {
+      const res = await getOrders(1, 100, { shiftId: shiftId ?? undefined });
+      return res.data;
+    },
+    enabled: shiftId !== null,
   });
 
   if (isLoading) {

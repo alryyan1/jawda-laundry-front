@@ -71,6 +71,7 @@ export const getOrders = async (
         createdDate?: string; // YYYY-MM-DD
         category_sequence_search?: string;
         show_only_incomplete?: boolean;
+        shiftId?: number;
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -84,6 +85,7 @@ export const getOrders = async (
     if (filters?.createdDate) params.created_date = filters.createdDate;
     if (filters?.category_sequence_search) params.category_sequence_search = filters.category_sequence_search;
     if (filters?.show_only_incomplete) params.show_only_incomplete = filters.show_only_incomplete;
+    if (filters?.shiftId) params.shift_id = filters.shiftId;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;
