@@ -66,8 +66,8 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
 
   // Fetch order statistics
   const { data: todayStatistics, refetch, isLoading, isRefetching } = useQuery({
-    queryKey: ["orderStatistics", effectiveDateFrom, effectiveDateTo],
-    queryFn: () => getOrderStatistics(effectiveDateFrom, effectiveDateTo),
+    queryKey: ["orderStatistics", effectiveDateFrom, effectiveDateTo, currentShift?.id ?? null],
+    queryFn: () => getOrderStatistics(effectiveDateFrom, effectiveDateTo, currentShift?.id ?? undefined),
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     enabled: isOpen, // Only fetch when dialog is open

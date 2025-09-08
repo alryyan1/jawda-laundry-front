@@ -442,11 +442,13 @@ export const updateOrderItemPickedUpQuantity = async (
 
 export const getOrderStatistics = async (
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  shiftId?: number
 ): Promise<OrderStatistics> => {
   const params = new URLSearchParams();
   if (dateFrom) params.append('date_from', dateFrom);
   if (dateTo) params.append('date_to', dateTo);
+  if (shiftId) params.append('shift_id', String(shiftId));
 
   const { data } = await apiClient.get<OrderStatistics>(
     `/orders/statistics?${params.toString()}`
