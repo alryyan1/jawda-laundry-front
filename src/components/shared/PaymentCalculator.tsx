@@ -47,6 +47,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   const [closingCash, setClosingCash] = useState<string>("");
   const [isShiftActionLoading, setIsShiftActionLoading] = useState(false);
   const queryClient = useQueryClient();
+  const isAnyShiftOpen = Boolean(openShiftInfo && !openShiftInfo.closed_at);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -100,7 +101,7 @@ const PaymentCalculator: React.FC<PaymentCalculatorProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader className="pb-3">
+        <DialogHeader className={`pb-3 ${isAnyShiftOpen ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 rounded-md' : ''}`}>
           <div className="grid grid-cols-3 items-center">
             <div className="flex items-center gap-2">
               <DialogTitle className="flex items-center gap-2 text-lg">
