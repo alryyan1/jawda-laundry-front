@@ -121,7 +121,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
     <MuiThemeProvider theme={muiTheme}>
       <div className="w-[120px] bg-background rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
         {/* Refresh */}
-        <div className="p-1 border-b flex items-center justify-end">
+        <div className="p-1 border-b flex items-center justify-center">
           <Button
             variant="ghost"
             size="sm"

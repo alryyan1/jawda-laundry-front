@@ -12,6 +12,7 @@ import { useDate } from "@/context/DateContext";
 import { POSSearch } from "@/components/ui/pos-search";
 import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
 import { POSDatePicker } from "@/components/ui/pos-date-picker";
+import { getCurrentShift } from "@/api/orderService";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -260,6 +261,14 @@ const MainLayout: React.FC = () => {
     queryKey: ['settings'],
     queryFn: settingService.getSettings,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Current Shift for header indicator
+  const { data: currentShift } = useQuery({
+    queryKey: ['current-shift'],
+    queryFn: getCurrentShift,
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
   });
 
 
@@ -639,6 +648,11 @@ const MainLayout: React.FC = () => {
 
           {/* Right-aligned Header Items */}
           <div className="flex items-center gap-3">
+            {currentShift && (
+              <div className="px-2 py-1 rounded border text-xs text-muted-foreground">
+                Shift #{currentShift.id}
+              </div>
+            )}
             <RealtimeLamp />
             <LanguageSwitcher />
             <ModeToggle />
