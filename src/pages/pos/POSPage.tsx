@@ -106,6 +106,8 @@ const POSPage: React.FC = () => {
   const [isNarrow, setIsNarrow] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 800 : false);
   const [isCartDialogOpen, setIsCartDialogOpen] = useState(false);
   const [isCartItemsLoading, setIsCartItemsLoading] = useState(false);
+  const isAddingRef = React.useRef(false);
+  const isCreatingOrderRef = React.useRef(false);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -276,7 +278,93 @@ const POSPage: React.FC = () => {
     setSelectedProductType(null);
   };
 
-  const handleSelectProduct = (product: ProductType) => {
+  const handleAddItemToBackend = React.useCallback(async (product: ProductType, offering: ServiceOffering) => {
+    if (!selectedOrder) {
+      if (isCreatingOrderRef.current) return;
+      isCreatingOrderRef.current = true;
+      const newOrderData = {
+        customer_id: '',
+        items: [],
+        order_type: orderType,
+        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
+      };
+      try {
+        const response = await createOrder(newOrderData, allServiceOfferings);
+        const createdOrder = handleOrderResponse(response, undefined);
+        setSelectedOrder(createdOrder);
+        await handleAddItemToBackend(product, offering);
+        return;
+      } catch (error) {
+        console.error('Failed to create new order:', error);
+        toast.error(t("failedToCreateOrder", { ns: "orders" }));
+        return;
+      } finally {
+        isCreatingOrderRef.current = false;
+      }
+    }
+
+    // Temp skeleton item while backend adds
+    if (isAddingRef.current) return;
+    isAddingRef.current = true;
+    const tempItemId = uuidv4();
+    const tempItem: CartItem = {
+      id: tempItemId,
+      productType: product,
+      serviceOffering: offering,
+      quantity: 1,
+      price: offering.default_price || 0,
+      _isQuoting: false,
+      _isAdding: true,
+      _addedAt: Date.now(),
+    };
+    setCartItems(prev => [...prev, tempItem]);
+
+    try {
+      await addOrderItem(selectedOrder.id, {
+        service_offering_id: offering.id,
+        quantity: 1,
+        product_description_custom: null,
+        length_meters: null,
+        width_meters: null,
+        notes: null,
+      });
+
+      setIsCartItemsLoading(true);
+      const items = await getOrderItems(selectedOrder.id);
+      // alert('s')
+      console.log('items in pos page', items);
+      const mapped: CartItem[] = items.map((item: ApiOrderItem, index: number) => ({
+        id: String(item.id),
+        productType: {
+          id: item.serviceOffering?.product_type_id || 0,
+          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
+          name: item.serviceOffering?.productType?.name || 'Unknown Product',
+          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
+          is_active: item.serviceOffering?.productType?.is_active || true,
+        } as ProductType,
+        serviceOffering: item.serviceOffering || {} as ServiceOffering,
+        quantity: item.quantity,
+        price: item.calculated_price_per_unit_item,
+        notes: item.notes || undefined,
+        length_meters: item.length_meters || undefined,
+        width_meters: item.width_meters || undefined,
+        _isQuoting: false,
+        _quotedSubTotal: item.sub_total,
+        _isExistingOrderItem: true,
+        _orderItemId: item.id,
+        _addedAt: Date.now() - (items.length - index) * 1000,
+      }));
+      setCartItems(mapped);
+    } catch (error) {
+      console.error('Failed to add item to order:', error);
+      setCartItems(prev => prev.filter(item => item.id !== tempItemId));
+    } finally {
+      setIsCartItemsLoading(false);
+      isAddingRef.current = false;
+    }
+  }, [selectedOrder, orderType, selectedTableId, allServiceOfferings, t]);
+
+  const handleSelectProduct = React.useCallback((product: ProductType) => {
     // Prevent adding items to received orders
     if (selectedOrder?.received) {
       toast.error(t("orderReceivedCannotEdit", { ns: "orders", defaultValue: "This order is received and cannot be edited" }));
@@ -310,7 +398,7 @@ const POSPage: React.FC = () => {
       // For iPad view, switch to product view when category is selected
       setShowCategoriesOnIpad(false);
     }
-  };
+  }, [selectedOrder, selectedCustomerId, isNewOrderMode, isIpadView, serviceOfferingsToUse, t, handleAddItemToBackend]);
 
   // Remove handleSelectOffering function since it's no longer needed
   // const handleSelectOffering = (offering: ServiceOffering) => { ... };
@@ -588,84 +676,7 @@ const POSPage: React.FC = () => {
 
 
 
-  const handleAddItemToBackend = async (product: ProductType, offering: ServiceOffering) => {
-    if (!selectedOrder) {
-      const newOrderData = {
-        customer_id: '',
-        items: [],
-        order_type: orderType,
-        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
-      };
-      try {
-        const response = await createOrder(newOrderData, allServiceOfferings);
-        const createdOrder = handleOrderResponse(response, undefined);
-        setSelectedOrder(createdOrder);
-        await handleAddItemToBackend(product, offering);
-        return;
-      } catch (error) {
-        console.error('Failed to create new order:', error);
-        toast.error(t("failedToCreateOrder", { ns: "orders" }));
-        return;
-      }
-    }
-
-    // Temp skeleton item while backend adds
-    const tempItemId = uuidv4();
-    const tempItem: CartItem = {
-      id: tempItemId,
-      productType: product,
-      serviceOffering: offering,
-      quantity: 1,
-      price: offering.default_price || 0,
-      _isQuoting: false,
-      _isAdding: true,
-      _addedAt: Date.now(),
-    };
-    setCartItems(prev => [...prev, tempItem]);
-
-    try {
-      await addOrderItem(selectedOrder.id, {
-        service_offering_id: offering.id,
-        quantity: 1,
-        product_description_custom: null,
-        length_meters: null,
-        width_meters: null,
-        notes: null,
-      });
-
-      setIsCartItemsLoading(true);
-      const items = await getOrderItems(selectedOrder.id);
-      // alert('s')
-      console.log('items in pos page', items);
-      const mapped: CartItem[] = items.map((item: ApiOrderItem, index: number) => ({
-        id: String(item.id),
-        productType: {
-          id: item.serviceOffering?.product_type_id || 0,
-          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
-          name: item.serviceOffering?.productType?.name || 'Unknown Product',
-          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
-          is_active: item.serviceOffering?.productType?.is_active || true,
-        } as ProductType,
-        serviceOffering: item.serviceOffering || {} as ServiceOffering,
-        quantity: item.quantity,
-        price: item.calculated_price_per_unit_item,
-        notes: item.notes || undefined,
-        length_meters: item.length_meters || undefined,
-        width_meters: item.width_meters || undefined,
-        _isQuoting: false,
-        _quotedSubTotal: item.sub_total,
-        _isExistingOrderItem: true,
-        _orderItemId: item.id,
-        _addedAt: Date.now() - (items.length - index) * 1000,
-      }));
-      setCartItems(mapped);
-    } catch (error) {
-      console.error('Failed to add item to order:', error);
-      setCartItems(prev => prev.filter(item => item.id !== tempItemId));
-    } finally {
-      setIsCartItemsLoading(false);
-    }
-  };
+  // (removed duplicate handleAddItemToBackend definition)
   
   
   
@@ -935,10 +946,6 @@ const POSPage: React.FC = () => {
       const hasCustomer = selectedOrder?.customer || selectedCustomerId;
       if (!hasCustomer && !isNewOrderMode) return;
 
-      // Find first matching product by name or id
-      const product = serviceOfferingsToUse
-        .map(o => o.productType)
-        .filter(Boolean) as ProductType[];
       const productTypesById = new Map<number, ProductType>();
       serviceOfferingsToUse.forEach(o => {
         if (o.productType) productTypesById.set(o.productType.id, o.productType);
@@ -961,14 +968,16 @@ const POSPage: React.FC = () => {
       const offerings = serviceOfferingsToUse.filter(o => o.product_type_id === matchedProduct!.id);
       if (offerings.length === 0) return;
 
-      const chosenOffering = offerings.length === 1 ? offerings[0] : offerings[0];
-      // Add to backend
+      // Add to backend via existing selection flow
       handleSelectProduct(matchedProduct);
     };
 
     window.addEventListener('pos-search-enter', handleSearchEnter as EventListener);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems.length, isProcessing, selectedOrder, can, handleCheckout, handleReceiveOrder, selectedCustomerId, isNewOrderMode, serviceOfferingsToUse]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('pos-search-enter', handleSearchEnter as EventListener);
+    };
+  }, [cartItems.length, isProcessing, selectedOrder, can, handleCheckout, handleReceiveOrder, selectedCustomerId, isNewOrderMode, serviceOfferingsToUse, handleSelectProduct]);
 
   return (
     <div style={{

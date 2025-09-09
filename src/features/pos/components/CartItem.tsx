@@ -80,7 +80,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   const { getSetting } = useSettings();
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
   const [compositionsAnchorEl, setCompositionsAnchorEl] = useState<HTMLElement | null>(null);
-  const [showNotes, setShowNotes] = useState(false);
+  const [showNotes, setShowNotes] = useState(Boolean(item.notes && String(item.notes).trim() !== ""));
 
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'OMR');
@@ -195,6 +195,13 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       }, 1000); // 1 second debounce
     }
   };
+
+  // Auto-expand notes if item already has notes or when notes are added later
+  useEffect(() => {
+    if ((item.notes && String(item.notes).trim() !== "") && !showNotes) {
+      setShowNotes(true);
+    }
+  }, [item.notes]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

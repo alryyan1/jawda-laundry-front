@@ -198,7 +198,7 @@ const ExpensesListPage: React.FC = () => {
       </TableCell>
                   <TableCell className="text-center">{format(new Date(expense.expense_date), "dd/MM/yyyy")}</TableCell>
       <TableCell className="text-center font-semibold">
-        {formatCurrency(expense.amount, currency, i18n.language)}
+        {expense.amount}
       </TableCell>
       <TableCell className="text-muted-foreground text-xs">
         {expense.user?.name || "-"}

@@ -1,12 +1,19 @@
 // src/pages/auth/LoginPage.tsx
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
+import settingService from '@/services/settingService';
 import { LoginForm } from '@/features/auth/components/LoginForm';
-import { ChefHat, Utensils, Clock, Star } from 'lucide-react';
+import { ChefHat, MapPin } from 'lucide-react';
 import { FloatingElement, GlowElement } from '@/components/ui/animated-elements';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation(['auth', 'common']);
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingService.getSettings,
+    staleTime: 5 * 60 * 1000,
+  });
 
   return (
     <div className="mx-auto grid w-full max-w-sm gap-4 animate-fade-in">
@@ -24,8 +31,17 @@ const LoginPage: React.FC = () => {
             </GlowElement>
           </div>
         </FloatingElement>
-        
-  
+        {settings?.company_name && (
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            {settings.company_name}
+          </h2>
+        )}
+        {settings?.company_address && (
+          <p className="flex items-center justify-center gap-2 text-sm sm:text-base text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>{settings.company_address}</span>
+          </p>
+        )}
       </div>
 
    

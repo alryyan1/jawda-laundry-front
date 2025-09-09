@@ -7,6 +7,16 @@ import { useSearch } from "@/context/SearchContext";
 export const POSSearch: React.FC = () => {
   const { t } = useTranslation(["services"]);
   const { searchTerm, setSearchTerm, isSearchVisible } = useSearch();
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    const focusHandler = () => {
+      // Use a small timeout to ensure element is mounted
+      setTimeout(() => inputRef.current?.focus(), 0);
+    };
+    window.addEventListener('focus-pos-search', focusHandler);
+    return () => window.removeEventListener('focus-pos-search', focusHandler);
+  }, []);
 
   if (!isSearchVisible) {
     return null;
@@ -17,6 +27,7 @@ export const POSSearch: React.FC = () => {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
         type="search"
+        ref={inputRef}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={(e) => {

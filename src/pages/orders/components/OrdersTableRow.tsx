@@ -75,6 +75,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
          onClick={() => setIsDialogOpen(true)}
        >
         <TableCell className="font-mono text-sm font-bold text-center">{order.id}</TableCell>
+        <TableCell className="font-mono text-sm font-bold text-center">{order.daily_order_number ?? '-'}</TableCell>
         <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
                  <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
          <TableCell className="text-center">

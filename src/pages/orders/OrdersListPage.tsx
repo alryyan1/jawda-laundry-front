@@ -15,7 +15,7 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus } from "@/api/orderService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus, getCurrentShift, getLatestShift, getPreviousShift } from "@/api/orderService";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -25,7 +25,6 @@ import { useSettings } from "@/context/SettingsContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -78,6 +77,7 @@ const OrdersListPage: React.FC = () => {
     dateTo?: string;
     categorySequenceSearch?: string;
     showOnlyIncomplete?: boolean;
+    shiftId?: number;
   }>({
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: format(new Date(), "yyyy-MM-dd"),
@@ -94,6 +94,11 @@ const OrdersListPage: React.FC = () => {
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
 
+  // Shifts state for Autocomplete
+  type ShiftOption = { id: number | "all"; label: string };
+  const [shiftOptions, setShiftOptions] = useState<ShiftOption[]>([{ id: "all", label: t("allShifts", { defaultValue: "All Shifts" }) }]);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(false);
+
   // Define queryKey early so handlers can use it
   const queryKey = useMemo(
     () => [
@@ -109,6 +114,7 @@ const OrdersListPage: React.FC = () => {
       filters.dateTo,
       filters.categorySequenceSearch,
       filters.showOnlyIncomplete,
+      filters.shiftId,
     ],
     [
       currentPage,
@@ -122,6 +128,7 @@ const OrdersListPage: React.FC = () => {
       filters.dateTo,
       filters.categorySequenceSearch,
       filters.showOnlyIncomplete,
+      filters.shiftId,
     ]
   );
 
@@ -305,6 +312,7 @@ const OrdersListPage: React.FC = () => {
         dateTo: filters.dateTo,
         category_sequence_search: filters.categorySequenceSearch,
         show_only_incomplete: filters.showOnlyIncomplete,
+        shiftId: filters.shiftId,
       }),
     placeholderData: keepPreviousData,
   });
@@ -323,7 +331,67 @@ const OrdersListPage: React.FC = () => {
     filters.dateTo,
     filters.categorySequenceSearch,
     filters.showOnlyIncomplete,
+    filters.shiftId,
+    currentPage,
   ]);
+
+  // On mount, default to current open shift; if none, use latest shift
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const current = await getCurrentShift();
+        if (isMounted && current) {
+          setFilters(prev => ({ ...prev, shiftId: current.id, dateFrom: undefined, dateTo: undefined }));
+          // also load options chain from current
+          try {
+            setIsLoadingShifts(true);
+            const options: ShiftOption[] = [{ id: "all", label: t("allShifts", { defaultValue: "All Shifts" }) }];
+            let cursor: { id: number; opened_at: string } | null = current as { id: number; opened_at: string } | null;
+            const seen = new Set<number>();
+            // collect up to 10 previous shifts
+            for (let i = 0; i < 10 && cursor; i++) {
+              if (!seen.has(cursor.id)) {
+                options.push({ id: cursor.id, label: `Shift #${cursor.id} - ${format(new Date(cursor.opened_at), "yyyy-MM-dd")}` });
+                seen.add(cursor.id);
+              }
+              const prev = await getPreviousShift(cursor.id);
+              cursor = prev as { id: number; opened_at: string } | null;
+            }
+            if (isMounted) setShiftOptions(options);
+          } finally {
+            setIsLoadingShifts(false);
+          }
+          return;
+        }
+        const latest = await getLatestShift();
+        if (isMounted && latest) {
+          setFilters(prev => ({ ...prev, shiftId: latest.id, dateFrom: undefined, dateTo: undefined }));
+          // also load options chain from latest
+          try {
+            setIsLoadingShifts(true);
+            const options: ShiftOption[] = [{ id: "all", label: t("allShifts", { defaultValue: "All Shifts" }) }];
+            let cursor: { id: number; opened_at: string } | null = latest as { id: number; opened_at: string } | null;
+            const seen = new Set<number>();
+            for (let i = 0; i < 10 && cursor; i++) {
+              if (!seen.has(cursor.id)) {
+                options.push({ id: cursor.id, label: `Shift #${cursor.id} - ${format(new Date(cursor.opened_at), "yyyy-MM-dd")}` });
+                seen.add(cursor.id);
+              }
+              const prev = await getPreviousShift(cursor.id);
+              cursor = prev as { id: number; opened_at: string } | null;
+            }
+            if (isMounted) setShiftOptions(options);
+          } finally {
+            setIsLoadingShifts(false);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [t]);
 
   const orders = paginatedData?.data || [];
   const totalItems = paginatedData?.meta?.total || 0;
@@ -341,6 +409,13 @@ const OrdersListPage: React.FC = () => {
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
       >
+        {/* Shift summary */}
+        {filters.shiftId && (
+          <div className="flex items-baseline gap-3">
+            <span className="text-2xl sm:text-3xl font-bold">{`Shift #${filters.shiftId}`}</span>
+            <span className="text-xl sm:text-2xl font-semibold text-muted-foreground">{`· Orders: ${totalItems}`}</span>
+          </div>
+        )}
 
         
         {/* Export Buttons */}
@@ -380,34 +455,7 @@ const OrdersListPage: React.FC = () => {
           </Button>
         </div>
         
-        {/* Mobile Date Range Picker */}
-        {/* Mobile Date Range Picker */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full">
-          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs sm:text-sm whitespace-nowrap">From:</Label>
-              <input
-                type="date"
-                value={filters.dateFrom || ""}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
-                }
-                className="w-32 sm:w-36 text-xs sm:text-sm px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs sm:text-sm whitespace-nowrap">To:</Label>
-              <input
-                type="date"
-                value={filters.dateTo || ""}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-                }
-                className="w-32 sm:w-36 text-xs sm:text-sm px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              />
-            </div>
-          </div>
-        </div>
+        
       </PageHeader>
 
       
@@ -418,7 +466,7 @@ const OrdersListPage: React.FC = () => {
 
              {/* Desktop Filters */}
        <div className="hidden sm:block mb-4">
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-4">
           {/* <Input
             placeholder={t("searchOrdersPlaceholder")}
             value={filters.search || ""}
@@ -502,6 +550,32 @@ const OrdersListPage: React.FC = () => {
               setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
             }
           />
+          {/* Shift filter */}
+          <DarkThemeAutocomplete
+            options={shiftOptions}
+            getOptionLabel={(option: ShiftOption) => option.label}
+            isOptionEqualToValue={(option: ShiftOption, value: ShiftOption) => option.id === value.id}
+            value={shiftOptions.find(o => o.id === (filters.shiftId ?? "all"))}
+            loading={isLoadingShifts}
+            onChange={(_, newValue: ShiftOption | null) => {
+              const id = newValue?.id;
+              setFilters(prev => ({
+                ...prev,
+                shiftId: id === "all" || id === undefined ? undefined : Number(id),
+                // clear date range when a shift is chosen
+                dateFrom: id === "all" || id === undefined ? prev.dateFrom : undefined,
+                dateTo: id === "all" || id === undefined ? prev.dateTo : undefined,
+              }));
+            }}
+            renderInput={(params) => (
+              <div ref={params.InputProps.ref}>
+                <Input
+                  {...params.inputProps}
+                  placeholder={t("filterByShift", { defaultValue: "Filter by Shift" })}
+                />
+              </div>
+            )}
+          />
         </div>
       </div>
 
@@ -551,10 +625,11 @@ const OrdersListPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[60px] text-center font-bold text-lg">ID</TableHead>
+                <TableHead className="w-[60px] text-center font-bold text-lg">Daily Order Number</TableHead>
                 <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
-                                 <TableHead className="text-center">{t("orderItems", { defaultValue: "Order Items" })}</TableHead>
+                 <TableHead className="text-center">{t("orderItems", { defaultValue: "Order Items" })}</TableHead>
                  <TableHead className="text-center">
                    {t("actions", { defaultValue: "Actions" })}
                  </TableHead>
@@ -572,7 +647,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
                              {isLoading && orders.length === 0 ? (
                  <TableRow>
-                   <TableCell colSpan={9} className="h-32 text-center">
+                   <TableCell colSpan={10} className="h-32 text-center">
                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                    </TableCell>
                  </TableRow>
@@ -601,7 +676,7 @@ const OrdersListPage: React.FC = () => {
                 ))
                              ) : (
                  <TableRow>
-                   <TableCell colSpan={9} className="h-32 text-center">
+                   <TableCell colSpan={10} className="h-32 text-center">
                      {t("noResults")}
                    </TableCell>
                  </TableRow>

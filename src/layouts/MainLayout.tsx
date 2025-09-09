@@ -14,6 +14,7 @@ import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
 import { POSDatePicker } from "@/components/ui/pos-date-picker";
 import { getCurrentShift } from "@/api/orderService";
 import { useCreateEmptyOrder } from "@/hooks/useCreateEmptyOrder";
+import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -55,6 +56,7 @@ import {
     ChartBar,
     Calculator,
     Keyboard,
+    Printer,
     PanelLeftClose,
     PanelLeftOpen,
     TrendingUp,
@@ -255,6 +257,8 @@ const MainLayout: React.FC = () => {
         event.preventDefault();
         if (!isCreating) {
           createNewOrder();
+          // Focus POS search after creating new order
+          window.dispatchEvent(new Event('focus-pos-search'));
         }
       }
     };
@@ -293,10 +297,51 @@ const MainLayout: React.FC = () => {
     staleTime: 30 * 1000,
   });
 
-
       const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>({});
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+    const [isPriceListOpen, setIsPriceListOpen] = useState(false);
+
+  // Load offerings for price list when dialog opens
+  const { data: offeringsForPrint = [], isLoading: isLoadingOfferings } = useQuery({
+    queryKey: ['all-offerings-for-price-list'],
+    queryFn: () => getAllServiceOfferingsForSelect(),
+    enabled: isPriceListOpen,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // (Query uses enabled:isPriceListOpen to fetch automatically)
+
+  type OfferingForPrint = {
+    id: number | string;
+    productType?: { id?: number; name?: string; display_name?: string };
+    product_type_id?: number;
+    display_name?: string;
+    name_override?: string;
+    default_price?: number | null;
+  };
+  const handlePrintPriceList = () => {
+    const rows = (offeringsForPrint as OfferingForPrint[]).map((o) => {
+      const product = o.productType?.name || o.productType?.display_name || o.display_name || '—';
+      const code = o.productType?.id ?? o.product_type_id ?? '—';
+      const service = o.display_name || o.name_override || '—';
+      const price = o.default_price ?? '—';
+      return `<tr><td>${code}</td><td>${product}</td><td>${service}</td><td style="text-align:right">${price}</td></tr>`;
+    }).join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Price List</title>
+      <style>body{font-family:system-ui,Segoe UI,Arial,sans-serif;padding:16px}h1{font-size:18px;margin:0 0 12px}
+      table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:6px}
+      th{text-align:left;background:#f5f5f5}</style></head><body>
+      <h1>${(settings?.app_name || 'POS')} — ${t('priceList', { ns:'common', defaultValue:'Price List' })}</h1>
+      <table><thead><tr><th>${t('code',{ns:'common',defaultValue:'Code'})}</th><th>${t('product',{ns:'common',defaultValue:'Product'})}</th><th>${t('service',{ns:'common',defaultValue:'Service'})}</th><th>${t('price',{ns:'common',defaultValue:'Price'})}</th></tr></thead>
+      <tbody>${rows}</tbody></table></body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
 
   // Fetch user navigation
   const { data: navigationItems = [], isLoading: isNavigationLoading, error: navigationError } = useQuery({
@@ -679,6 +724,14 @@ const MainLayout: React.FC = () => {
             <Button
               variant="outline"
               size="icon"
+              title={t('printPriceList', { ns: 'common', defaultValue: 'Print price list' })}
+              onClick={() => setIsPriceListOpen(true)}
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               title={t("keyboardShortcuts", { ns: "common", defaultValue: "Keyboard Shortcuts" })}
               onClick={() => setIsShortcutsOpen(true)}
             >
@@ -726,6 +779,44 @@ const MainLayout: React.FC = () => {
                 </ul>
               </div>
               <div className="text-xs text-muted-foreground">Shortcuts are ignored while typing in inputs/textareas.</div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Price List Dialog */}
+        <Dialog open={isPriceListOpen} onOpenChange={setIsPriceListOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t('priceList', { ns:'common', defaultValue:'Price List' })}</DialogTitle>
+              <DialogDescription>{t('priceListDesc', { ns:'common', defaultValue:'Product types, services, and default prices.' })}</DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-sm text-muted-foreground">{isLoadingOfferings ? t('loading') : `${(offeringsForPrint as OfferingForPrint[]).length} items`}</div>
+              <Button size="sm" onClick={handlePrintPriceList} disabled={isLoadingOfferings || (offeringsForPrint as OfferingForPrint[]).length===0}>
+                <Printer className="h-4 w-4 mr-2" /> {t('print', { ns:'common', defaultValue:'Print' })}
+              </Button>
+            </div>
+            <div className="max-h-[60vh] overflow-auto border rounded">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="text-left p-2 border-b">{t('code',{ns:'common',defaultValue:'Code'})}</th>
+                    <th className="text-left p-2 border-b">{t('product',{ns:'common',defaultValue:'Product'})}</th>
+                    <th className="text-left p-2 border-b">{t('service',{ns:'common',defaultValue:'Service'})}</th>
+                    <th className="text-right p-2 border-b">{t('price',{ns:'common',defaultValue:'Price'})}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(offeringsForPrint as OfferingForPrint[]).map((o) => (
+                    <tr key={o.id} className="border-b last:border-0">
+                      <td className="p-2">{o.productType?.id ?? o.product_type_id}</td>
+                      <td className="p-2">{o.productType?.name || o.productType?.display_name || o.display_name}</td>
+                      <td className="p-2">{o.display_name || o.name_override}</td>
+                      <td className="p-2 text-right">{o.default_price ?? '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </DialogContent>
         </Dialog>

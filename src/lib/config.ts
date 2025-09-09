@@ -16,12 +16,12 @@ export const CONFIG = {
   
   // Derived values
   get BASE_URL() {
-    return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}/public/api`;
+    return `${this.SCHEMA}://${this.HOST}/laundry/${this.PROJECT_FOLDER}/public/api`;
     // return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}/public/api`;
   },
   
   get FULL_URL() {
-    return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}`;
+    return `${this.SCHEMA}://${this.HOST}/laundry/${this.PROJECT_FOLDER}`;
     // return `${this.SCHEMA}://${this.HOST}/${this.PROJECT_FOLDER}`;
   }
 } as const;

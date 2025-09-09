@@ -251,9 +251,9 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
               <Input
                 id="expense-amount"
                 type="number"
-                step="0.01"
+                step="0.001"
                 {...register("amount")}
-                placeholder="0.00"
+                placeholder="0.000"
               />
               {errors.amount && (
                 <p className="text-sm text-destructive">

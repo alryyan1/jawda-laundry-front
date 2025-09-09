@@ -592,6 +592,7 @@ export const downloadOrdersListExcel = async (filters: {
     dateFrom?: string;
     dateTo?: string;
     category_sequence_search?: string;
+    shiftId?: number;
 }): Promise<void> => {
     try {
         const params = new URLSearchParams();
@@ -603,6 +604,7 @@ export const downloadOrdersListExcel = async (filters: {
         if (filters.dateFrom) params.append('date_from', filters.dateFrom);
         if (filters.dateTo) params.append('date_to', filters.dateTo);
         if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
+        if (filters.shiftId) params.append('shift_id', String(filters.shiftId));
         
         const response = await apiClient.get(`/reports/orders/export-csv?${params.toString()}`, {
             responseType: 'blob',
@@ -635,6 +637,7 @@ export const downloadOrdersListPdf = async (filters: {
     dateFrom?: string;
     dateTo?: string;
     category_sequence_search?: string;
+    shiftId?: number;
 }): Promise<void> => {
     try {
         const params = new URLSearchParams();
@@ -646,6 +649,7 @@ export const downloadOrdersListPdf = async (filters: {
         if (filters.dateFrom) params.append('date_from', filters.dateFrom);
         if (filters.dateTo) params.append('date_to', filters.dateTo);
         if (filters.category_sequence_search) params.append('category_sequence_search', filters.category_sequence_search);
+        if (filters.shiftId) params.append('shift_id', String(filters.shiftId));
         
         // Open PDF in new tab
         const url = `${apiClient.defaults.baseURL}/reports/orders/list-pdf?${params.toString()}`;
