@@ -14,6 +14,8 @@
   "allStatuses": "All Statuses",
   "items": "Items",
   "editOrder": "Edit Order",
+  "viewCart": "View Cart",
+
   "cancelOrder": "Cancel Order",
   "cannotCancelPaidOrder": "Cannot cancel a fully paid order",
   "searchOrdersPlaceholder": "Search Order #, Customer...",

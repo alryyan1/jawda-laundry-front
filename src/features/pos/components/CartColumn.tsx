@@ -142,7 +142,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
         </div>
         )}
 
-        <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
+        <ScrollArea className="flex-grow h-[calc(100vh-350px)] ">
         <div className={cn(
           "p-1 space-y-4",
           isReceived && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"

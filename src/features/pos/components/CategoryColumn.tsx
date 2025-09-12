@@ -85,15 +85,15 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
 
   return (
     <TooltipProvider>
-      <ScrollArea className="h-[calc(100vh-100px)] md:h-[calc(100vh-120px)] w-full max-w-[100px]">
-        <div className="grid grid-cols-1 gap-2 p-1">
+      <ScrollArea className="h-[calc(100vh-100px)] md:h-[calc(100vh-120px)] w-full ">
+        <div className="grid grid-cols-1 gap-2 p-1 justify-between">
         {categoriesToShow.map((category) => (
           <Tooltip key={category.id}>
             <TooltipTrigger asChild>
               <button
                 onClick={() => onSelectCategory(category.id.toString())}
                 className={cn(
-                  "relative overflow-hidden flex flex-col h-[80px] rounded-lg transition-all cursor-pointer",
+                  "relative overflow-hidden flex flex-col h-[100px] rounded-lg transition-all cursor-pointer",
                   "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5 dark:shadow-black/30",
                   selectedCategoryId === category.id.toString()
                     ? "from-sky-400 to-sky-600 text-white ring-2 ring-sky-400/30"

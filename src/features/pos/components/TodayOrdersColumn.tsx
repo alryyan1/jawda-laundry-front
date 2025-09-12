@@ -94,8 +94,8 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
     return (
       <div className="w-[120px] bg-background rounded-lg shadow-sm overflow-hidden flex flex-col h-full">
         {/* Skeleton loading for orders */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="p-1 space-y-1">
+        <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+          <div className="p-3 space-y-1">
             <div className="flex flex-col items-center space-y-1">
               {[...Array(8)].map((_, index) => (
                 <React.Fragment key={index}>
@@ -138,8 +138,8 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
 
 
         {/* Orders List */}
-        <ScrollArea className="flex-1 min-h-0 p-3" >
-          <div className="p-1 space-y-1">
+        <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+          <div className="p-3 space-y-1">
             {orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
@@ -148,7 +148,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-1 p-2">
+              <div className="flex flex-col items-center h-[calc(100vh-200px)] overflow-y-auto space-y-1 p-2">
                 {orders.map((order, index) => (
                   <React.Fragment key={order.id}>
                     <MuiBadge

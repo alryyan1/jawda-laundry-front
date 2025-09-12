@@ -160,7 +160,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                     <button
                       onClick={() => onSelectProduct(product)}
                       className={cn(
-                        "w-full flex flex-col items-center justify-center p-1 rounded-lg transition-all text-center cursor-pointer",
+                        "w-full h-[160px] flex flex-col items-center justify-between p-2 rounded-lg transition-all text-center cursor-pointer",
                         "bg-card hover:bg-card/90",
                         "shadow-sm hover:shadow-md",
                         "transform hover:-translate-y-0.5",
@@ -168,7 +168,6 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                         isProductInCart(product.id) && "bg-sky-500/10 border-sky-500"
                         
                       )}
-                      style={{ minHeight: "130px" }}
                     >
                       
                       {/* --- MUI Badge Implementation --- */}
@@ -189,12 +188,12 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                           )}
-                        <div className="   mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
+                        <div className="w-full h-[100px] mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
                           {product.image_url ? (
                             <img 
                               src={getImageUrl(product.image_url)} 
                               alt={product.name} 
-                              className="h-full object-cover"
+                              className="w-full h-full object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -211,7 +210,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                           </div>
                         </div>
                       </Badge>
-                      <span className=" font-medium line-clamp-2 px-1 text-card-foreground">
+                      <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground text-center">
                         {product.name}
                       </span>
 

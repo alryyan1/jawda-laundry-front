@@ -72,6 +72,8 @@ const POSPage: React.FC = () => {
       setCartItems([]);
       // Set new order mode
       setIsNewOrderMode(true);
+      // Auto-select "All Categories" to show all products by default
+      setSelectedCategoryId("");
       clearNewlyCreatedOrder();
     }
   }, [newlyCreatedOrder, clearNewlyCreatedOrder]);
@@ -103,6 +105,17 @@ const POSPage: React.FC = () => {
   const [isNarrow, setIsNarrow] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 800 : false);
   const [isCartDialogOpen, setIsCartDialogOpen] = useState(false);
   const [isCartItemsLoading, setIsCartItemsLoading] = useState(false);
+  console.log("isNarrow", isNarrow)
+  // Handle window resize to update isNarrow state
+  useEffect(() => {
+    const handleResize = () => {
+      console.log("window.innerWidth", window.innerWidth)
+      setIsNarrow(window.innerWidth < 800);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -201,6 +214,8 @@ const POSPage: React.FC = () => {
     // Enter new order mode if not already in it
     if (!isNewOrderMode) {
       setIsNewOrderMode(true);
+      // Auto-select "All Categories" to show all products by default
+      setSelectedCategoryId("");
     }
   }, [isNewOrderMode]);
 
@@ -222,6 +237,8 @@ const POSPage: React.FC = () => {
     // Enter new-order mode on first selection if there's no existing order
     if (!selectedOrder && !isNewOrderMode) {
       setIsNewOrderMode(true);
+      // Auto-select "All Categories" to show all products by default
+      setSelectedCategoryId("");
     }
 
     setSelectedProductType(product);
@@ -847,7 +864,7 @@ const POSPage: React.FC = () => {
   return (
     <div style={{
       userSelect: 'none',
-    }} className="flex flex-col ">
+    }} className="flex flex-col h-screen overflow-hidden">
                <POSHeader
           selectedCustomerId={selectedCustomerId}
           onCustomerSelected={handleCustomerSelected}
@@ -882,8 +899,8 @@ const POSPage: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1  mt-1 overflow-hidden">
-        <div className="flex gap-2 h-full">
+      <main className="flex-1 mt-1 overflow-hidden min-h-0">
+        <div className="flex gap-2">
           {/* Show product columns when a customer is selected OR in new order mode */}
           {(selectedCustomerId || selectedOrder?.customer || isNewOrderMode) ? (
             <>
@@ -891,7 +908,7 @@ const POSPage: React.FC = () => {
               {/* Left Section: Categories - Hide when order is received */}
               {!selectedOrder?.received && (
                 <div className="w-[160px] flex-shrink-0">
-                  <div className="p-1 h-full">
+                  <div className="p-1">
                 <CategoryColumn
                   onSelectCategory={handleSelectCategory}
                   selectedCategoryId={selectedCategoryId}
@@ -902,11 +919,11 @@ const POSPage: React.FC = () => {
               )}
 
           {/* Middle Section: Products and Services */}
-          <div className="flex-1 flex gap-2 min-h-0 mx-2 relative ">
+          <div className="flex-1 flex gap-2 mx-2 relative ">
                                {/* Products */}
                    <div className="flex-1 flex flex-col w-full">
-                     <div className="flex-1 min-h-0 p-1">
-                       <div className="flex-1 min-h-0">
+                     <div className="flex-1 p-1">
+                       <div className="flex-1">
                          {selectedOrder?.received ? (
                            // Show ActionsComponent when order is received
                            <ActionsComponent
@@ -943,7 +960,7 @@ const POSPage: React.FC = () => {
                          {/* Right Section: Cart - Only show when wide enough and there are items */}
                          {!isNarrow && cartItems.length > 0 && (
                            <div className="w-[400px] flex-shrink-0">
-                             <div className="p-1 h-full">
+                             <div className="p-1">
                            <CartColumn
                              items={cartItems}
                              onRemoveItem={handleRemoveItem}
