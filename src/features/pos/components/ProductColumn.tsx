@@ -71,15 +71,15 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
       if (!containerRef.current) return;
       
       const containerWidth = containerRef.current.offsetWidth;
-      const minItemWidth = 120; // Minimum width for each product item
+      const minItemWidth = 100; // Reduced minimum width for each product item
       const gap = 8; // Gap between items (gap-2 = 8px)
       
-      // Calculate how many columns can fit
-      const availableWidth = containerWidth - gap; // Account for gap
+      // Calculate how many columns can fit with padding
+      const availableWidth = containerWidth - (gap * 2); // Account for gaps and padding
       const columns = Math.max(1, Math.floor(availableWidth / (minItemWidth + gap)));
       
-      // Cap at 6 columns maximum for very wide screens
-      const maxColumns = Math.min(columns, 6);
+      // Cap at 4 columns maximum to prevent horizontal overflow
+      const maxColumns = Math.min(columns, 4);
       setGridColumns(maxColumns);
     };
 
@@ -139,7 +139,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 
   return (
     <MuiThemeProvider theme={muiTheme}>
-      <div className="flex flex-col h-full " ref={containerRef}>
+      <div className="flex flex-col h-full w-full max-w-[50vw] overflow-hidden" ref={containerRef}>
         <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
           <div className="p-0">
             {filteredProducts.length === 0 ? (
@@ -147,7 +147,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                 {/* ... empty state message ... */}
               </div>
             ) : (
-              <div className="grid gap-2" 
+              <div className="grid gap-2 w-full" 
                    style={{ 
                      gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
                      maxWidth: "100%"
@@ -189,12 +189,12 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                           )}
-                        <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
+                        <div className="   mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
                           {product.image_url ? (
                             <img 
                               src={getImageUrl(product.image_url)} 
                               alt={product.name} 
-                              className="w-full h-full object-cover"
+                              className="h-full object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -211,7 +211,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                           </div>
                         </div>
                       </Badge>
-                      <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
+                      <span className=" font-medium line-clamp-2 px-1 text-card-foreground">
                         {product.name}
                       </span>
 

@@ -204,8 +204,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
               </div>
             )}
 
-            {/* Show CustomerSelection when there's a selected order OR when we're in new order mode */}
-            {(selectedOrder || isNewOrderMode) && (
+            {/* Customer Selection - Hidden */}
+            {/* {(selectedOrder || isNewOrderMode) && (
               <CustomerSelection
                 selectedCustomerId={selectedCustomerId}
                 onCustomerSelected={onCustomerSelected}
@@ -215,10 +215,10 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                 onOrderUpdate={onOrderUpdate}
                 preventCustomerUpdates={isNewOrderMode} // Prevent customer updates when in new order mode
               />
-            )}
+            )} */}
 
-            {/* Order Type Selection */}
-            {selectedOrder && (
+            {/* Order Type Selection - Hidden */}
+            {/* {selectedOrder && (
               <Select
                 value={selectedOrder ? selectedOrder.order_type : orderType}
                 onValueChange={(
@@ -247,7 +247,7 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                   </SelectItem>
                 </SelectContent>
               </Select>
-            )}
+            )} */}
 
             {/* Table Selection
           {selectedOrder && (
@@ -291,14 +291,9 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           <Button
               size="sm"
               onClick={onCalculatorClick}
-              style={{
-                backgroundColor: getSecondaryColor(),
-                borderColor: getSecondaryColor(700),
-                color: "white",
-              }}
-              className="hover:opacity-90 transition-opacity h-7 px-2"
+             
             >
-              <Calculator className="h-3 w-3 mr-1" />
+              <Calculator className=" mr-1" />
               <span className="hidden sm:inline">
                 {t("calculator", { ns: "common", defaultValue: "Calculator" })}
               </span>

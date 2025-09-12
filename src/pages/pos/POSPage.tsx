@@ -97,8 +97,6 @@ const POSPage: React.FC = () => {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isServiceOfferingDialogOpen, setIsServiceOfferingDialogOpen] = useState(false);
   const [selectedProductForDialog, setSelectedProductForDialog] = useState<ProductType | null>(null);
-  const [isIpadView, setIsIpadView] = useState(false);
-  const [showCategoriesOnIpad, setShowCategoriesOnIpad] = useState(true);
   const [isNewOrderMode, setIsNewOrderMode] = useState(false);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
@@ -241,11 +239,8 @@ const POSPage: React.FC = () => {
       // Show dialog for multiple service offerings
       setSelectedProductForDialog(product);
       setIsServiceOfferingDialogOpen(true);
-    } else if (isIpadView && (hasCustomer || isNewOrderMode)) {
-      // For iPad view, switch to product view when category is selected
-      setShowCategoriesOnIpad(false);
     }
-  }, [selectedOrder, selectedCustomerId, isNewOrderMode, isIpadView, serviceOfferingsToUse, t, handleAddItemToBackend]);
+  }, [selectedOrder, selectedCustomerId, isNewOrderMode, serviceOfferingsToUse, t, handleAddItemToBackend]);
 
   // Remove handleSelectOffering function since it's no longer needed
   // const handleSelectOffering = (offering: ServiceOffering) => { ... };
@@ -459,11 +454,6 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleBackToCategories = () => {
-    setShowCategoriesOnIpad(true);
-    setSelectedProductType(null);
-    // setSelectedOfferingId(null); // Removed this line
-  };
 
   const handleServiceOfferingSelect = (offering: ServiceOffering) => {
     // Prevent adding items to received orders
@@ -769,20 +759,6 @@ const POSPage: React.FC = () => {
 
   // Removed quoting logic; prices use service offering defaults.
 
-  // Effect to detect iPad screen size
-  useEffect(() => {
-    const checkIpadView = () => {
-      const width = window.innerWidth;
-      // iPad screens are typically 768px to 1024px wide
-      const isIpad = width >= 768 && width <= 1024;
-      setIsIpadView(isIpad);
-      setIsNarrow(width < 800);
-    };
-
-    checkIpadView();
-    window.addEventListener('resize', checkIpadView);
-    return () => window.removeEventListener('resize', checkIpadView);
-  }, []);
 
   // Global keyboard event listener for Enter key
   useEffect(() => {
@@ -871,7 +847,7 @@ const POSPage: React.FC = () => {
   return (
     <div style={{
       userSelect: 'none',
-    }} className="flex flex-col h-[calc(100vh-64px)]  ">
+    }} className="flex flex-col ">
                <POSHeader
           selectedCustomerId={selectedCustomerId}
           onCustomerSelected={handleCustomerSelected}
@@ -890,17 +866,6 @@ const POSPage: React.FC = () => {
       {/* Narrow screens: open Cart in a dialog */}
       {isNarrow && (
         <div className="px-2 pt-1 flex items-center gap-2">
-          {isIpadView && !showCategoriesOnIpad && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleBackToCategories}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("backToCategories", { ns: "common", defaultValue: "Back to Categories" })}
-            </Button>
-          )}
           <Button
             size="sm"
             variant="outline"
@@ -922,182 +887,81 @@ const POSPage: React.FC = () => {
           {/* Show product columns when a customer is selected OR in new order mode */}
           {(selectedCustomerId || selectedOrder?.customer || isNewOrderMode) ? (
             <>
-              {/* iPad Layout */}
-              {isIpadView ? (
-                <>
-                  {/* Categories View */}
-                  {showCategoriesOnIpad && (
-                    <div   className="flex-1">
-                      <div className=" h-full">
-                        <CategoryColumn
-                          onSelectCategory={(categoryId) => {
-                            setSelectedCategoryId(categoryId);
-                            setShowCategoriesOnIpad(false);
-                          }}
-                          selectedCategoryId={selectedCategoryId}
-                          selectedCustomerId={selectedCustomerId}
-                          enabled={!isNewOrderMode} // Don't fetch categories when creating new order
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Products and Cart View */}
-                  {!showCategoriesOnIpad && (
-                    <div className="relative flex-1 flex gap-2">
-                    <>
-                      {/* Back Button overlay removed; handled in narrow controls row */}
-                       
- 
- 
-                                              {/* Products */}
-                       <div className="flex-1 flex flex-col p-1">
-                           {selectedOrder?.received ? (
-                             // Show ActionsComponent when order is received
-                             <ActionsComponent
-                               order={selectedOrder}
-                               onPaymentClick={() => setIsPaymentModalOpen(true)}
-                               onInvoiceClick={handleSendInvoice}
-                               onPdfClick={() => setIsPdfDialogOpen(true)}
-                               isProcessing={isProcessing}
-                               isSendingInvoice={isSendingInvoice}
-                               onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
-                             />
-                           ) : (
-                             // Show ProductColumn when order is not received
-                             <>
-                               {settings?.pos_show_products_as_list ? (
-                                 <ProductListColumn
-                                   categoryId={selectedCategoryId}
-                                   onSelectProduct={handleSelectProduct}
-                                   activeProductId={selectedProductType?.id.toString()}
-                                   cartItems={cartItems}
-                                 />
-                               ) : (
-                                 <ProductColumn
-                                   categoryId={selectedCategoryId}
-                                   onSelectProduct={handleSelectProduct}
-                                   activeProductId={selectedProductType?.id.toString()}
-                                   cartItems={cartItems}
-                                 />
-                               )}
-                             </>
-                           )}
-                       </div>
-
-                      {/* Cart - Only show when wide enough and there are items */}
-                      {!isNarrow && cartItems.length > 0 && (
-                        <div className="flex-1">
-                          <div className="p-1 h-full">
-                          <CartColumn
-                            items={cartItems}
-                            onRemoveItem={handleRemoveItem}
-                            onUpdateQuantity={handleUpdateQuantity}
-                            onUpdateNotes={handleUpdateNotes}
-                            onUpdateCompositions={handleUpdateCompositions}
-                            onSaveNotesToBackend={handleSaveNotesToBackend}
-                            onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
-                            onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
-                            isProcessing={isProcessing}
-                            mode={selectedOrder ? 'order_edit' : 'cart'}
-                            isReadOnly={selectedOrder?.received}
-                            isReceived={selectedOrder?.received === true}
-                            paymentStatus={selectedOrder?.payment_status}
-                            orderId={selectedOrder?.id}
-                            isLoadingItems={isCartItemsLoading}
-                          />
-                          </div>
-                        </div>
-                      )}
-                    </>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Desktop Layout */}
-                  {/* Left Section: Categories */}
-                  <div className="w-[160px] flex-shrink-0 ">
-                    <div className="p-1 h-full">
-                  <CategoryColumn
-                    onSelectCategory={handleSelectCategory}
-                    selectedCategoryId={selectedCategoryId}
-                    enabled={!isNewOrderMode} // Don't fetch categories when creating new order
-                  />
-                    </div>
+              {/* Desktop Layout */}
+              {/* Left Section: Categories - Hide when order is received */}
+              {!selectedOrder?.received && (
+                <div className="w-[160px] flex-shrink-0">
+                  <div className="p-1 h-full">
+                <CategoryColumn
+                  onSelectCategory={handleSelectCategory}
+                  selectedCategoryId={selectedCategoryId}
+                  enabled={!isNewOrderMode} // Don't fetch categories when creating new order
+                />
                   </div>
+                </div>
+              )}
 
-              {/* Middle Section: Products and Services */}
-              <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
-                                 {/* Products */}
-                     <div className="flex-1 flex flex-col ">
-                       <div className="flex-1 min-h-0 p-1">
-                         <div className="flex-1 min-h-0">
-                           {selectedOrder?.received ? (
-                             // Show ActionsComponent when order is received
-                             <ActionsComponent
-                               order={selectedOrder}
-                               onPaymentClick={() => setIsPaymentModalOpen(true)}
-                               onInvoiceClick={handleSendInvoice}
-                               onPdfClick={() => setIsPdfDialogOpen(true)}
-                               isProcessing={isProcessing}
-                               isSendingInvoice={isSendingInvoice}
-                               onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
-                             />
-                           ) : (
-                             // Show ProductColumn when order is not completed
-                             <>
-                               {settings?.pos_show_products_as_list ? (
-                                 <ProductListColumn
-                                   categoryId={selectedCategoryId}
-                                   onSelectProduct={handleSelectProduct}
-                                   activeProductId={selectedProductType?.id.toString()}
-                                   selectedCustomerId={selectedCustomerId}
-                                   cartItems={cartItems}
-                                 />
-                               ) : (
-                                 <ProductColumn
-                                   categoryId={selectedCategoryId}
-                                   onSelectProduct={handleSelectProduct}
-                                   activeProductId={selectedProductType?.id.toString()}
-                                   cartItems={cartItems}
-                                 />
-                               )}
-                             </>
-                           )}
-                         </div>
+          {/* Middle Section: Products and Services */}
+          <div className="flex-1 flex gap-2 min-h-0 mx-2 relative ">
+                               {/* Products */}
+                   <div className="flex-1 flex flex-col w-full">
+                     <div className="flex-1 min-h-0 p-1">
+                       <div className="flex-1 min-h-0">
+                         {selectedOrder?.received ? (
+                           // Show ActionsComponent when order is received
+                           <ActionsComponent
+                             order={selectedOrder}
+                             onPaymentClick={() => setIsPaymentModalOpen(true)}
+                             onInvoiceClick={handleSendInvoice}
+                             onPdfClick={() => setIsPdfDialogOpen(true)}
+                             isProcessing={isProcessing}
+                             isSendingInvoice={isSendingInvoice}
+                             onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
+                           />
+                         ) : (
+                           // Show ProductColumn when order is not completed
+                           
+                         
+                               <ProductColumn
+                                 categoryId={selectedCategoryId}
+                                 onSelectProduct={handleSelectProduct}
+                                 activeProductId={selectedProductType?.id.toString()}
+                                 cartItems={cartItems}
+                               />
+                             
+                           
+                         )}
                        </div>
                      </div>
+                   </div>
 
-                {/* Removed ServiceOfferingColumn - now handled by dialog */}
-              </div>
-              
+              {/* Removed ServiceOfferingColumn - now handled by dialog */}
+            </div>
+            
 
-           
-                           {/* Right Section: Cart - Only show when wide enough and there are items */}
-                           {!isNarrow && cartItems.length > 0 && (
-                             <div className="w-[400px] flex-shrink-0 ">
-                               <div className="p-1 h-full">
-                             <CartColumn
-                               items={cartItems}
-                               onRemoveItem={handleRemoveItem}
-                               onUpdateQuantity={handleUpdateQuantity}
-                               onUpdateNotes={handleUpdateNotes}
-                               onUpdateCompositions={handleUpdateCompositions}
-                               onSaveNotesToBackend={handleSaveNotesToBackend}
-                               onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
-                               onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
-                               isProcessing={isProcessing}
-                               mode={selectedOrder ? 'order_edit' : 'cart'}
-                               isReadOnly={selectedOrder?.received}
-                                isReceived={selectedOrder?.received === true}
-                               paymentStatus={selectedOrder?.payment_status}
-                                                          />
-                                 </div>
-                             </div>
-                           )}
-                  </>
-              )}
+         
+                         {/* Right Section: Cart - Only show when wide enough and there are items */}
+                         {!isNarrow && cartItems.length > 0 && (
+                           <div className="w-[400px] flex-shrink-0">
+                             <div className="p-1 h-full">
+                           <CartColumn
+                             items={cartItems}
+                             onRemoveItem={handleRemoveItem}
+                             onUpdateQuantity={handleUpdateQuantity}
+                             onUpdateNotes={handleUpdateNotes}
+                             onUpdateCompositions={handleUpdateCompositions}
+                             onSaveNotesToBackend={handleSaveNotesToBackend}
+                             onCheckout={selectedOrder ? handleReceiveOrder : handleCheckout}
+                             onCancelOrder={selectedOrder?.received ? handleCancelOrder : undefined}
+                             isProcessing={isProcessing}
+                             mode={selectedOrder ? 'order_edit' : 'cart'}
+                             isReadOnly={selectedOrder?.received}
+                              isReceived={selectedOrder?.received === true}
+                             paymentStatus={selectedOrder?.payment_status}
+                                                        />
+                               </div>
+                           </div>
+                         )}
             </>
                      ) : (
               /* No order selected - show empty state */

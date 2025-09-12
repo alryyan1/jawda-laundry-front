@@ -57,6 +57,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   const { t, i18n } = useTranslation(["common", "orders"]);
   const { can } = useAuth();
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   // Mutation for updating order status
   const updateStatusMutation = useMutation<
@@ -204,62 +205,77 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         </div>
       </div>
 
-      {/* Order Details Section */}
-      <div className="shadow-sm rounded-md bg-white dark:bg-gray-900">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-purple-600" />
-              {t("orderDetails", { ns: "orders", defaultValue: "Order Details" })}
-            </h3>
-            <Badge variant="secondary" className="font-medium">
-              #{order.id}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("createdAt", { ns: "orders", defaultValue: "Created" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.created_at
-                    ? new Date(order.created_at).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+      {/* Order Details Toggle Button */}
+      <Button
+        onClick={() => setShowOrderDetails(!showOrderDetails)}
+        variant="outline"
+        className="w-full h-12 flex items-center justify-between px-4 font-medium border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+      >
+        <div className="flex items-center gap-3">
+          <FileText className="h-5 w-5 text-purple-600" />
+          <span className="text-base">
+            {t("orderDetails", { ns: "orders", defaultValue: "Order Details" })}
+          </span>
+          <Badge variant="secondary" className="text-xs">
+            #{order.id}
+          </Badge>
+        </div>
+        {showOrderDetails ? (
+          <ChevronUp className="h-4 w-4 text-gray-500" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-gray-500" />
+        )}
+      </Button>
+
+      {/* Order Details Section - Conditionally Rendered */}
+      {showOrderDetails && (
+        <div className="shadow-sm rounded-md bg-white dark:bg-gray-900">
+          <div className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("createdAt", { ns: "orders", defaultValue: "Created" })}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {order.created_at
+                      ? new Date(order.created_at).toLocaleString(i18n.language)
+                      : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                  </div>
                 </div>
               </div>
-            </div>
-      
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("completedAt", { ns: "orders", defaultValue: "Completed" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.completed_at
-                    ? new Date(order.completed_at).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+        
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("completedAt", { ns: "orders", defaultValue: "Completed" })}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {order.completed_at
+                      ? new Date(order.completed_at).toLocaleString(i18n.language)
+                      : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("deliveredDate", { ns: "orders", defaultValue: "Delivered" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.delivered_date
-                    ? new Date(order.delivered_date).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("deliveredDate", { ns: "orders", defaultValue: "Delivered" })}
+                  </div>
+                  <div className="text-sm font-medium">
+                    {order.delivered_date
+                      ? new Date(order.delivered_date).toLocaleString(i18n.language)
+                      : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Payment Status Section */}
       <div className="shadow-sm rounded-md bg-white">
@@ -336,7 +352,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               </span>
             </Button>
 
-            <Button
+            {/* <Button
               onClick={onInvoiceClick}
               disabled={isProcessing || order.whatsapp_pdf_sent || isSendingInvoice}
               variant={order.whatsapp_pdf_sent ? "default" : "outline"}
@@ -362,7 +378,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                   : t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })
                 }
               </span>
-            </Button>
+            </Button> */}
 
             {/* WhatsApp Text Button */}
          

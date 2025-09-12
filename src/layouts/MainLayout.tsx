@@ -709,14 +709,18 @@ const MainLayout: React.FC = () => {
           {/* Flexible space to push items to the right */}
           <div className="w-full flex-1 flex items-center justify-center gap-4">
             <POSSearch />
-            {location.pathname === '/pos' && <POSDatePicker onDateChange={setSelectedDate} />}
+            {location.pathname === '/pos' && (
+              <div className="hidden xl:block">
+                <POSDatePicker onDateChange={setSelectedDate} />
+              </div>
+            )}
             {location.pathname === '/pos' && <POSNewOrderButton />}
           </div>
 
           {/* Right-aligned Header Items */}
           <div className="flex items-center gap-3">
             {currentShift && (
-              <div className="px-2 py-1 rounded border text-xs text-muted-foreground">
+              <div className="hidden xl:block px-2 py-1 rounded border text-xs text-muted-foreground">
                 Shift #{currentShift.id}
               </div>
             )}
@@ -725,6 +729,7 @@ const MainLayout: React.FC = () => {
               size="icon"
               title={t('printPriceList', { ns: 'common', defaultValue: 'Print price list' })}
               onClick={() => setIsPriceListOpen(true)}
+              className="hidden xl:flex"
             >
               <Printer className="h-4 w-4" />
             </Button>
@@ -733,10 +738,13 @@ const MainLayout: React.FC = () => {
               size="icon"
               title={t("keyboardShortcuts", { ns: "common", defaultValue: "Keyboard Shortcuts" })}
               onClick={() => setIsShortcutsOpen(true)}
+              className="hidden xl:flex"
             >
               <Keyboard className="h-4 w-4" />
             </Button>
-            <RealtimeLamp />
+            <div className="hidden xl:block">
+              <RealtimeLamp />
+            </div>
             <LanguageSwitcher />
             <ModeToggle />
             <UserNav />
