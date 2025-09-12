@@ -103,7 +103,11 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
   const { data: allProducts = [], isLoading: isLoadingAllProducts, error } = useQuery<ProductType[], Error>({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
 

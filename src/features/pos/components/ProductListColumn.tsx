@@ -53,7 +53,11 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
   const { data: allProducts = [], isLoading: isLoadingAllProducts, error } = useQuery<ProductType[], Error>({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   // Determine which products to show based on customer selection
@@ -64,7 +68,6 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
         id: cpt.product_type.id,
         product_category_id: cpt.product_type.category?.id || 0,
         name: cpt.product_type.name,
-        is_dimension_based: cpt.product_type.is_dimension_based,
         is_active: true, // Customer product types are always active
         image_url: undefined, // Customer product types don't have image_url
         service_offerings_count: 0, // Will be calculated separately
@@ -166,11 +169,7 @@ export const ProductListColumn: React.FC<ProductListColumnProps> = ({
                               {product.service_offerings_count ?? 0}
                             </Badge>
                           )}
-                          {product.is_dimension_based && (
-                            <Badge variant="outline" className="text-xs">
-                              {t("dimensionBased", { ns: "services" })}
-                            </Badge>
-                          )}
+                          
                           
                           {/* Green check circle for products in cart */}
                           {isProductInCart(product.id) && (

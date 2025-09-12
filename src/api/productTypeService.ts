@@ -67,7 +67,7 @@ export const createProductType = async (formData: ProductTypeFormData): Promise<
     const data = new FormData();
     data.append('name', formData.name);
     data.append('product_category_id', String(formData.product_category_id));
-    data.append('is_dimension_based', formData.is_dimension_based ? '1' : '0');
+    
     if (formData.description) data.append('description', formData.description);
     if (formData.image) data.append('image', formData.image);
 
@@ -82,7 +82,7 @@ export const updateProductType = async (id: number | string, formData: Partial<P
     data.append('_method', 'PUT'); // Laravel needs this hint for PUT requests with FormData
     if (formData.name !== undefined) data.append('name', formData.name);
     if (formData.product_category_id !== undefined) data.append('product_category_id', String(formData.product_category_id));
-    if (formData.is_dimension_based !== undefined) data.append('is_dimension_based', formData.is_dimension_based ? '1' : '0');
+    
     if (formData.description !== undefined) data.append('description', formData.description);
     if (formData.image) data.append('image', formData.image);
 

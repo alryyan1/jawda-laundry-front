@@ -11,12 +11,9 @@ import {
   type Order,
   type OrderStatus,
   type PaginatedResponse,
-  orderStatusOptions,
-  type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus, getCurrentShift, getLatestShift, getPreviousShift } from "@/api/orderService";
-import { getAllCustomers } from "@/api/customerService";
+import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, updateOrderStatus, getCurrentShift, getLatestShift, getShiftsByMonth, getOrderCategories } from "@/api/orderService";
 import { getAllProductTypes } from "@/api/productTypeService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/features/auth/hooks/useAuth";
@@ -34,13 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Removed status Select imports
 import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 
 import {
@@ -78,6 +69,7 @@ const OrdersListPage: React.FC = () => {
     categorySequenceSearch?: string;
     showOnlyIncomplete?: boolean;
     shiftId?: number;
+    categoryId?: string;
   }>({
     dateFrom: format(new Date(), "yyyy-MM-dd"),
     dateTo: format(new Date(), "yyyy-MM-dd"),
@@ -105,30 +97,32 @@ const OrdersListPage: React.FC = () => {
       "orders",
       currentPage,
       itemsPerPage,
-      filters.status,
+      // removed: filters.status,
       debouncedSearch,
       filters.orderId,
-      filters.customerId,
+      // removed: filters.customerId,
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
-      filters.categorySequenceSearch,
+      // removed: filters.categorySequenceSearch,
       filters.showOnlyIncomplete,
       filters.shiftId,
+      filters.categoryId,
     ],
     [
       currentPage,
       itemsPerPage,
-      filters.status,
+      // removed: filters.status,
       debouncedSearch,
       filters.orderId,
-      filters.customerId,
+      // removed: filters.customerId,
       filters.productTypeId,
       filters.dateFrom,
       filters.dateTo,
-      filters.categorySequenceSearch,
+      // removed: filters.categorySequenceSearch,
       filters.showOnlyIncomplete,
       filters.shiftId,
+      filters.categoryId,
     ]
   );
 
@@ -225,32 +219,6 @@ const OrdersListPage: React.FC = () => {
     }
   };
 
-  // Handler to mark order as delivered
-  const handleMarkDelivered = async (order: Order) => {
-    try {
-      await markOrderAsDelivered(order.id);
-      // Update the cache
-      queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((o) => {
-            if (o.id === order.id) {
-              return { 
-                ...o, 
-                status: 'delivered' as OrderStatus,
-                delivered_date: new Date().toISOString()
-              };
-            }
-            return o;
-          }),
-        };
-      });
-    } catch (error) {
-      console.error('Error updating order status:', error);
-    }
-  };
-
   // Handler to mark order as completed (sets completed_at on backend via status change)
   const handleMarkCompleted = async (order: Order) => {
     try {
@@ -285,10 +253,7 @@ const OrdersListPage: React.FC = () => {
 
 
   // --- Data Fetching ---
-  const { data: customers = [] } = useQuery<Customer[], Error>({
-    queryKey: ["allCustomersForSelect"],
-    queryFn: () => getAllCustomers(),
-  });
+  // Removed customers query since customer filter is removed
   const { data: productTypes = [] } = useQuery<ProductType[], Error>({
     queryKey: ["allProductTypesForSelect"],
     queryFn: () => getAllProductTypes(),
@@ -303,16 +268,17 @@ const OrdersListPage: React.FC = () => {
     queryKey,
     queryFn: () =>
       getOrders(currentPage, itemsPerPage, {
-        status: filters.status,
+        status: filters.showOnlyIncomplete ? 'pending' : undefined,
         search: debouncedSearch,
         orderId: filters.orderId,
-        customerId: filters.customerId,
+        // removed: customerId: filters.customerId,
         productTypeId: filters.productTypeId,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
-        category_sequence_search: filters.categorySequenceSearch,
+        // removed: category_sequence_search: filters.categorySequenceSearch,
         show_only_incomplete: filters.showOnlyIncomplete,
         shiftId: filters.shiftId,
+        categoryId: filters.categoryId,
       }),
     placeholderData: keepPreviousData,
   });
@@ -320,19 +286,19 @@ const OrdersListPage: React.FC = () => {
 
 
   useEffect(() => {
-    if (currentPage !== 1) setCurrentPage(1);
+    setCurrentPage(1);
   }, [
-    filters.status,
+    // removed: filters.status,
     debouncedSearch,
     filters.orderId,
-    filters.customerId,
+    // removed: filters.customerId,
     filters.productTypeId,
     filters.dateFrom,
     filters.dateTo,
-    filters.categorySequenceSearch,
+    // removed: filters.categorySequenceSearch,
     filters.showOnlyIncomplete,
     filters.shiftId,
-    currentPage,
+    filters.categoryId,
   ]);
 
   // On mount, default to current open shift; if none, use latest shift
@@ -343,21 +309,23 @@ const OrdersListPage: React.FC = () => {
         const current = await getCurrentShift();
         if (isMounted && current) {
           setFilters(prev => ({ ...prev, shiftId: current.id, dateFrom: undefined, dateTo: undefined }));
-          // also load options chain from current
+          // Load shifts for the current month
           try {
             setIsLoadingShifts(true);
+            const currentDate = new Date(current.opened_at);
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+            
+            const monthlyShifts = await getShiftsByMonth(year, month);
             const options: ShiftOption[] = [{ id: "all", label: t("allShifts", { defaultValue: "All Shifts" }) }];
-            let cursor: { id: number; opened_at: string } | null = current as { id: number; opened_at: string } | null;
-            const seen = new Set<number>();
-            // collect up to 10 previous shifts
-            for (let i = 0; i < 10 && cursor; i++) {
-              if (!seen.has(cursor.id)) {
-                options.push({ id: cursor.id, label: `Shift #${cursor.id} - ${format(new Date(cursor.opened_at), "yyyy-MM-dd")}` });
-                seen.add(cursor.id);
-              }
-              const prev = await getPreviousShift(cursor.id);
-              cursor = prev as { id: number; opened_at: string } | null;
-            }
+            
+            monthlyShifts.forEach(shift => {
+              options.push({ 
+                id: shift.id, 
+                label: `Shift #${shift.id} - ${format(new Date(shift.opened_at), "yyyy-MM-dd")}` 
+              });
+            });
+            
             if (isMounted) setShiftOptions(options);
           } finally {
             setIsLoadingShifts(false);
@@ -367,20 +335,23 @@ const OrdersListPage: React.FC = () => {
         const latest = await getLatestShift();
         if (isMounted && latest) {
           setFilters(prev => ({ ...prev, shiftId: latest.id, dateFrom: undefined, dateTo: undefined }));
-          // also load options chain from latest
+          // Load shifts for the latest shift's month
           try {
             setIsLoadingShifts(true);
+            const latestDate = new Date(latest.opened_at);
+            const year = latestDate.getFullYear();
+            const month = latestDate.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+            
+            const monthlyShifts = await getShiftsByMonth(year, month);
             const options: ShiftOption[] = [{ id: "all", label: t("allShifts", { defaultValue: "All Shifts" }) }];
-            let cursor: { id: number; opened_at: string } | null = latest as { id: number; opened_at: string } | null;
-            const seen = new Set<number>();
-            for (let i = 0; i < 10 && cursor; i++) {
-              if (!seen.has(cursor.id)) {
-                options.push({ id: cursor.id, label: `Shift #${cursor.id} - ${format(new Date(cursor.opened_at), "yyyy-MM-dd")}` });
-                seen.add(cursor.id);
-              }
-              const prev = await getPreviousShift(cursor.id);
-              cursor = prev as { id: number; opened_at: string } | null;
-            }
+            
+            monthlyShifts.forEach(shift => {
+              options.push({ 
+                id: shift.id, 
+                label: `Shift #${shift.id} - ${format(new Date(shift.opened_at), "yyyy-MM-dd")}` 
+              });
+            });
+            
             if (isMounted) setShiftOptions(options);
           } finally {
             setIsLoadingShifts(false);
@@ -393,9 +364,19 @@ const OrdersListPage: React.FC = () => {
     return () => { isMounted = false; };
   }, [t]);
 
-  const orders = paginatedData?.data || [];
+  const orders = useMemo(() => paginatedData?.data || [], [paginatedData?.data]);
   const totalItems = paginatedData?.meta?.total || 0;
   const totalPages = paginatedData?.meta?.last_page || 1;
+
+  // Fetch categories from backend API
+  const { data: orderCategories = [] } = useQuery<{ id: number; name: string; count: number }[], Error>({
+    queryKey: ["orderCategories", filters.shiftId, filters.dateFrom, filters.dateTo],
+    queryFn: () => getOrderCategories({
+      shiftId: filters.shiftId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+    }),
+  });
 
   // Mobile Order Card Component
   
@@ -424,7 +405,10 @@ const OrdersListPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => downloadOrdersListExcel(filters)}
+            onClick={() => downloadOrdersListExcel({
+              ...filters,
+              status: filters.showOnlyIncomplete ? 'pending' : undefined,
+            })}
             className="flex items-center gap-2"
           >
             <FileText className="h-4 w-4" />
@@ -435,7 +419,10 @@ const OrdersListPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => downloadOrdersListPdf(filters)}
+            onClick={() => downloadOrdersListPdf({
+              ...filters,
+              status: filters.showOnlyIncomplete ? 'pending' : undefined,
+            })}
             className="flex items-center gap-2"
           >
             <FileText className="h-4 w-4" />
@@ -458,22 +445,43 @@ const OrdersListPage: React.FC = () => {
         
       </PageHeader>
 
-      
-
-      
-
-
+      {/* Category Filter Buttons */}
+      {orderCategories.length > 0 && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground mr-2">
+              {t("filterByCategory", { defaultValue: "Filter by Category" })}:
+            </span>
+            <Button
+              variant={!filters.categoryId ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilters(prev => ({ ...prev, categoryId: undefined }))}
+              className="text-xs"
+            >
+              {t("allCategories", { defaultValue: "All Categories" })}
+            </Button>
+            {orderCategories.map((category) => (
+              <Button
+                key={category.id}
+                variant={filters.categoryId === category.id.toString() ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters(prev => ({ 
+                  ...prev, 
+                  categoryId: prev.categoryId === category.id.toString() ? undefined : category.id.toString()
+                }))}
+                className="text-xs"
+              >
+                {category.name} ({category.count})
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
              {/* Desktop Filters */}
        <div className="hidden sm:block mb-4">
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-4">
-          {/* <Input
-            placeholder={t("searchOrdersPlaceholder")}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-          /> */}
+          {/* Removed search text input */}
           <Input
             placeholder="Order ID"
             value={filters.orderId || ""}
@@ -482,47 +490,8 @@ const OrdersListPage: React.FC = () => {
             }
             className="w-full"
           />
-          <Select
-            value={filters.status || ""}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                status: value === "all" ? undefined : (value as OrderStatus),
-              }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("filterByStatus")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("allStatuses")}</SelectItem>
-              {orderStatusOptions.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {t(`status_${opt}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <DarkThemeAutocomplete
-            options={[{ id: "all", name: t("allCustomers", { ns: "customers" }) }, ...customers]}
-            getOptionLabel={(option) => option.name}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            value={customers.find(c => c.id.toString() === filters.customerId) || { id: "all", name: t("allCustomers", { ns: "customers" }) }}
-            onChange={(_, newValue) =>
-              setFilters((prev) => ({
-                ...prev,
-                customerId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
-              }))
-            }
-            renderInput={(params) => (
-              <div ref={params.InputProps.ref}>
-                <Input
-                  {...params.inputProps}
-                  placeholder={t("filterByCustomer")}
-                />
-              </div>
-            )}
-          />
+          {/* Removed Status Select */}
+          {/* Removed Customer Autocomplete */}
           <DarkThemeAutocomplete
             options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
             getOptionLabel={(option) => option.name}
@@ -543,15 +512,12 @@ const OrdersListPage: React.FC = () => {
               </div>
             )}
           />
-          <Input
-            placeholder={t("searchCategorySequences", { defaultValue: "Search Category Sequences" })}
-            value={filters.categorySequenceSearch || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
-            }
-          />
+          {/* Removed Category Sequence Search */}
           {/* Shift filter */}
           <DarkThemeAutocomplete
+          sx={{
+            width:'250px'
+          }}
             options={shiftOptions}
             getOptionLabel={(option: ShiftOption) => option.label}
             isOptionEqualToValue={(option: ShiftOption, value: ShiftOption) => option.id === value.id}
@@ -626,7 +592,6 @@ const OrdersListPage: React.FC = () => {
               <TableRow>
                 <TableHead className="w-[60px] text-center font-bold text-lg">ID</TableHead>
                 <TableHead className="w-[60px] text-center font-bold text-lg">Daily Order Number</TableHead>
-                <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
                 <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
                  <TableHead className="text-center">{t("orderItems", { defaultValue: "Order Items" })}</TableHead>
@@ -654,25 +619,24 @@ const OrdersListPage: React.FC = () => {
                ) : orders.length > 0 ? (
                 orders.map((order) => (
                                                            <OrdersTableRow
-                        key={order.id}
-                        order={order}
-                        selectedOrderId={orderItemsDialogOrder?.id ?? null}
-                        onOpenPayments={(o) => setSelectedOrderForPayments(o)}
-                        onRecordPayment={(o) => setSelectedOrderForPayment(o)}
-                        onMarkCompleted={handleMarkCompleted}
-                        onMarkDelivered={handleMarkDelivered}
-                        onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
-                        isCompleting={isCompletingOrderId === order.id}
-                        onOpenItems={(o) => setOrderItemsDialogOrder(o)}
-                        onOpenWhatsApp={(o) => {
-                          // You can implement WhatsApp dialog here if needed
-                          console.log('WhatsApp dialog for order:', o.id);
-                        }}
-                        can={can}
-                        t={t}
-                        currencySymbol={currencySymbol}
-                        language={i18n.language}
-                      />
+                       key={order.id}
+                       order={order}
+                       selectedOrderId={orderItemsDialogOrder?.id ?? null}
+                       onOpenPayments={(o) => setSelectedOrderForPayments(o)}
+                       onRecordPayment={(o) => setSelectedOrderForPayment(o)}
+                       onMarkCompleted={handleMarkCompleted}
+                       onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
+                       isCompleting={isCompletingOrderId === order.id}
+                       onOpenItems={(o) => setOrderItemsDialogOrder(o)}
+                       onOpenWhatsApp={(o) => {
+                         // You can implement WhatsApp dialog here if needed
+                         console.log('WhatsApp dialog for order:', o.id);
+                       }}
+                       can={can}
+                       t={t}
+                       currencySymbol={currencySymbol}
+                       language={i18n.language}
+                     />
                 ))
                              ) : (
                  <TableRow>

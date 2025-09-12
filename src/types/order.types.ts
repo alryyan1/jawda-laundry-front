@@ -34,12 +34,9 @@ export interface QuoteItemPayload {
     service_offering_id: number;
     customer_id?: string | null;
     quantity: number;
-    length_meters?: number;
-    width_meters?: number;
 }
 
 export interface QuoteItemResponse {
-    calculated_price_per_unit_item: number;
     sub_total: number;
     applied_unit: string;
 }
@@ -52,12 +49,8 @@ export interface OrderItem {
     order_id: number;
     service_offering_id: number;
     serviceOffering?: ServiceOffering;
-    product_description_custom?: string | null;
     quantity: number;
     picked_up_quantity?: number;
-    length_meters?: number | null;
-    width_meters?: number | null;
-    calculated_price_per_unit_item: number;
     sub_total: number;
     notes?: string | null;
     // New fields if you implement them
@@ -113,13 +106,9 @@ export interface OrderItemFormLine {
     product_type_id: string;
     service_action_id: string;
     quantity: number | string;
-    product_description_custom?: string;
-    length_meters?: number | string;
-    width_meters?: number | string;
     notes?: string;
     _derivedServiceOffering?: ServiceOffering | null;
     _pricingStrategy?: PricingStrategy | null; // 'fixed' or 'dimension_based'
-    _quoted_price_per_unit_item?: number | null;
     _quoted_sub_total?: number | null;
     _quoted_applied_unit?: string | null;
     _isQuoting?: boolean;

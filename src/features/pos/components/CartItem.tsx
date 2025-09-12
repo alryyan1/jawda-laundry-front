@@ -11,7 +11,6 @@ import {
   X,
   Plus,
   Minus,
-  Ruler,
   AlertCircle,
   List,
   Mail,
@@ -19,7 +18,6 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 import type { ServiceOffering, ProductType, ProductTypeComposition } from "@/types";
 import { cn } from "@/lib/utils";
-import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -35,8 +33,6 @@ export interface CartItem {
   quantity: number;
   price: number; // The base unit price
   notes?: string;
-  length_meters?: number;
-  width_meters?: number;
   excludedCompositionIds?: number[]; // Product compositions excluded by customer
   _isQuoting?: boolean;
   _quoteError?: string | null;
@@ -52,10 +48,6 @@ interface CartItemProps {
   item: CartItem;
   onRemoveItem: (id: string | number) => void;
   onUpdateQuantity: (id: string | number, quantity: number) => void;
-  onUpdateDimensions: (
-    id: string | number,
-    dimensions: { length?: number; width?: number }
-  ) => void;
   onUpdateNotes: (id: string | number, notes: string) => void;
   onUpdateCompositions: (id: string | number, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
@@ -67,7 +59,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   item,
   onRemoveItem,
   onUpdateQuantity,
-  onUpdateDimensions,
   onUpdateNotes,
   onUpdateCompositions,
   onSaveNotesToBackend,
@@ -78,14 +69,11 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   const effectiveReadOnly = isReadOnly;
   const { t, i18n } = useTranslation(["common", "orders", "services"]);
   const { getSetting } = useSettings();
-  const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
   const [compositionsAnchorEl, setCompositionsAnchorEl] = useState<HTMLElement | null>(null);
   const [showNotes, setShowNotes] = useState(Boolean(item.notes && String(item.notes).trim() !== ""));
 
   // Get currency from settings, fallback to USD
   const currency = getSetting('currency_symbol', 'OMR');
-
-  const isDimensionBased = item.productType.is_dimension_based;
 
   // Fetch product compositions
   const { data: compositionsData, isLoading: compositionsLoading } = useQuery({
@@ -201,7 +189,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
     if ((item.notes && String(item.notes).trim() !== "") && !showNotes) {
       setShowNotes(true);
     }
-  }, [item.notes]);
+  }, [item.notes, showNotes]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -270,7 +258,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             </Badge>
             </div>
             <p className=" text-2xl">
-              {console.log('item', item)}
               {item.productType.name}
             </p>
             {item.productType.category && (
@@ -327,66 +314,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
 
         {/* Content */}
         <div className="p-1 space-y-1">
-          {/* Dimensions */}
-          {isDimensionBased && (
-            <div className="grid grid-cols-5 gap-2 items-end">
-              <div className="col-span-2">
-                <Label className="text-xs mb-1 font-normal">
-                  {t("length", { ns: "orders" })} (m)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={item.length_meters || ""}
-                  onChange={(e) =>
-                    onUpdateDimensions(item.id, {
-                      length: parseFloat(e.target.value) || undefined,
-                      width: item.width_meters,
-                    })
-                  }
-                  onFocus={(e) => e.target.select()}
-                  className="h-8"
-                  disabled={effectiveReadOnly || item._isQuoting}
-                />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs mb-1 font-normal">
-                  {t("width", { ns: "orders" })} (m)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={item.width_meters || ""}
-                  onChange={(e) =>
-                    onUpdateDimensions(item.id, {
-                      length: item.length_meters,
-                      width: parseFloat(e.target.value) || undefined,
-                    })
-                  }
-                  onFocus={(e) => e.target.select()}
-                  className="h-8"
-                  disabled={effectiveReadOnly || item._isQuoting}
-                />
-              </div>
-              <div className="col-span-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => setIsSizeDialogOpen(true)}
-                  disabled={effectiveReadOnly || item._isQuoting}
-                >
-                  <Ruler className="h-4 w-4" />
-                  <span className="sr-only">
-                    {t("selectPredefinedSize", { ns: "services" })}
-                  </span>
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Quantity and Price */}
           <div className="flex items-center justify-between">
@@ -490,19 +417,6 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       </div>
       )}
 
-      {item.productType && isDimensionBased && !effectiveReadOnly && (
-        <SelectSizeDialog
-          isOpen={isSizeDialogOpen}
-          onOpenChange={setIsSizeDialogOpen}
-          productType={item.productType}
-          onSelect={(size) => {
-            onUpdateDimensions(item.id, {
-              length: size.length_meters,
-              width: size.width_meters,
-            });
-          }}
-        />
-      )}
 
         {/* MUI Popover for Compositions */}
         <Popover

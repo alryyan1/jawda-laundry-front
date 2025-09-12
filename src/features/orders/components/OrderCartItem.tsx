@@ -21,7 +21,6 @@ import {
 import { Loader2, Trash2, Edit3, Ruler, AlertCircle, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
-import { SelectSizeDialog } from "../../pos/components/SelectSizeDialog"; // Fixed import path
 
 import type { NewOrderFormData, OrderItemFormLine } from "@/types";
 
@@ -83,7 +82,7 @@ export const OrderCartItem: React.FC<OrderCartItemProps> = ({
     _quoted_sub_total: subtotal,
   } = itemData;
 
-  const isDimensionBased = offering.productType?.is_dimension_based;
+  const isDimensionBased = false;
 
   return (
     <>
@@ -119,50 +118,7 @@ export const OrderCartItem: React.FC<OrderCartItemProps> = ({
               )}
             />
           </div>
-          {/* Conditional Dimension Inputs */}
-          {isDimensionBased ? (
-            <>
-              <div className="col-span-4 sm:col-span-2 relative">
-                <Input
-                  id={`${itemPathPrefix}.length_meters`}
-                  type="number"
-                  step="0.01"
-                  aria-label={t("lengthMeters", { ns: "orders" })}
-                  {...register(`${itemPathPrefix}.length_meters`)}
-                  placeholder={t("lengthAbbr", {
-                    ns: "orders",
-                    defaultValue: "L",
-                  })}
-                  disabled={isSubmittingOrder}
-                  className={cn(
-                    "h-9 text-center",
-                    itemErrors?.length_meters && "border-destructive"
-                  )}
-                />
-              </div>
-              <div className="col-span-4 sm:col-span-2 relative">
-                <Input
-                  id={`${itemPathPrefix}.width_meters`}
-                  type="number"
-                  step="0.01"
-                  aria-label={t("widthMeters", { ns: "orders" })}
-                  {...register(`${itemPathPrefix}.width_meters`)}
-                  placeholder={t("widthAbbr", {
-                    ns: "orders",
-                    defaultValue: "W",
-                  })}
-                  disabled={isSubmittingOrder}
-                  className={cn(
-                    "h-9 text-center",
-                    itemErrors?.width_meters && "border-destructive"
-                  )}
-                />
-              </div>
-            </>
-          ) : (
             <div className="hidden sm:block sm:col-span-4"></div>
-          )}{" "}
-          {/* Placeholder to keep alignment */}
           {/* Subtotal */}
           <div className="col-span-8 sm:col-span-2 text-right rtl:text-left font-semibold">
             {isQuoting ? (
@@ -217,42 +173,13 @@ export const OrderCartItem: React.FC<OrderCartItemProps> = ({
         </div>
 
         {/* Display validation errors below the row */}
-        {(itemErrors?.quantity ||
-          itemErrors?.length_meters ||
-          itemErrors?.width_meters) && (
+        {itemErrors?.quantity && (
           <div className="text-xs text-destructive pl-1">
-            {itemErrors?.quantity && (
-              <p>{t(itemErrors.quantity.message as string)}</p>
-            )}
-            {itemErrors?.length_meters && (
-              <p>{t(itemErrors.length_meters.message as string)}</p>
-            )}
-            {itemErrors?.width_meters && (
-              <p>{t(itemErrors.width_meters.message as string)}</p>
-            )}
+            <p>{t(itemErrors.quantity.message as string)}</p>
           </div>
         )}
       </div>
 
-      {offering.productType && (
-        <SelectSizeDialog
-          isOpen={isSizeDialogOpen}
-          onOpenChange={setIsSizeDialogOpen}
-          productType={offering.productType}
-          onSelect={(size: { length_meters: number; width_meters: number }) => {
-            setValue(
-              `${itemPathPrefix}.length_meters`,
-              size.length_meters.toString(),
-              { shouldDirty: true }
-            );
-            setValue(
-              `${itemPathPrefix}.width_meters`,
-              size.width_meters.toString(),
-              { shouldDirty: true, shouldValidate: true }
-            );
-          }}
-        />
-      )}
     </>
   );
 };

@@ -9,7 +9,6 @@ export interface CustomerProductType {
       id: number;
       name: string;
     };
-    is_dimension_based: boolean;
   };
   is_active: boolean;
   created_at: string;
@@ -35,7 +34,6 @@ export interface AvailableProductType {
     id: number;
     name: string;
   };
-  is_dimension_based: boolean;
 }
 
 export interface AvailableProductTypesResponse {

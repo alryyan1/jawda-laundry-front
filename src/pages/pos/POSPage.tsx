@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from 'uuid';
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 
@@ -24,9 +24,8 @@ import { POSHeader } from '@/features/pos/components/POSHeader';
 import PdfPreviewDialog from '@/features/orders/components/PdfDialog';
 import { RecordPaymentModal } from '@/features/orders/components/RecordPaymentModal';
 import PaymentCalculator from '@/components/shared/PaymentCalculator';
-import { createOrder, getTodayOrders, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemDimensions, updateOrderItemQuantity, updateOrderItemNotes, getOrderItems, addOrderItem } from "@/api/orderService";
+import { createOrder, getTodayOrders, updateOrderDetails, deleteOrderItem, cancelOrder, markOrderReceived, updateOrderItemQuantity, updateOrderItemNotes, getOrderItems } from "@/api/orderService";
 import apiClient from "@/lib/axios";
-import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 import { getDiningTables, updateDiningTableStatus } from "@/api/diningTableService";
@@ -106,8 +105,6 @@ const POSPage: React.FC = () => {
   const [isNarrow, setIsNarrow] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth < 800 : false);
   const [isCartDialogOpen, setIsCartDialogOpen] = useState(false);
   const [isCartItemsLoading, setIsCartItemsLoading] = useState(false);
-  const isAddingRef = React.useRef(false);
-  const isCreatingOrderRef = React.useRef(false);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -144,97 +141,8 @@ const POSPage: React.FC = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-
-
-  const createOrderMutation = useMutation<OrderResponseWithWarnings, Error, NewOrderFormData>({
-    mutationFn: (orderData: NewOrderFormData) => createOrder(orderData, allServiceOfferings),
-    onSuccess: async (response) => {
-      const createdOrder = handleOrderResponse(response, undefined);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-      
-      // Update table status to occupied if order has a dining table
-      if (createdOrder.table_id) {
-        try {
-          await updateDiningTableStatus(createdOrder.table_id, 'occupied');
-          queryClient.invalidateQueries({ queryKey: ["diningTables"] });
-        } catch (error) {
-          console.error('Failed to update table status:', error);
-        }
-      }
-      
-      // Clear the cart and reset selections - ensure cart is empty for new orders
-      setCartItems([]);
-      
-      // Always reset customer selection to null for new orders to show "required" state
-      // This ensures the customer selection component shows the animation and required state
-      setSelectedCustomerId(null);
-      
-      setSelectedCategoryId(null);
-      setSelectedProductType(null);
-      setSelectedTableId(createdOrder.dining_table_id?.toString() || ' ');
-      setOrderType(createdOrder.order_type);
-      setIsProcessing(false);
-      
-      // Clear dialog state
-      setSelectedProductForDialog(null);
-      setIsServiceOfferingDialogOpen(false);
-      setIsNewOrderMode(true); // Keep new order mode active
-      
-      // Automatically select the newly created order
-      if (createdOrder) {
-        setSelectedOrder(createdOrder);
-        
-        // Auto-show PDF when order is created
-        setIsPdfDialogOpen(true);
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to create order:', error);
-      toast.error(t("failedToCreateOrder", { ns: "orders" }));
-      setIsProcessing(false);
-    },
-  });
-
   
-
-  // Function to update order item dimensions in database
-  const updateOrderItemDimensionsInDB = async (orderItemId: string | number, dimensions: { length_meters?: number | null; width_meters?: number | null }) => {
-    try {
-      const data = await updateOrderItemDimensions(orderItemId, dimensions);
-      
-      // Update the selected order with the new total
-      if (selectedOrder) {
-        setSelectedOrder(prev => prev ? { ...prev, total_amount: data.order_total } : null);
-      }
-      
-      // Update the cart item with the new dimensions and subtotal
-      setCartItems(prev => prev.map(item => {
-        if (item._isExistingOrderItem && selectedOrder) {
-          // Find the corresponding order item in the selected order
-          const orderItem = selectedOrder.items?.find(oi => 
-            oi.serviceOffering?.id === item.serviceOffering.id &&
-            oi.quantity === item.quantity
-          );
-          
-          if (orderItem && orderItem.id.toString() === orderItemId.toString()) {
-            return {
-              ...item,
-              length_meters: data.order_item.length_meters || undefined,
-              width_meters: data.order_item.width_meters || undefined,
-              _quotedSubTotal: data.order_item.sub_total,
-              price: data.order_item.calculated_price_per_unit_item,
-            };
-          }
-        }
-        return item;
-      }));
-      
-      toast.success(t("dimensionsUpdatedSuccessfully", { ns: "orders", defaultValue: "Dimensions updated successfully" }));
-    } catch {
-      toast.error(t("failedToUpdateDimensions", { ns: "orders", defaultValue: "Failed to update dimensions" }));
-    }
-  };
+  
 
   // Function to update order item quantity in database
   const updateOrderItemQuantityInDB = async (orderItemId: string | number, quantity: number) => {
@@ -260,7 +168,6 @@ const POSPage: React.FC = () => {
               ...item,
               quantity: data.order_item.quantity,
               _quotedSubTotal: data.order_item.sub_total,
-              price: data.order_item.calculated_price_per_unit_item,
             };
           }
         }
@@ -278,91 +185,26 @@ const POSPage: React.FC = () => {
     setSelectedProductType(null);
   };
 
-  const handleAddItemToBackend = React.useCallback(async (product: ProductType, offering: ServiceOffering) => {
-    if (!selectedOrder) {
-      if (isCreatingOrderRef.current) return;
-      isCreatingOrderRef.current = true;
-      const newOrderData = {
-        customer_id: '',
-        items: [],
-        order_type: orderType,
-        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
-      };
-      try {
-        const response = await createOrder(newOrderData, allServiceOfferings);
-        const createdOrder = handleOrderResponse(response, undefined);
-        setSelectedOrder(createdOrder);
-        await handleAddItemToBackend(product, offering);
-        return;
-      } catch (error) {
-        console.error('Failed to create new order:', error);
-        toast.error(t("failedToCreateOrder", { ns: "orders" }));
-        return;
-      } finally {
-        isCreatingOrderRef.current = false;
-      }
-    }
-
-    // Temp skeleton item while backend adds
-    if (isAddingRef.current) return;
-    isAddingRef.current = true;
-    const tempItemId = uuidv4();
-    const tempItem: CartItem = {
-      id: tempItemId,
+  const handleAddItemToBackend = React.useCallback((product: ProductType, offering: ServiceOffering) => {
+    // Always add to local cart - no backend calls until receiving
+    const localItemId = uuidv4();
+    const localItem: CartItem = {
+      id: localItemId,
       productType: product,
       serviceOffering: offering,
       quantity: 1,
       price: offering.default_price || 0,
       _isQuoting: false,
-      _isAdding: true,
       _addedAt: Date.now(),
     };
-    setCartItems(prev => [...prev, tempItem]);
-
-    try {
-      await addOrderItem(selectedOrder.id, {
-        service_offering_id: offering.id,
-        quantity: 1,
-        product_description_custom: null,
-        length_meters: null,
-        width_meters: null,
-        notes: null,
-      });
-
-      setIsCartItemsLoading(true);
-      const items = await getOrderItems(selectedOrder.id);
-      // alert('s')
-      console.log('items in pos page', items);
-      const mapped: CartItem[] = items.map((item: ApiOrderItem, index: number) => ({
-        id: String(item.id),
-        productType: {
-          id: item.serviceOffering?.product_type_id || 0,
-          product_category_id: item.serviceOffering?.productType?.product_category_id || 0,
-          name: item.serviceOffering?.productType?.name || 'Unknown Product',
-          is_dimension_based: item.serviceOffering?.productType?.is_dimension_based || false,
-          is_active: item.serviceOffering?.productType?.is_active || true,
-        } as ProductType,
-        serviceOffering: item.serviceOffering || {} as ServiceOffering,
-        quantity: item.quantity,
-        price: item.calculated_price_per_unit_item,
-        notes: item.notes || undefined,
-        length_meters: item.length_meters || undefined,
-        width_meters: item.width_meters || undefined,
-        _isQuoting: false,
-        _quotedSubTotal: item.sub_total,
-        _isExistingOrderItem: true,
-        _orderItemId: item.id,
-        _addedAt: Date.now() - (items.length - index) * 1000,
-      }));
-      setCartItems(mapped);
-    } catch (error) {
-      console.error('Failed to add item to order:', error);
-      setCartItems(prev => prev.filter(item => item.id !== tempItemId));
-    } finally {
-      setIsCartItemsLoading(false);
-      isAddingRef.current = false;
+    
+    setCartItems(prev => [...prev, localItem]);
+    
+    // Enter new order mode if not already in it
+    if (!isNewOrderMode) {
+      setIsNewOrderMode(true);
     }
-  }, [selectedOrder, orderType, selectedTableId, allServiceOfferings, t]);
+  }, [isNewOrderMode]);
 
   const handleSelectProduct = React.useCallback((product: ProductType) => {
     // Prevent adding items to received orders
@@ -377,6 +219,11 @@ const POSPage: React.FC = () => {
     if (!hasCustomer && !isNewOrderMode) {
       toast.error(t("orderNeedsCustomer", { ns: "orders", defaultValue: "Please select a customer for this order before adding items" }));
       return;
+    }
+
+    // Enter new-order mode on first selection if there's no existing order
+    if (!selectedOrder && !isNewOrderMode) {
+      setIsNewOrderMode(true);
     }
 
     setSelectedProductType(product);
@@ -403,7 +250,7 @@ const POSPage: React.FC = () => {
   // Remove handleSelectOffering function since it's no longer needed
   // const handleSelectOffering = (offering: ServiceOffering) => { ... };
 
-  const handleRemoveItem = async (id: string) => {
+  const handleRemoveItem = async (id: string | number) => {
     // Find the item to check if it's an existing order item
     const item = cartItems.find(cartItem => cartItem.id === id);
     
@@ -420,6 +267,13 @@ const POSPage: React.FC = () => {
       quantity: item.quantity
     });
 
+    // For new orders (no selectedOrder), just remove from local cart
+    if (!selectedOrder) {
+      setCartItems(prev => prev.filter(cartItem => cartItem.id !== id));
+      return;
+    }
+
+    // For existing orders, handle backend deletion
     // Set loading state immediately for all items
     setCartItems(prev => prev.map(cartItem => 
       cartItem.id === id ? { ...cartItem, _isDeleting: true } : cartItem
@@ -461,7 +315,7 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const handleUpdateQuantity = (id: string | number, quantity: number) => {
     setCartItems(prev => prev.map(item => 
       item.id === id 
         ? { 
@@ -471,6 +325,11 @@ const POSPage: React.FC = () => {
           } 
         : item
     ));
+
+    // For new orders (no selectedOrder), only update local state
+    if (!selectedOrder) {
+      return;
+    }
 
     // Find the cart item
     const item = cartItems.find(cartItem => cartItem.id === id);
@@ -485,37 +344,17 @@ const POSPage: React.FC = () => {
     // No quoting. Price remains as default, backend recalculates on save when needed.
   };
 
-  const handleUpdateDimensions = (id: string, dimensions: { length?: number; width?: number }) => {
-    setCartItems(prev => prev.map(item =>
-      item.id === id
-        ? {
-            ...item,
-            length_meters: dimensions.length,
-            width_meters: dimensions.width,
-          }
-        : item
-    ));
 
-    // Find the cart item
-    const item = cartItems.find(cartItem => cartItem.id === id);
-    if (!item) return;
-
-    // If this is an existing order item, save dimensions to database
-    if (item._isExistingOrderItem && item._orderItemId) {
-      // Save dimensions to database using stored order item ID
-      updateOrderItemDimensionsInDB(item._orderItemId, {
-        length_meters: dimensions.length || null,
-        width_meters: dimensions.width || null,
-      });
-    }
-
-    // No quoting. Price remains as default, backend recalculates on save when needed.
-  };
-
-  const handleUpdateNotes = (id: string, notes: string) => {
+  const handleUpdateNotes = (id: string | number, notes: string) => {
     setCartItems(prev => prev.map(item =>
       item.id === id ? { ...item, notes } : item
     ));
+
+    // For new orders (no selectedOrder), only update local state
+    // Notes will be saved when the order is created and received
+    if (!selectedOrder) {
+      return;
+    }
   };
 
   const handleSaveNotesToBackend = async (orderItemId: string | number, notes: string) => {
@@ -538,18 +377,21 @@ const POSPage: React.FC = () => {
     }
   };
 
-  const handleUpdateCompositions = (id: string, excludedIds: number[]) => {
+  const handleUpdateCompositions = (id: string | number, excludedIds: number[]) => {
     setCartItems(prev => prev.map(item =>
       item.id === id ? { ...item, excludedCompositionIds: excludedIds } : item
     ));
+
+    // For new orders (no selectedOrder), only update local state
+    // Compositions will be saved when the order is created and received
+    if (!selectedOrder) {
+      return;
+    }
   };
 
   const handleOrderSelect = (order: Order) => {
     setSelectedOrder(order);
     setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
-    
-    // Clear current cart items
-    setCartItems([]);
     
     // Set customer if order has one
     if (order.customer) {
@@ -568,12 +410,13 @@ const POSPage: React.FC = () => {
       setSelectedTableId(' ');
     }
     
-    // Fetch order items independently
+    // For existing orders, we still need to fetch items to display them
+    // But all modifications will be client-side until receiving
     setIsCartItemsLoading(true);
     getOrderItems(order.id)
       .then((items: ApiOrderItem[]) => {
         const cartItemsFromOrder: CartItem[] = items.map((item: ApiOrderItem, index: number) => {
-          const unitPrice = Number(item.calculated_price_per_unit_item ?? item.serviceOffering?.default_price ?? 0);
+          const unitPrice = Number(item.serviceOffering?.default_price ?? 0);
           const subTotal = Number(item.sub_total ?? unitPrice * Number(item.quantity ?? 1));
           return {
             id: String(item.id),
@@ -581,15 +424,12 @@ const POSPage: React.FC = () => {
               id: item.serviceOffering?.product_type_id || 0,
               product_category_id: item.serviceOffering?.productType?.category?.id || 0,
               name: item.serviceOffering?.productType?.name || item.serviceOffering?.display_name || 'Unknown Product',
-              is_dimension_based: Boolean(item.serviceOffering?.productType?.is_dimension_based),
               is_active: item.serviceOffering?.productType?.is_active ?? true,
             } as ProductType,
             serviceOffering: item.serviceOffering || {} as ServiceOffering,
             quantity: Number(item.quantity ?? 1),
             price: unitPrice,
             notes: item.notes || undefined,
-            length_meters: item.length_meters || undefined,
-            width_meters: item.width_meters || undefined,
             _isQuoting: false,
             _quotedSubTotal: subTotal,
             _isExistingOrderItem: true,
@@ -597,10 +437,15 @@ const POSPage: React.FC = () => {
             _addedAt: Date.now() - (items.length - index) * 1000,
           };
         });
+        // Only clear and set new items after they're loaded
         setCartItems(cartItemsFromOrder);
       })
+      .catch((error) => {
+        console.error('Failed to load order items:', error);
+        // Clear cart only if there was an error loading items
+        setCartItems([]);
+      })
       .finally(() => setIsCartItemsLoading(false));
-    // If order has no items, cart remains empty (which is correct for new orders)
     
     // Update dining table status to occupied if the order has a table
     if (order.table_id) {
@@ -699,14 +544,30 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    console.log('Receiving order - backend will recalculate total from order items');
+    console.log('Receiving order - will send current cart items to backend');
     
-    // Mark order as received - backend will recalculate total from order items
+    // Block if items are still loading or none present
+    if (isCartItemsLoading || cartItems.length === 0) {
+      toast.error(t("cartIsEmpty", { ns: "orders" }));
+      return;
+    }
+
+    // Prepare items payload from current cart to persist before receiving
+    const orderItemsForMarkReceived = cartItems.map(cartItem => ({
+      service_offering_id: cartItem.serviceOffering.id,
+      quantity: cartItem.quantity,
+      notes: cartItem.notes || null,
+    }));
+
+    // Mark order as received with current items - backend will recalc totals
     try {
       setIsProcessing(true);
       
-      // Use the markOrderReceived endpoint - backend will recalculate total from order items
-      const response = await markOrderReceived(selectedOrder.id);
+      const response = await markOrderReceived(selectedOrder.id, {
+        items: orderItemsForMarkReceived,
+        customer_id: selectedOrder.customer?.id,
+        order_type: orderType,
+      });
       
       // Update the selected order with the received status
       setSelectedOrder(response.order);
@@ -752,17 +613,10 @@ const POSPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedOrder, t, settings, queryClient]);
+  }, [selectedOrder, cartItems, isCartItemsLoading, orderType, t, settings, queryClient]);
 
   const handleCheckout = React.useCallback(async () => {
-          // If we have a selected order, we should receive it instead of creating a new one
-      if (selectedOrder) {
-        // Receive the selected order
-        await handleReceiveOrder();
-        return;
-      }
-
-    // Otherwise, create a new order (this should rarely happen now with the new workflow)
+    // Validate requirements
     if (!selectedCustomerId) {
       toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
       return;
@@ -773,7 +627,6 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Validate table selection for in-house orders
     if (orderType === 'in_house' && !selectedTableId) {
       toast.error(t("pleaseSelectTable", { ns: "dining", defaultValue: "Please select a table for in-house orders" }));
       return;
@@ -781,33 +634,69 @@ const POSPage: React.FC = () => {
 
     setIsProcessing(true);
 
-    const orderItems: OrderItemFormLine[] = cartItems.map(item => ({
-      id: item.id,
-      service_offering_id: item.serviceOffering.id,
-      product_type_id: item.productType.id.toString(),
-      service_action_id: item.serviceOffering.service_action_id.toString(),
-      quantity: item.quantity,
-      notes: item.notes,
-      length_meters: item.length_meters,
-      width_meters: item.width_meters,
-      _derivedServiceOffering: item.serviceOffering,
-      _pricingStrategy: item.productType.is_dimension_based ? 'dimension_based' : 'fixed',
-      _quoted_price_per_unit_item: item.price,
-      _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
-    }));
+    try {
+      // Prepare order items for both create and mark-received APIs
+      const orderItemsForCreate: OrderItemFormLine[] = cartItems.map(item => ({
+        id: item.id,
+        service_offering_id: item.serviceOffering.id,
+        product_type_id: item.productType.id.toString(),
+        service_action_id: item.serviceOffering.service_action_id.toString(),
+        quantity: item.quantity,
+        notes: item.notes,
+        _derivedServiceOffering: item.serviceOffering,
+        _pricingStrategy: 'fixed',
+        _quoted_sub_total: item._quotedSubTotal || (item.price * item.quantity),
+      }));
 
-    const orderData: NewOrderFormData = {
-      customer_id: selectedCustomerId,
-      items: orderItems,
-      notes: undefined, // TODO: Add UI for order notes
-      due_date: undefined, // TODO: Add UI for due date
-      order_type: orderType,
-      dining_table_id: selectedTableId ? parseInt(selectedTableId) : null, // Use dining_table_id for dining tables
-    };
+      const orderItemsForMarkReceived = cartItems.map(cartItem => ({
+        service_offering_id: cartItem.serviceOffering.id,
+        quantity: cartItem.quantity,
+        notes: cartItem.notes || null,
+      }));
 
-    console.log('Creating order with dining table ID:', orderData.dining_table_id);
-    createOrderMutation.mutate(orderData);
-  }, [selectedOrder, handleReceiveOrder, selectedCustomerId, cartItems, orderType, selectedTableId, t, createOrderMutation]);
+      const orderData: NewOrderFormData = {
+        customer_id: selectedCustomerId,
+        items: orderItemsForCreate,
+        notes: undefined,
+        due_date: undefined,
+        order_type: orderType,
+        dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
+      };
+
+      // If we have a selected order, update it with the current cart items
+      if (selectedOrder) {
+        // Mark as received with all order items and details
+        const received = await markOrderReceived(selectedOrder.id, {
+          items: orderItemsForMarkReceived,
+          customer_id: parseInt(selectedCustomerId),
+          order_type: orderType,
+        });
+        setSelectedOrder(received.order);
+      } else {
+        // Create new order and immediately mark as received
+        const response = await createOrder(orderData, allServiceOfferings);
+        const createdOrder = handleOrderResponse(response, undefined);
+        
+        // Immediately mark as received with the same order items
+        const received = await markOrderReceived(createdOrder.id, {
+          items: orderItemsForMarkReceived,
+          customer_id: parseInt(selectedCustomerId),
+          order_type: orderType,
+        });
+        setSelectedOrder(received.order);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+      toast.success(t("orderReceivedSuccessfully", { ns: "orders", defaultValue: "Order received successfully" }));
+      setIsPdfDialogOpen(true);
+    } catch (error) {
+      console.error('Failed to create/update and receive order:', error);
+      toast.error(t("failedToReceiveOrder", { ns: "orders", defaultValue: "Failed to receive order" }));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedOrder, selectedCustomerId, cartItems, orderType, selectedTableId, t, allServiceOfferings, queryClient]);
 
   
 
@@ -1030,8 +919,8 @@ const POSPage: React.FC = () => {
 
       <main className="flex-1  mt-1 overflow-hidden">
         <div className="flex gap-2 h-full">
-          {/* Show product columns only when a customer is selected */}
-          {(selectedCustomerId || selectedOrder?.customer) ? (
+          {/* Show product columns when a customer is selected OR in new order mode */}
+          {(selectedCustomerId || selectedOrder?.customer || isNewOrderMode) ? (
             <>
               {/* iPad Layout */}
               {isIpadView ? (
@@ -1104,7 +993,6 @@ const POSPage: React.FC = () => {
                             items={cartItems}
                             onRemoveItem={handleRemoveItem}
                             onUpdateQuantity={handleUpdateQuantity}
-                            onUpdateDimensions={handleUpdateDimensions}
                             onUpdateNotes={handleUpdateNotes}
                             onUpdateCompositions={handleUpdateCompositions}
                             onSaveNotesToBackend={handleSaveNotesToBackend}
@@ -1194,7 +1082,6 @@ const POSPage: React.FC = () => {
                                items={cartItems}
                                onRemoveItem={handleRemoveItem}
                                onUpdateQuantity={handleUpdateQuantity}
-                               onUpdateDimensions={handleUpdateDimensions}
                                onUpdateNotes={handleUpdateNotes}
                                onUpdateCompositions={handleUpdateCompositions}
                                onSaveNotesToBackend={handleSaveNotesToBackend}
@@ -1344,7 +1231,6 @@ const POSPage: React.FC = () => {
               items={cartItems}
               onRemoveItem={handleRemoveItem}
               onUpdateQuantity={handleUpdateQuantity}
-              onUpdateDimensions={handleUpdateDimensions}
               onUpdateNotes={handleUpdateNotes}
               onUpdateCompositions={handleUpdateCompositions}
               onSaveNotesToBackend={handleSaveNotesToBackend}

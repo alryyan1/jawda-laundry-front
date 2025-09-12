@@ -317,14 +317,13 @@ const MainLayout: React.FC = () => {
     productType?: { id?: number; name?: string; display_name?: string };
     product_type_id?: number;
     display_name?: string;
-    name_override?: string;
     default_price?: number | null;
   };
   const handlePrintPriceList = () => {
     const rows = (offeringsForPrint as OfferingForPrint[]).map((o) => {
       const product = o.productType?.name || o.productType?.display_name || o.display_name || '—';
       const code = o.productType?.id ?? o.product_type_id ?? '—';
-      const service = o.display_name || o.name_override || '—';
+      const service = o.display_name || '—';
       const price = o.default_price ?? '—';
       return `<tr><td>${code}</td><td>${product}</td><td>${service}</td><td style="text-align:right">${price}</td></tr>`;
     }).join('');
@@ -811,7 +810,7 @@ const MainLayout: React.FC = () => {
                     <tr key={o.id} className="border-b last:border-0">
                       <td className="p-2">{o.productType?.id ?? o.product_type_id}</td>
                       <td className="p-2">{o.productType?.name || o.productType?.display_name || o.display_name}</td>
-                      <td className="p-2">{o.display_name || o.name_override}</td>
+                      <td className="p-2">{o.display_name}</td>
                       <td className="p-2 text-right">{o.default_price ?? '-'}</td>
                     </tr>
                   ))}

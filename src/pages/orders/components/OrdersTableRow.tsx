@@ -18,7 +18,6 @@ type OrdersTableRowProps = {
   onOpenPayments: (order: Order) => void;
   onRecordPayment: (order: Order) => void;
   onMarkCompleted: (order: Order) => void;
-  onMarkDelivered: (order: Order) => void;
   onOpenTimeline: (order: Order) => void;
   isCompleting?: boolean;
   can: (permission: string) => boolean;
@@ -35,7 +34,6 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   onOpenPayments,
   onRecordPayment,
   onMarkCompleted,
-  onMarkDelivered,
   onOpenTimeline,
   isCompleting,
   can,
@@ -76,7 +74,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
        >
         <TableCell className="font-mono text-sm font-bold text-center">{order.id}</TableCell>
         <TableCell className="font-mono text-sm font-bold text-center">{order.daily_order_number ?? '-'}</TableCell>
-        <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
+        {/* <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell> */}
                  <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
          <TableCell className="text-center">
            <button type="button" onClick={(e) => { e.stopPropagation(); onOpenTimeline(order); }} className="inline-flex items-center gap-1 hover:opacity-80">
@@ -84,50 +82,47 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
            </button>
          </TableCell>
                    <TableCell className="text-center">
-            <div className="max-w-xs truncate" title={order.items?.map(item => 
-              `${item.serviceOffering?.productType?.name || 'Unknown Product'} (${item.quantity})`
-            ).join(', ')}>
-              {order.items?.slice(0, 2).map(item => 
-                `${item.serviceOffering?.productType?.name || 'Unknown Product'} (${item.quantity})`
-              ).join(', ')}
-              {order.items && order.items.length > 2 && (
-                <span className="text-muted-foreground text-xs"> +{order.items.length - 2} more</span>
-              )}
-            </div>
-          </TableCell>
+           <div className="max-h-36 overflow-y-auto space-y-1">
+             {order.items?.map((item) => {
+               const name = item.serviceOffering?.productType?.name || item.serviceOffering?.display_name || 'Unknown Product';
+               return (
+                 <div key={item.id} className="truncate" title={`${name} (${item.quantity})`}>
+                   {name} <span className="text-blue-600 dark:text-blue-400 font-semibold">({item.quantity})</span>
+                 </div>
+               );
+             })}
+           </div>
+         </TableCell>
         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col gap-1">
-            {!order.completed_at && can("order:update-status") && (
+            {order.status === 'pending' ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onMarkCompleted(order)}
-                disabled={!!isCompleting}
                 className="h-7 text-xs"
+                disabled={isCompleting}
               >
-                {isCompleting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
-                {t("markComplete", { defaultValue: "Mark Complete" })}
+                {isCompleting ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {t("markCompleted", { defaultValue: "Mark Complete" })}
+                  </span>
+                ) : (
+                  t("markCompleted", { defaultValue: "Mark Complete" })
+                )}
               </Button>
-            )}
-            {order.status === 'completed' && can("order:update-status") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onMarkDelivered(order)}
-                className="h-7 text-xs"
-              >
-                {t("markDelivered", { defaultValue: "Mark Delivered" })}
-              </Button>
-            )}
-            {order.status === 'delivered' && can("order:record-payment") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onRecordPayment(order)}
-                className="h-7 text-xs"
-              >
-                {t("recordPayment", { defaultValue: "Record Payment" })}
-              </Button>
+            ) : (
+              can("order:record-payment") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onRecordPayment(order)}
+                  className="h-7 text-xs"
+                >
+                  {t("recordPayment", { defaultValue: "Record Payment" })}
+                </Button>
+              )
             )}
           </div>
         </TableCell>

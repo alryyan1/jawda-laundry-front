@@ -5,12 +5,9 @@ import type { ServiceOffering, PaginatedResponse, PricingStrategy } from "@/type
 export interface ServiceOfferingFormData {
   product_type_id: number | string;
   service_action_id: number | string;
-  name_override?: string;
   description_override?: string;
   default_price?: number | string; // Allow string for form input
   pricing_strategy: PricingStrategy;
-  default_price_per_sq_meter?: number | string;
-  applicable_unit?: string;
   is_active: boolean;
 }
 
@@ -46,9 +43,6 @@ export const createServiceOffering = async (
     default_price: formData.default_price
       ? parseFloat(formData.default_price as string)
       : undefined,
-    default_price_per_sq_meter: formData.default_price_per_sq_meter
-      ? parseFloat(formData.default_price_per_sq_meter as string)
-      : undefined,
   };
   const { data } = await apiClient.post("/service-offerings", payload);
   return data.data;
@@ -62,9 +56,6 @@ export const updateServiceOffering = async (
     ...formData,
     default_price: formData.default_price
       ? parseFloat(formData.default_price as string)
-      : undefined,
-    default_price_per_sq_meter: formData.default_price_per_sq_meter
-      ? parseFloat(formData.default_price_per_sq_meter as string)
       : undefined,
   };
   const { data } = await apiClient.put(`/service-offerings/${id}`, payload);

@@ -12,11 +12,10 @@ import { cn } from "@/lib/utils";
 
 interface CartColumnProps {
   items: CartItem[];
-  onRemoveItem: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
-  onUpdateDimensions: (id: string, dimensions: { length?: number; width?: number }) => void;
-  onUpdateNotes: (id: string, notes: string) => void;
-  onUpdateCompositions: (id: string, excludedIds: number[]) => void;
+  onRemoveItem: (id: string | number) => void;
+  onUpdateQuantity: (id: string | number, quantity: number) => void;
+  onUpdateNotes: (id: string | number, notes: string) => void;
+  onUpdateCompositions: (id: string | number, excludedIds: number[]) => void;
   onSaveNotesToBackend?: (orderItemId: string | number, notes: string) => Promise<void>;
   onCheckout: () => void;
   onCancelOrder?: () => void;
@@ -33,7 +32,6 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   items,
   onRemoveItem,
   onUpdateQuantity,
-  onUpdateDimensions,
   onUpdateNotes,
   onUpdateCompositions,
   onSaveNotesToBackend,
@@ -44,7 +42,6 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   isReadOnly = false,
   isReceived = false,
   paymentStatus,
-  orderId,
   isLoadingItems = false,
 }) => {
   const { t, i18n } = useTranslation(["common", "orders"]);
@@ -69,7 +66,6 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   const itemsToShow = selectedItemId 
     ? sortedItems.filter(item => item.id === selectedItemId)
     : sortedItems;
-console.log(itemsToShow,'itemsToShow',items,'items')
 
   // Handle avatar click
   const handleAvatarClick = (itemId: string) => {
@@ -144,9 +140,9 @@ console.log(itemsToShow,'itemsToShow',items,'items')
           
     
         </div>
-      )}
+        )}
 
-      <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
+        <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
         <div className={cn(
           "p-1 space-y-4",
           isReceived && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
@@ -156,9 +152,13 @@ console.log(itemsToShow,'itemsToShow',items,'items')
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent mb-2" />
               <p>{t("loading", { ns: "common", defaultValue: "Loading..." })}</p>
             </div>
-          ) : itemsToShow.length === 0 ? (
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
               <p>{t("cartIsEmpty", { ns: "orders" })}</p>
+            </div>
+          ) : itemsToShow.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">
+              <p>{t("noItemsToShow", { ns: "orders", defaultValue: "No items to show" })}</p>
             </div>
           ) : (
             itemsToShow.map((item, index) => (
@@ -167,7 +167,6 @@ console.log(itemsToShow,'itemsToShow',items,'items')
                 item={item}
                 onRemoveItem={onRemoveItem}
                 onUpdateQuantity={onUpdateQuantity}
-                onUpdateDimensions={onUpdateDimensions}
                 onUpdateNotes={onUpdateNotes}
                 onUpdateCompositions={onUpdateCompositions}
                 onSaveNotesToBackend={onSaveNotesToBackend}
@@ -220,7 +219,7 @@ console.log(itemsToShow,'itemsToShow',items,'items')
               <Button
                 className="w-full h-12 text-base font-semibold"
                 onClick={onCheckout}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingItems || items.length === 0}
               >
                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t("receiveOrder", { ns: "orders", defaultValue: "Receive Order" })}

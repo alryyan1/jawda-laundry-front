@@ -18,9 +18,6 @@ import type {
 interface BackendOrderItemPayload {
     service_offering_id: number;
     quantity: number;
-    product_description_custom?: string | null;
-    length_meters?: number | null;
-    width_meters?: number | null;
     notes?: string | null;
     // If updating, you might send an 'id' for existing items, or a flag for new/deleted
     // id?: number | null; // For updates
@@ -72,6 +69,7 @@ export const getOrders = async (
         category_sequence_search?: string;
         show_only_incomplete?: boolean;
         shiftId?: number;
+        categoryId?: string;
     }
 ): Promise<PaginatedResponse<Order>> => {
     const params: any = { page, per_page: perPage };
@@ -86,6 +84,7 @@ export const getOrders = async (
     if (filters?.category_sequence_search) params.category_sequence_search = filters.category_sequence_search;
     if (filters?.show_only_incomplete) params.show_only_incomplete = filters.show_only_incomplete;
     if (filters?.shiftId) params.shift_id = filters.shiftId;
+    if (filters?.categoryId) params.category_id = filters.categoryId;
 
     const { data } = await apiClient.get<PaginatedResponse<Order>>('/orders', { params });
     return data;
@@ -115,9 +114,6 @@ export const addOrderItem = async (
   payload: {
     service_offering_id: number;
     quantity: number;
-    product_description_custom?: string | null;
-    length_meters?: number | null;
-    width_meters?: number | null;
     notes?: string | null;
   }
 ): Promise<{ order_item: OrderItem; order: Order; message: string }> => {
@@ -151,21 +147,9 @@ export const createOrder = async (orderData: FrontendNewOrderFormData, serviceOf
         
      
 
-        // Convert length and width to numbers if they exist
-        const lengthMeters = item.length_meters ? 
-            (typeof item.length_meters === 'string' ? parseFloat(item.length_meters) : item.length_meters) : 
-            null;
-        
-        const widthMeters = item.width_meters ? 
-            (typeof item.width_meters === 'string' ? parseFloat(item.width_meters) : item.width_meters) : 
-            null;
-
         return {
             service_offering_id: item.service_offering_id,
             quantity: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity,
-            product_description_custom: item.product_description_custom || null,
-            length_meters: lengthMeters,
-            width_meters: widthMeters,
             notes: item.notes || null,
         };
     });
@@ -246,8 +230,6 @@ export const getOrderItemQuote = async (payload: QuoteItemPayload): Promise<Quot
     const quoteApiPayload: any = {
         service_offering_id: Number(payload.service_offering_id),
         quantity: Number(payload.quantity),
-        length_meters: payload.length_meters ? Number(payload.length_meters) : null,
-        width_meters: payload.width_meters ? Number(payload.width_meters) : null,
     };
     if (payload.customer_id) {
         quoteApiPayload.customer_id = Number(payload.customer_id);
@@ -321,9 +303,6 @@ const prepareOrderItemsPayload = (
         return {
             service_offering_id: Number(offeringId),
             quantity: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity,
-            product_description_custom: item.product_description_custom || null,
-            length_meters: item.length_meters && String(item.length_meters).trim() !== '' ? parseFloat(String(item.length_meters)) : null,
-            width_meters: item.width_meters && String(item.width_meters).trim() !== '' ? parseFloat(String(item.width_meters)) : null,
             notes: item.notes || null,
             // If NOT using delete-and-recreate, you'd pass item ID for existing items:
             // id: item.db_id || null, // Assuming you store original DB ID on form item
@@ -496,6 +475,30 @@ export const getNextShift = async (shiftId: number) => {
   return data.shift as { id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null } | null;
 };
 
+export const getShiftsByMonth = async (year: number, month: number) => {
+  const { data } = await apiClient.get<{ shifts: any[] }>(`/shifts/by-month`, {
+    params: { year, month }
+  });
+  return data.shifts as { id: number; opened_at: string; closed_at: string | null; opening_cash: number; closing_cash: number | null }[];
+};
+
+/**
+ * Get unique product categories from orders with counts
+ */
+export const getOrderCategories = async (filters?: {
+  shiftId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<{ id: number; name: string; count: number }[]> => {
+  const params: any = {};
+  if (filters?.shiftId) params.shift_id = filters.shiftId;
+  if (filters?.dateFrom) params.date_from = filters.dateFrom;
+  if (filters?.dateTo) params.date_to = filters.dateTo;
+
+  const { data } = await apiClient.get<{ id: number; name: string; count: number }[]>('/orders/categories', { params });
+  return data;
+};
+
 export const deleteOrderItem = async (orderItemId: number | string): Promise<{ order: Order; message: string }> => {
   const { data } = await apiClient.delete<{ order: Order; message: string }>(`/order-items/${orderItemId}`);
   return data;
@@ -509,24 +512,22 @@ export const cancelOrder = async (orderId: string | number): Promise<{ order: Or
     return data;
 };
 
-export const markOrderReceived = async (orderId: string | number): Promise<{ order: Order; message: string }> => {
-    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-received`);
+export const markOrderReceived = async (
+    orderId: string | number, 
+    payload?: {
+        items?: Array<{
+            service_offering_id: number;
+            quantity: number;
+            notes?: string | null;
+        }>;
+        customer_id?: number;
+        order_type?: 'in_house' | 'take_away' | 'delivery';
+    }
+): Promise<{ order: Order; message: string }> => {
+    const { data } = await apiClient.post<{ order: Order; message: string }>(`/orders/${orderId}/mark-received`, payload || {});
     return data;
 };
 
-/**
- * Update order item dimensions and recalculate totals
- */
-export const updateOrderItemDimensions = async (
-    orderItemId: string | number,
-    dimensions: { length_meters?: number | null; width_meters?: number | null }
-): Promise<{ order_item: OrderItem; order_total: number; message: string }> => {
-    const { data } = await apiClient.patch<{ order_item: OrderItem; order_total: number; message: string }>(
-        `/order-items/${orderItemId}/dimensions`,
-        dimensions
-    );
-    return data;
-};
 
 /**
  * Update order item quantity and recalculate totals

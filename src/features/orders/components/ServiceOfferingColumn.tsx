@@ -42,14 +42,6 @@ export const ServiceOfferingColumn: React.FC<ServiceOfferingColumnProps> = ({
   });
 
   const getPriceDisplay = (offering: ServiceOffering): string => {
-    // We now get is_dimension_based from the prop, not the offering's nested type
-    if (selectedProductType?.is_dimension_based) {
-      return `${formatCurrency(
-        offering.default_price_per_sq_meter,
-        "USD",
-        i18n.language
-      )} / ${t("units.sq_meter")}`;
-    }
     return formatCurrency(offering.default_price, "USD", i18n.language);
   };
 

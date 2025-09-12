@@ -12,12 +12,9 @@ import  type {
 export interface ServiceOfferingFormData {
   product_type_id: number | string; // string from form, number for API
   service_action_id: number | string; // string from form, number for API
-  name_override?: string | null;
   description_override?: string | null;
   default_price?: number | string | null; // string from form, number/null for API
   pricing_strategy: PricingStrategy;
-  default_price_per_sq_meter?: number | string | null; // string from form, number/null for API
-  applicable_unit?: string | null;
   is_active: boolean;
 }
 
@@ -44,13 +41,7 @@ const preparePayload = (formData: Partial<ServiceOfferingFormData>): any => {
         ? null
         : parseFloat(String(formData.default_price));
   }
-  if (formData.default_price_per_sq_meter !== undefined) {
-    payload.default_price_per_sq_meter =
-      formData.default_price_per_sq_meter === "" ||
-      formData.default_price_per_sq_meter === null
-        ? null
-        : parseFloat(String(formData.default_price_per_sq_meter));
-  }
+  
   // is_active is already boolean from Switch component
   return payload;
 };
