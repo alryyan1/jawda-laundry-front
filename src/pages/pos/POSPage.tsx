@@ -18,7 +18,7 @@ import type {
   Order,
   PricingStrategy,
 } from "@/types";
-import type { DiningTable } from "@/types/dining.types";
+
 import { CategoryColumn } from "@/features/pos/components/CategoryColumn";
 import { ProductColumn } from "@/features/pos/components/ProductColumn";
 import { ProductListColumn } from "@/features/pos/components/ProductListColumn";
@@ -48,10 +48,7 @@ import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
-import {
-  getDiningTables,
-  updateDiningTableStatus,
-} from "@/api/diningTableService";
+
 import {
   pricingRuleService,
   type ServiceOfferingWithPricing,
@@ -107,7 +104,7 @@ const POSPage: React.FC = () => {
   );
   const [selectedProductType, setSelectedProductType] =
     useState<ProductType | null>(null);
-  const [selectedTableId, setSelectedTableId] = useState<string>(" ");
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<
     "in_house" | "take_away" | "delivery"
@@ -207,10 +204,6 @@ const POSPage: React.FC = () => {
   );
 
   // Fetch dining tables for in-house orders
-  useQuery<DiningTable[], Error>({
-    queryKey: ["diningTables"],
-    queryFn: getDiningTables,
-  });
 
   // Fetch settings to determine POS display options
   const { data: settings } = useQuery({
@@ -234,16 +227,6 @@ const POSPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
 
-      // Update table status to occupied if order has a dining table
-      if (createdOrder.table_id) {
-        try {
-          await updateDiningTableStatus(createdOrder.table_id, "occupied");
-          queryClient.invalidateQueries({ queryKey: ["diningTables"] });
-        } catch (error) {
-          console.error("Failed to update table status:", error);
-        }
-      }
-
       // Clear the cart and reset selections - ensure cart is empty for new orders
       setCartItems([]);
 
@@ -253,7 +236,6 @@ const POSPage: React.FC = () => {
 
       setSelectedCategoryId(null);
       setSelectedProductType(null);
-      setSelectedTableId(createdOrder.dining_table_id?.toString() || " ");
       setOrderType(createdOrder.order_type);
       setIsProcessing(false);
 
@@ -764,72 +746,55 @@ const POSPage: React.FC = () => {
     );
   };
 
-  const handleOrderSelect = React.useCallback(
-    (order: Order) => {
-      setSelectedOrder(order);
-      setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
+  const handleOrderSelect = React.useCallback((order: Order) => {
+    setSelectedOrder(order);
+    setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
 
-      // Clear current cart items
-      setCartItems([]);
+    // Clear current cart items
+    setCartItems([]);
 
-      // Set customer if order has one
-      if (order.customer) {
-        setSelectedCustomerId(order.customer.id.toString());
-      } else {
-        setSelectedCustomerId(null);
-      }
+    // Set customer if order has one
+    if (order.customer) {
+      setSelectedCustomerId(order.customer.id.toString());
+    } else {
+      setSelectedCustomerId(null);
+    }
 
-      // Set order type
-      setOrderType(order.order_type);
+    // Set order type
+    setOrderType(order.order_type);
 
-      // Set table if order has one
-      if (order.dining_table_id) {
-        setSelectedTableId(order.dining_table_id.toString());
-      } else {
-        setSelectedTableId(" ");
-      }
+    // Set table if order has one
 
-      // Convert order items to cart items and populate cart only if order has items
-      if (order.items && order.items.length > 0) {
-        const cartItemsFromOrder: CartItem[] = order.items.map((item) => ({
-          id: uuidv4(), // Generate new ID for cart item
-          productType: {
-            id: item.serviceOffering?.product_type_id || 0,
-            product_category_id:
-              item.serviceOffering?.productType?.product_category_id || 0,
-            name: item.serviceOffering?.productType?.name || "Unknown Product",
-            is_dimension_based:
-              item.serviceOffering?.productType?.is_dimension_based || false,
-            is_active: item.serviceOffering?.productType?.is_active || true,
-          } as ProductType,
-          serviceOffering: item.serviceOffering || ({} as ServiceOffering),
-          quantity: item.quantity,
-          price: item.calculated_price_per_unit_item,
-          notes: item.notes || undefined,
-          length_meters: item.length_meters || undefined,
-          width_meters: item.width_meters || undefined,
-          _isQuoting: false,
-          _quotedSubTotal: item.sub_total,
-          _isExistingOrderItem: true, // Mark as existing order item
-        }));
+    // Convert order items to cart items and populate cart only if order has items
+    if (order.items && order.items.length > 0) {
+      const cartItemsFromOrder: CartItem[] = order.items.map((item) => ({
+        id: uuidv4(), // Generate new ID for cart item
+        productType: {
+          id: item.serviceOffering?.product_type_id || 0,
+          product_category_id:
+            item.serviceOffering?.productType?.product_category_id || 0,
+          name: item.serviceOffering?.productType?.name || "Unknown Product",
+          is_dimension_based:
+            item.serviceOffering?.productType?.is_dimension_based || false,
+          is_active: item.serviceOffering?.productType?.is_active || true,
+        } as ProductType,
+        serviceOffering: item.serviceOffering || ({} as ServiceOffering),
+        quantity: item.quantity,
+        price: item.calculated_price_per_unit_item,
+        notes: item.notes || undefined,
+        length_meters: item.length_meters || undefined,
+        width_meters: item.width_meters || undefined,
+        _isQuoting: false,
+        _quotedSubTotal: item.sub_total,
+        _isExistingOrderItem: true, // Mark as existing order item
+      }));
 
-        setCartItems(cartItemsFromOrder);
-      }
-      // If order has no items, cart remains empty (which is correct for new orders)
+      setCartItems(cartItemsFromOrder);
+    }
+    // If order has no items, cart remains empty (which is correct for new orders)
 
-      // Update dining table status to occupied if the order has a table
-      if (order.table_id) {
-        updateDiningTableStatus(order.table_id, "occupied")
-          .then(() => {
-            queryClient.invalidateQueries({ queryKey: ["diningTables"] });
-          })
-          .catch((error) => {
-            console.error("Failed to update table status:", error);
-          });
-      }
-    },
-    [queryClient],
-  );
+    // Update dining table status to occupied if the order has a table
+  }, []);
 
   const handleBackToCategories = () => {
     setShowCategoriesOnIpad(true);
@@ -913,7 +878,6 @@ const POSPage: React.FC = () => {
           customer_id: customerId,
           items: [], // Empty items array for new order
           order_type: orderType,
-          dining_table_id: selectedTableId ? parseInt(selectedTableId) : null,
         };
         createOrderMutation.mutate(newOrderData);
       }
@@ -923,7 +887,7 @@ const POSPage: React.FC = () => {
       selectedOrder,
       isNewOrderMode,
       orderType,
-      selectedTableId,
+
       createOrderMutation,
       queryClient,
       t,
@@ -1007,7 +971,6 @@ const POSPage: React.FC = () => {
         notes: selectedOrder.notes || undefined,
         due_date: selectedOrder.due_date || undefined,
         order_type: selectedOrder.order_type,
-        dining_table_id: selectedOrder.dining_table_id,
       };
 
       // Call the updateOrder API to add item to the existing order
@@ -1105,17 +1068,6 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    // Validate table selection for in-house orders
-    if (orderType === "in_house" && !selectedTableId) {
-      toast.error(
-        t("pleaseSelectTable", {
-          ns: "dining",
-          defaultValue: "Please select a table for in-house orders",
-        }),
-      );
-      return;
-    }
-
     setIsProcessing(true);
 
     const orderItems: OrderItemFormLine[] = cartItems.map((item) => ({
@@ -1141,13 +1093,8 @@ const POSPage: React.FC = () => {
       notes: undefined, // TODO: Add UI for order notes
       due_date: undefined, // TODO: Add UI for due date
       order_type: orderType,
-      dining_table_id: selectedTableId ? parseInt(selectedTableId) : null, // Use dining_table_id for dining tables
     };
 
-    console.log(
-      "Creating order with dining table ID:",
-      orderData.dining_table_id,
-    );
     createOrderMutation.mutate(orderData);
   };
 

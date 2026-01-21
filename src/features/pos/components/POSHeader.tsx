@@ -20,8 +20,6 @@ import { CustomerSelection } from "./CustomerSelection";
 //   sendOrderWhatsAppInvoice,
 // } from "@/api/orderService";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Printer, Calculator, Tags } from "lucide-react";
 
 interface POSHeaderProps {
@@ -45,14 +43,13 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   selectedOrder,
   onCalculatorClick,
   onPdfClick,
-  onOrderSelect,
+
   selectedCategoryId,
   onCategorySelect,
   isNewOrderMode,
   onOrderUpdate,
 }) => {
-  const { t } = useTranslation(["common", "orders", "dining"]);
-  const { can } = useAuth();
+  const { t } = useTranslation(["common", "orders"]);
   const { getSecondaryColor } = useTheme();
 
   // MUI theme for order ID display
@@ -219,29 +216,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           {/* Order Action Buttons - Only show when an order is selected */}
           {selectedOrder && (
             <div className="flex items-center gap-1">
-              {/* Table Display - Show when order has a dining table */}
-              {(selectedOrder.dining_table ||
-                selectedOrder.dining_table_id) && (
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-white whitespace-nowrap">
-                    {t("section", { ns: "dining", defaultValue: "Section" })}:
-                  </Label>
-                  <Badge
-                    variant="outline"
-                    className="text-xs px-1.5 py-0.5"
-                    style={{
-                      backgroundColor: getSecondaryColor(50),
-                      borderColor: getSecondaryColor(300),
-                      color: getSecondaryColor(700),
-                    }}
-                  >
-                    {selectedOrder.dining_table
-                      ? `${selectedOrder.dining_table.name} (${selectedOrder.dining_table.capacity} ${t("seats", { ns: "dining", defaultValue: "seats" })})`
-                      : `Section ${selectedOrder.dining_table_id}`}
-                  </Badge>
-                </div>
-              )}
-
               {/* Print and Download Buttons */}
               <Button
                 size="sm"

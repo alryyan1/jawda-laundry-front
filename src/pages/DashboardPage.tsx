@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import RoleTest from "@/components/RoleTest";
+
 import {
   ResponsiveContainer,
   BarChart,
@@ -17,12 +17,7 @@ import {
   Area,
 } from "recharts";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -80,7 +75,7 @@ const StatCard: React.FC<{
 const DashboardPage: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "dashboard", "orders"]);
   const { getSetting } = useSettings();
-  const currencySymbol = getSetting('currency_symbol', '$');
+  const currencySymbol = getSetting("currency_symbol", "$");
 
   const {
     data: summary,
@@ -152,7 +147,11 @@ const DashboardPage: React.FC = () => {
           title={t("monthlyRevenue", { ns: "dashboard" })}
           value={
             summary?.monthlyRevenue !== undefined
-              ? formatCurrency(summary.monthlyRevenue, currencySymbol, i18n.language)
+              ? formatCurrency(
+                  summary.monthlyRevenue,
+                  currencySymbol,
+                  i18n.language,
+                )
               : undefined
           }
           icon={DollarSign}
@@ -294,9 +293,8 @@ const DashboardPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Temporary Role Test Component */}
-      
     </div>
   );
 };

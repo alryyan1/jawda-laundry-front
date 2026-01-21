@@ -15,15 +15,13 @@ import UsersListPage from "@/pages/admin/users/UsersListPage";
 import UserFormPage from "@/pages/admin/users/UserFormPage";
 import RolesListPage from "@/pages/admin/roles/RolesListPage";
 import RoleFormPage from "@/pages/admin/roles/RoleFormPage";
-import RestaurantTablesListPage from "@/pages/admin/RestaurantTablesListPage";
+
 import NavigationManagementPage from "@/pages/admin/NavigationManagementPage";
 import { AppearanceSettings } from "@/features/settings/components/AppearanceSettings";
 import { AccountSettings } from "@/features/settings/components/AccountSettings";
 import { ProfileSettings } from "@/features/settings/components/ProfileSettings";
 import ExpenseCategoriesListPage from "@/pages/expenses/ExpenseCategoriesListPage";
-import POSPage from '@/pages/pos/POSPage';
-import DiningManagementPage from '@/pages/dining/DiningManagementPage';
-
+import POSPage from "@/pages/pos/POSPage";
 
 // Test Error Page for demonstrating ErrorBoundary - commented out as file doesn't exist
 // const TestErrorPage = React.lazy(() => import("@/pages/TestErrorPage"));
@@ -32,17 +30,25 @@ import DiningManagementPage from '@/pages/dining/DiningManagementPage';
 
 // General Pages
 const DashboardPage = React.lazy(() => import("@/pages/DashboardPage"));
-const SuppliersListPage = React.lazy(() => import('@/pages/suppliers/SuppliersListPage'));
+const SuppliersListPage = React.lazy(
+  () => import("@/pages/suppliers/SuppliersListPage"),
+);
 const SettingsPage = React.lazy(() => import("@/pages/admin/SettingsPage"));
 const NotFoundPage = React.lazy(() => import("@/pages/NotFoundPage"));
-const ExpensesListPage = React.lazy(() => import('@/pages/expenses/ExpensesListPage'));
-
-
+const ExpensesListPage = React.lazy(
+  () => import("@/pages/expenses/ExpensesListPage"),
+);
 
 // Purchase Pages
-const PurchasesListPage = React.lazy(() => import('@/pages/purchases/PurchasesListPage'));
-const NewPurchasePage = React.lazy(() => import('@/pages/purchases/NewPurchasePage'));
-const PurchaseDetailsPage = React.lazy(() => import('@/pages/purchases/PurchaseDetailsPage'));
+const PurchasesListPage = React.lazy(
+  () => import("@/pages/purchases/PurchasesListPage"),
+);
+const NewPurchasePage = React.lazy(
+  () => import("@/pages/purchases/NewPurchasePage"),
+);
+const PurchaseDetailsPage = React.lazy(
+  () => import("@/pages/purchases/PurchaseDetailsPage"),
+);
 // Auth Pages
 const LoginPage = React.lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = React.lazy(() => import("@/pages/auth/RegisterPage"));
@@ -50,60 +56,80 @@ const RegisterPage = React.lazy(() => import("@/pages/auth/RegisterPage"));
 
 // Customer Pages
 const CustomersListPage = React.lazy(
-  () => import("@/pages/customers/CustomersListPage")
+  () => import("@/pages/customers/CustomersListPage"),
 );
 const NewCustomerPage = React.lazy(
-  () => import("@/pages/customers/NewCustomerPage")
+  () => import("@/pages/customers/NewCustomerPage"),
 );
 const EditCustomerPage = React.lazy(
-  () => import("@/pages/customers/EditCustomerPage")
+  () => import("@/pages/customers/EditCustomerPage"),
 );
 const CustomerPriceListPage = React.lazy(
-  () => import("@/pages/customers/CustomerPriceListPage")
+  () => import("@/pages/customers/CustomerPriceListPage"),
 );
 
 // Order Pages
 const OrdersListPage = React.lazy(
-  () => import("@/pages/orders/OrdersListPage")
+  () => import("@/pages/orders/OrdersListPage"),
 );
 const OrderDetailsPage = React.lazy(
-  () => import("@/pages/orders/OrderDetailsPage")
+  () => import("@/pages/orders/OrderDetailsPage"),
 );
 // const EditOrderPage = React.lazy(() => import('@/pages/orders/EditOrderPage')); // Future
 
 // Service Management Pages (Admin)
 const ServiceOfferingsListPage = React.lazy(
-  () => import("@/pages/services/offerings/ServiceOfferingsListPage")
+  () => import("@/pages/services/offerings/ServiceOfferingsListPage"),
 );
 const NewServiceOfferingPage = React.lazy(
-  () => import("@/pages/services/offerings/NewServiceOfferingPage")
+  () => import("@/pages/services/offerings/NewServiceOfferingPage"),
 );
 const EditServiceOfferingPage = React.lazy(
-  () => import("@/pages/services/offerings/EditServiceOfferingPage")
+  () => import("@/pages/services/offerings/EditServiceOfferingPage"),
 );
 const MenuPage = React.lazy(
-  () => import("@/pages/services/offerings/MenuPage")
+  () => import("@/pages/services/offerings/MenuPage"),
 );
 
 const ProductCategoriesListPage = React.lazy(
-  () => import("@/pages/services/product-categories/ProductCategoriesListPage")
+  () => import("@/pages/services/product-categories/ProductCategoriesListPage"),
 );
 const ProductTypesListPage = React.lazy(
-  () => import("@/pages/services/product-types/ProductTypesListPage")
+  () => import("@/pages/services/product-types/ProductTypesListPage"),
 );
 const ServiceActionsListPage = React.lazy(
-  () => import("@/pages/services/service-actions/ServiceActionsListPage")
+  () => import("@/pages/services/service-actions/ServiceActionsListPage"),
 );
-const CustomerLedgerPage = React.lazy(() => import('@/pages/customers/CustomerLedgerPage'));
-const SalesSummaryPage = React.lazy(() => import('@/pages/reports/SalesSummaryPage'));
-const DailyRevenuePage = React.lazy(() => import('@/pages/reports/DailyRevenuePage'));
-const CostSummaryPage = React.lazy(() => import('@/pages/reports/CostSummaryPage'));
-const ReportsMainPage = React.lazy(() => import('@/pages/reports/ReportsMainPage'));
-const DetailedReportsMainPage = React.lazy(() => import('@/pages/reports/DetailedReportsMainPage'));
-const DetailedOrdersReport = React.lazy(() => import('@/pages/reports/DetailedOrdersReport'));
-const OverduePickupsReport = React.lazy(() => import('@/pages/reports/OverduePickupsReport'));
-const DailyCostsPage = React.lazy(() => import('@/pages/reports/DailyCostsPage'));
-const OrdersReportPage = React.lazy(() => import('@/pages/reports/OrdersReportPage'));
+const CustomerLedgerPage = React.lazy(
+  () => import("@/pages/customers/CustomerLedgerPage"),
+);
+const SalesSummaryPage = React.lazy(
+  () => import("@/pages/reports/SalesSummaryPage"),
+);
+const DailyRevenuePage = React.lazy(
+  () => import("@/pages/reports/DailyRevenuePage"),
+);
+const CostSummaryPage = React.lazy(
+  () => import("@/pages/reports/CostSummaryPage"),
+);
+const ReportsMainPage = React.lazy(
+  () => import("@/pages/reports/ReportsMainPage"),
+);
+const DetailedReportsMainPage = React.lazy(
+  () => import("@/pages/reports/DetailedReportsMainPage"),
+);
+const DetailedOrdersReport = React.lazy(
+  () => import("@/pages/reports/DetailedOrdersReport"),
+);
+const OverduePickupsReport = React.lazy(
+  () => import("@/pages/reports/OverduePickupsReport"),
+);
+const DailyCostsPage = React.lazy(
+  () => import("@/pages/reports/DailyCostsPage"),
+);
+const OrdersReportPage = React.lazy(
+  () => import("@/pages/reports/OrdersReportPage"),
+);
 
 // Loading fallback component for Suspense
 const RouteSuspenseFallback = () => (
@@ -142,7 +168,7 @@ export const router = createHashRouter([
     ), // MainLayout itself is not protected here, but its Outlet will be.
     children: [
       // --- PUBLIC ROUTE: MenuPage ---
-    
+
       {
         element: (
           <ErrorBoundary componentName="ProtectedRoute">
@@ -161,47 +187,88 @@ export const router = createHashRouter([
             ),
           },
           {
-            path: 'reports/daily-costs',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DailyCostsPage /></React.Suspense>,
+            path: "reports/daily-costs",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <DailyCostsPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'expenses',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpensesListPage /></React.Suspense>,
-          },
-          { // --- ADD THE NEW EXPENSE CATEGORIES ROUTE HERE ---
-            path: 'admin/expense-categories',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ExpenseCategoriesListPage /></React.Suspense>,
-          },
-          {
-            path: 'reports',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><ReportsMainPage /></React.Suspense>,
+            path: "expenses",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ExpensesListPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/detailed',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DetailedReportsMainPage /></React.Suspense>,
+            // --- ADD THE NEW EXPENSE CATEGORIES ROUTE HERE ---
+            path: "admin/expense-categories",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ExpenseCategoriesListPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/sales',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><SalesSummaryPage /></React.Suspense>,
+            path: "reports",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <ReportsMainPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/daily-revenue',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DailyRevenuePage /></React.Suspense>,
+            path: "reports/detailed",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <DetailedReportsMainPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/costs',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><CostSummaryPage /></React.Suspense>,
+            path: "reports/sales",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <SalesSummaryPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/detailed/overdue-pickups',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><OverduePickupsReport /></React.Suspense>,
+            path: "reports/daily-revenue",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <DailyRevenuePage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/detailed-orders',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><DetailedOrdersReport /></React.Suspense>,
+            path: "reports/costs",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <CostSummaryPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'reports/orders',
+            path: "reports/detailed/overdue-pickups",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <OverduePickupsReport />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "reports/detailed-orders",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <DetailedOrdersReport />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "reports/orders",
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <OrdersReportPage />
@@ -210,21 +277,37 @@ export const router = createHashRouter([
           },
           // Suppliers
           {
-            path: 'suppliers',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><SuppliersListPage /></React.Suspense>,
+            path: "suppliers",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <SuppliersListPage />
+              </React.Suspense>
+            ),
           },
           // Purchases
           {
-            path: 'purchases',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><PurchasesListPage /></React.Suspense>,
+            path: "purchases",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <PurchasesListPage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'purchases/new',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><NewPurchasePage /></React.Suspense>,
+            path: "purchases/new",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <NewPurchasePage />
+              </React.Suspense>
+            ),
           },
           {
-            path: 'purchases/:id',
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><PurchaseDetailsPage /></React.Suspense>,
+            path: "purchases/:id",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <PurchaseDetailsPage />
+              </React.Suspense>
+            ),
           },
           // Customers
           {
@@ -254,7 +337,11 @@ export const router = createHashRouter([
           },
           {
             path: "customers/:id/ledger",
-            element: <React.Suspense fallback={<RouteSuspenseFallback />}><CustomerLedgerPage /></React.Suspense>,
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <CustomerLedgerPage />
+              </React.Suspense>
+            ),
           },
           {
             path: "customers/:customerId/price-list",
@@ -273,7 +360,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-      
+
           {
             path: "orders/:id",
             element: (
@@ -292,14 +379,7 @@ export const router = createHashRouter([
             ),
           },
           // Dining Management Route
-          {
-            path: "dining",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <DiningManagementPage />
-              </React.Suspense>
-            ),
-          },
+
           // --- Settings Routes ---
           {
             path: "settings",
@@ -401,14 +481,7 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-          {
-            path: "admin/restaurant-tables",
-            element: (
-              <React.Suspense fallback={<RouteSuspenseFallback />}>
-                <RestaurantTablesListPage />
-              </React.Suspense>
-            ),
-          },
+
           {
             path: "admin/navigation",
             element: (
@@ -458,7 +531,6 @@ export const router = createHashRouter([
             ),
           },
 
-
           // Admin Service Management (could be further nested under an /admin path if desired)
           {
             path: "admin/product-categories",
@@ -484,7 +556,6 @@ export const router = createHashRouter([
               </React.Suspense>
             ),
           },
-
 
           // Settings
           {
@@ -526,7 +597,7 @@ export const router = createHashRouter([
           </React.Suspense>
         ),
       },
-      
+
       {
         path: "register",
         element: (

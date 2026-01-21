@@ -28,7 +28,7 @@ export const POSNewOrderButton: React.FC = () => {
         create_empty_order: true,
         customer_id: null,
         order_type: "in_house",
-        dining_table_id: null,
+
         items: [], // Empty items array
         status: "pending",
       });
