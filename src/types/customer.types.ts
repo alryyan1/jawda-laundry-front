@@ -1,25 +1,13 @@
 // src/types/customer.types.ts
-import type { User } from './auth.types';
-
-export interface CustomerType {
-    id: number;
-    name: string;
-    description?: string | null;
-    customers_count?: number;
-    pricing_rules_count?: number;
-    created_at?: string;
-    updated_at?: string;
-}
+import type { User } from "./auth.types";
 
 export interface Customer {
   id: number;
-  name:string;
+  name: string;
   phone: string; // Now required
   email?: string | null; // Now optional
   address?: string | null;
   notes?: string | null;
-  customer_type_id?: number | null;
-  customerType?: CustomerType;
   user_id?: number | null;
   managedBy?: User; // The staff member who manages them
   registered_date: string;
@@ -31,21 +19,19 @@ export interface Customer {
 
 // Form data for creating/editing customers
 export interface CustomerFormData {
-    name: string;
-    phone: string;
-    address?: string;
-    notes?: string;
-    customer_type_id?: number | string | null; // string from form select
-    is_default?: boolean; // New field for default customer
+  name: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+  is_default?: boolean; // New field for default customer
 }
-
 
 // src/types/customer.types.ts
 // ...
 
 export interface LedgerTransaction {
   date: string; // ISO date string
-  type: 'order' | 'payment' | 'refund';
+  type: "order" | "payment" | "refund";
   description: string;
   debit: number;
   credit: number;
@@ -54,18 +40,18 @@ export interface LedgerTransaction {
   total_amount?: number; // Total order amount
   paid_amount?: number; // Total amount paid
   remaining_balance?: number; // Remaining balance to be paid
-  payment_status?: 'paid' | 'unpaid' | 'partially_paid'; // Payment status
+  payment_status?: "paid" | "unpaid" | "partially_paid"; // Payment status
 }
 
 export interface CustomerLedger {
   customer: {
-      id: number;
-      name: string;
+    id: number;
+    name: string;
   };
   summary: {
-      total_debits: number;
-      total_credits: number;
-      current_balance: number;
+    total_debits: number;
+    total_credits: number;
+    current_balance: number;
   };
   transactions: LedgerTransaction[];
 }

@@ -31,8 +31,7 @@
   "confirmDelete": "Are you sure you want to delete this customer?",
   "confirmDeleteDescription": "This action cannot be undone.",
   "delete": "Delete",
-  "cancel": "Cancel"
-,
+  "cancel": "Cancel",
 
   "customerListDescription": "View and manage your registered customers.",
   "newCustomerTitle": "Add New Customer",
@@ -53,13 +52,7 @@
   "searchCustomerByNameOrPhone": "Search by name or phone...",
   "createNewCustomer": "Create New Customer",
   "customerDetails": "Customer Details",
-  "customerTypeOptional": "Customer Type (Optional)",
-  "newCustomerTypeTitle": "New Customer Type",
-  "newCustomerTypeDescription": "Create a new customer type for categorization.",
   "createCustomerBtn": "Create Customer",
-  "selectCustomerType": "Select Customer Type",
-  "customerTypeCreatedSuccess": "Customer type \"{{name}}\" created successfully.",
-  "customerTypeCreationFailed": "Failed to create customer type.",
   "customerPhone": "Customer Phone",
   "setAsDefault": "Set as default customer",
   "addPayment": "Add Payment",
