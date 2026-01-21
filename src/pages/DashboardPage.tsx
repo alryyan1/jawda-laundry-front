@@ -296,9 +296,7 @@ const DashboardPage: React.FC = () => {
       </div>
       
       {/* Temporary Role Test Component */}
-      <div className="mt-8">
-        <RoleTest />
-      </div>
+      
     </div>
   );
 };

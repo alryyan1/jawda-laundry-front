@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+// import { useMutation } from "@tanstack/react-query";
+// import { toast } from "sonner";
 
 // MUI imports for order ID display
 import { Card } from "@mui/material";
@@ -10,28 +10,19 @@ import {
   ThemeProvider as MuiThemeProvider,
 } from "@mui/material/styles";
 
-import { ORDER_STATUSES } from "@/lib/constants";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
-import type { Order, OrderStatus } from "@/types";
+import type { Order } from "@/types";
 import { CustomerSelection } from "./CustomerSelection";
-import { OrderStatusBadgeComponent } from "./OrderStatusBadge";
-import {
-  updateOrderStatus,
-  sendOrderWhatsAppInvoice,
-} from "@/api/orderService";
+// import {
+//   updateOrderStatus,
+//   sendOrderWhatsAppInvoice,
+// } from "@/api/orderService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Printer, Calculator, Tags } from "lucide-react";
+import { Printer, Calculator, Tags } from "lucide-react";
 
 interface POSHeaderProps {
   selectedCustomerId: string | null;
@@ -83,73 +74,8 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   });
 
   // Mutation for updating order status
-  const updateStatusMutation = useMutation<
-    { order: Order },
-    Error,
-    { orderId: string | number; status: OrderStatus }
-  >({
-    mutationFn: ({ orderId, status }) => updateOrderStatus(orderId, status),
-    onSuccess: async (response) => {
-      toast.success(
-        t("orderStatusUpdatedSuccess", {
-          ns: "orders",
-          status: t(`status_${response.order.status}`, { ns: "orders" }),
-        }),
-      );
-
-      // Update the selected order if it's the same one
-      if (selectedOrder && selectedOrder.id === response.order.id) {
-        onOrderSelect(response.order);
-
-        // If the order was completed, automatically reset to new order mode after a short delay
-        if (response.order.status === "completed") {
-          setTimeout(() => {
-            onOrderSelect(null as Order | null);
-          }, 2000); // 2 second delay to show completion status
-        }
-      }
-    },
-    onError: (error) => {
-      toast.error(
-        error.message || t("orderStatusUpdateFailed", { ns: "orders" }),
-      );
-    },
-  });
 
   // Mutation for sending WhatsApp invoice
-  const sendWhatsAppInvoiceMutation = useMutation<
-    { message: string },
-    Error,
-    string | number
-  >({
-    mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
-    onSuccess: (data) => {
-      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }), {
-        description: data.message,
-      });
-    },
-    onError: (error: Error) => {
-      // Extract detailed error message from backend response
-      const errorMessage =
-        (error as any)?.response?.data?.details ||
-        (error as any)?.response?.data?.message ||
-        error?.message ||
-        t("whatsappInvoiceSendFailed", { ns: "orders" });
-
-      toast.error(t("whatsappInvoiceSendFailed", { ns: "orders" }), {
-        description: errorMessage,
-      });
-    },
-  });
-
-  const handleStatusChange = (newStatus: OrderStatus) => {
-    if (selectedOrder && newStatus !== selectedOrder.status) {
-      updateStatusMutation.mutate({
-        orderId: selectedOrder.id,
-        status: newStatus,
-      });
-    }
-  };
 
   return (
     <MuiThemeProvider theme={muiTheme}>
@@ -313,42 +239,6 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
                       ? `${selectedOrder.dining_table.name} (${selectedOrder.dining_table.capacity} ${t("seats", { ns: "dining", defaultValue: "seats" })})`
                       : `Section ${selectedOrder.dining_table_id}`}
                   </Badge>
-                </div>
-              )}
-
-              {/* Status Change Select */}
-              {can("order:update-status") && (
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-white whitespace-nowrap">
-                    {t("changeStatus", { ns: "orders" })}:
-                  </Label>
-                  <Select
-                    value={selectedOrder.status}
-                    onValueChange={(newStatus: OrderStatus) =>
-                      handleStatusChange(newStatus)
-                    }
-                    disabled={
-                      updateStatusMutation.isPending ||
-                      selectedOrder.status === "completed" ||
-                      selectedOrder.status === "cancelled"
-                    }
-                  >
-                    <SelectTrigger className="w-28 h-7">
-                      <SelectValue
-                        placeholder={t("changeStatus", { ns: "orders" })}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {t(`status.${status}`, { ns: "services" })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {updateStatusMutation.isPending && (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  )}
                 </div>
               )}
 

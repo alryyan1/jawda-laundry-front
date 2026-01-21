@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 // MUI imports
-import { Autocomplete, TextField, CircularProgress } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { Autocomplete, TextField, CircularProgress } from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { UserPlus, AlertCircle } from "lucide-react";
 
 import type { Customer, PaginatedResponse, Order } from "@/types";
 import { getCustomers } from "@/api/customerService";
-import { updateOrderDetails } from "@/api/orderService";
+
 import { useTheme } from "@/context/ThemeContext";
 
 interface CustomerSelectionProps {
@@ -36,7 +35,7 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
   selectedOrder = null,
   onOrderUpdate,
 }) => {
-  console.log(disabled,'disabled')
+  console.log(disabled, "disabled");
   const { t } = useTranslation(["common", "orders", "customers"]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -52,34 +51,10 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Mutation to update order customer
-  const updateOrderCustomerMutation = useMutation({
-    mutationFn: async ({ orderId, customerId }: { orderId: number; customerId: string }) => {
-      return await updateOrderDetails(orderId, {
-        customer_id: parseInt(customerId, 10),
-      });
-    },
-    onSuccess: (updatedOrder) => {
-      toast.success(t("customerUpdatedSuccessfully", { 
-        ns: "orders", 
-        defaultValue: "Customer updated successfully" 
-      }));
-      onOrderUpdate?.(updatedOrder);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-    },
-    onError: (error) => {
-      console.error('Failed to update order customer:', error);
-      toast.error(t("failedToUpdateCustomer", { 
-        ns: "orders", 
-        defaultValue: "Failed to update customer" 
-      }));
-    },
-  });
-
   // Check if order has items (to determine if customer can be changed)
-  const orderHasItems = selectedOrder && selectedOrder.items && selectedOrder.items.length > 0;
-  const canChangeCustomer = !orderHasItems;
+  const orderHasItems =
+    selectedOrder && selectedOrder.items && selectedOrder.items.length > 0;
+  // Previously restricted changing customer if orderHasItems. Now removed per user request.
 
   // MUI theme
   const muiTheme = createTheme({
@@ -92,8 +67,10 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
 
   // Show animation when order has no customer or when in new order mode
   useEffect(() => {
-    if ((selectedOrder && !selectedOrder.customer && !disabled) || 
-        (!selectedCustomerId && selectedOrder && !disabled)) {
+    if (
+      (selectedOrder && !selectedOrder.customer && !disabled) ||
+      (!selectedCustomerId && selectedOrder && !disabled)
+    ) {
       setShowAnimation(true);
       const timer = setTimeout(() => setShowAnimation(false), 3000);
       return () => clearTimeout(timer);
@@ -108,27 +85,26 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
       onCustomerSelected("");
       return;
     }
-    
+
     onCustomerSelected(customer.id.toString());
-    
-    // If we have a selected order without a customer, update it in the backend
-    if (selectedOrder && !selectedOrder.customer) {
-      updateOrderCustomerMutation.mutate({
-        orderId: selectedOrder.id,
-        customerId: customer.id.toString(),
-      });
-    }
   };
 
   // Get current selected customer
   const getCurrentCustomer = () => {
     if (forcedCustomer) return forcedCustomer;
     if (!selectedCustomerId) return null;
-    return customersResponse?.data.find(cust => cust.id.toString() === selectedCustomerId) || null;
+    return (
+      customersResponse?.data.find(
+        (cust) => cust.id.toString() === selectedCustomerId,
+      ) || null
+    );
   };
 
   // Determine if we should show the animation
-  const shouldShowAnimation = showAnimation && selectedOrder && (!selectedOrder.customer || !selectedCustomerId);
+  const shouldShowAnimation =
+    showAnimation &&
+    selectedOrder &&
+    (!selectedOrder.customer || !selectedCustomerId);
 
   return (
     <ThemeProvider theme={muiTheme}>
@@ -137,51 +113,62 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
           {isLoadingCustomers ? (
             <Skeleton className="h-10 flex-grow" />
           ) : (
-            <div className={`relative flex-grow ${shouldShowAnimation ? 'animate-pulse' : ''}`}>
+            <div
+              className={`relative flex-grow ${shouldShowAnimation ? "animate-pulse" : ""}`}
+            >
               {shouldShowAnimation && (
                 <div className="absolute -top-8 left-0 right-0 flex items-center justify-center">
                   <div className="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs flex items-center gap-1 animate-bounce">
                     <AlertCircle className="h-3 w-3" />
-                    {t("selectCustomerForOrder", { 
-                      ns: "orders", 
-                      defaultValue: "Select customer for this order" 
+                    {t("selectCustomerForOrder", {
+                      ns: "orders",
+                      defaultValue: "Select customer for this order",
                     })}
                   </div>
                 </div>
               )}
-              <div className={`${shouldShowAnimation ? 'ring-2 ring-yellow-500 ring-opacity-50' : ''} ${!selectedCustomerId && !disabled && !selectedOrder?.customer ? 'ring-2 ring-red-500' : ''} rounded-md transition-all duration-300`}>
+              <div
+                className={`${shouldShowAnimation ? "ring-2 ring-yellow-500 ring-opacity-50" : ""} ${!selectedCustomerId && !disabled && !selectedOrder?.customer ? "ring-2 ring-red-500" : ""} rounded-md transition-all duration-300`}
+              >
                 <Autocomplete
                   options={customersResponse?.data || []}
-                  getOptionLabel={(option) => `${option.name} (${option.phone})`}
+                  getOptionLabel={(option) =>
+                    `${option.name} (${option.phone})`
+                  }
                   value={getCurrentCustomer()}
                   onChange={(_, newValue) => {
-                    if (!disabled && canChangeCustomer) {
+                    if (!disabled) {
                       handleCustomerSelect(newValue);
                     }
                   }}
-                  sx={
-                    {minWidth: '400px'}
-                  }
+                  sx={{ minWidth: "400px" }}
                   filterOptions={(options, { inputValue }) => {
                     const searchTerm = inputValue.toLowerCase();
-                    return options.filter(option => 
-                      option.name.toLowerCase().includes(searchTerm) ||
-                      option.phone.toLowerCase().includes(searchTerm)
+                    return options.filter(
+                      (option) =>
+                        option.name.toLowerCase().includes(searchTerm) ||
+                        option.phone.toLowerCase().includes(searchTerm),
                     );
                   }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder={shouldShowAnimation 
-                        ? t("selectCustomerRequired", { ns: "orders", defaultValue: "Select customer (required)" })
-                        : t("selectOrSearchCustomer", { ns: "customers" })
+                      placeholder={
+                        shouldShowAnimation
+                          ? t("selectCustomerRequired", {
+                              ns: "orders",
+                              defaultValue: "Select customer (required)",
+                            })
+                          : t("selectOrSearchCustomer", { ns: "customers" })
                       }
-                      disabled={disabled || !canChangeCustomer || updateOrderCustomerMutation.isPending}
+                      disabled={disabled}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
                           <>
-                            {isLoadingCustomers ? <CircularProgress color="inherit" size={20} /> : null}
+                            {isLoadingCustomers ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
                             {params.InputProps.endAdornment}
                           </>
                         ),
@@ -192,7 +179,9 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
                     <li {...props}>
                       <div>
                         <div className="font-medium">{option.name}</div>
-                        <div className="text-sm text-gray-500">{option.phone}</div>
+                        <div className="text-sm text-gray-500">
+                          {option.phone}
+                        </div>
                       </div>
                     </li>
                   )}
@@ -208,21 +197,14 @@ export const CustomerSelection: React.FC<CustomerSelectionProps> = ({
             size="icon"
             onClick={onNewCustomerClick || (() => navigate("/customers/new"))}
             title={t("createNewCustomer", { ns: "customers" })}
-            disabled={disabled || updateOrderCustomerMutation.isPending}
+            disabled={disabled}
           >
             <UserPlus className="h-4 w-4" />
           </Button>
         </div>
-        
-     
-        
+
         {/* Show loading state when updating order customer */}
-        {updateOrderCustomerMutation.isPending && (
-          <div className="text-xs text-muted-foreground animate-pulse">
-            {t("updatingCustomer", { ns: "orders", defaultValue: "Updating customer..." })}
-          </div>
-        )}
       </div>
     </ThemeProvider>
   );
-}; 
+};

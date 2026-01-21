@@ -31,40 +31,51 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-  import {
-    Home,
-    Package,
-    Users,
-    Settings as SettingsIcon,
-    LogOut,
-    Menu,
-    Shirt,
-    Layers,
-    Box,
-    Wand2,
-    ChevronDown,
-    ChevronRight,
-    Languages,
-    User2,
-    Lock,
-    DollarSign,
-    ShoppingCart,
-    ChartBar,
-    Calculator,
-    PanelLeftClose,
-    PanelLeftOpen,
-    TrendingUp,
-    Utensils,
+import {
+  Home,
+  Package,
+  Users,
+  Settings as SettingsIcon,
+  LogOut,
+  Menu,
+  Shirt,
+  Layers,
+  Box,
+  Wand2,
+  ChevronDown,
+  ChevronRight,
+  Languages,
+  User2,
+  Lock,
+  DollarSign,
+  ShoppingCart,
+  ChartBar,
+  Calculator,
+  PanelLeftClose,
+  PanelLeftOpen,
+  TrendingUp,
+  Utensils,
   Loader2,
   Lamp,
-  } from "lucide-react";
+} from "lucide-react";
 
 import { getUserNavigation } from "@/api/navigationService";
 import type { NavigationItem } from "@/types/navigation.types";
-import { useEffect, useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import AppIcon from '@/components/ui/app-icon';
+import { useEffect, useState } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import AppIcon from "@/components/ui/app-icon";
 
 // Type declaration for Echo
 declare global {
@@ -74,8 +85,14 @@ declare global {
         pusher: {
           connection: {
             state: string;
-            bind: (event: string, callback: (...args: unknown[]) => void) => void;
-            unbind: (event: string, callback: (...args: unknown[]) => void) => void;
+            bind: (
+              event: string,
+              callback: (...args: unknown[]) => void,
+            ) => void;
+            unbind: (
+              event: string,
+              callback: (...args: unknown[]) => void,
+            ) => void;
           };
           connect: () => void;
         };
@@ -91,7 +108,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Users,
   Settings: SettingsIcon,
   Menu,
-      Shirt,
+  Shirt,
   Layers,
   Box,
   Wand2,
@@ -105,7 +122,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Utensils,
   // Navigation item icon mappings
   LayoutDashboard: Home,
-      Briefcase: Shirt,
+  Briefcase: Shirt,
   Receipt: DollarSign,
   Truck: Users,
   BarChart3: ChartBar,
@@ -124,10 +141,12 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 // Real-time connection status lamp
 const RealtimeLamp: React.FC = () => {
   const [connected, setConnected] = useState(false);
-  const [state, setState] = useState('disconnected');
-  const [lastEvent, setLastEvent] = useState('');
+  const [state, setState] = useState("disconnected");
+  const [lastEvent, setLastEvent] = useState("");
   const [showReconnectDialog, setShowReconnectDialog] = useState(false);
-  const [reconnectStatus, setReconnectStatus] = useState<'idle'|'reconnecting'|'success'|'failed'>('idle');
+  const [reconnectStatus, setReconnectStatus] = useState<
+    "idle" | "reconnecting" | "success" | "failed"
+  >("idle");
 
   useEffect(() => {
     const echo = window.Echo;
@@ -135,40 +154,47 @@ const RealtimeLamp: React.FC = () => {
     const pusher = echo.connector.pusher;
     if (!pusher) return;
     const updateStatus = () => {
-      setConnected(pusher.connection.state === 'connected');
+      setConnected(pusher.connection.state === "connected");
       setState(pusher.connection.state);
       // If dialog is open and reconnecting, update status
-      if (showReconnectDialog && reconnectStatus === 'reconnecting') {
-        if (pusher.connection.state === 'connected') {
-          setReconnectStatus('success');
+      if (showReconnectDialog && reconnectStatus === "reconnecting") {
+        if (pusher.connection.state === "connected") {
+          setReconnectStatus("success");
           setTimeout(() => setShowReconnectDialog(false), 1000); // auto-close
-        } else if (pusher.connection.state === 'failed' || pusher.connection.state === 'unavailable') {
-          setReconnectStatus('failed');
+        } else if (
+          pusher.connection.state === "failed" ||
+          pusher.connection.state === "unavailable"
+        ) {
+          setReconnectStatus("failed");
         }
       }
     };
     const handleEvent = (...args: unknown[]) => {
       const event = args[0];
-      const eventString = typeof event === 'object' && event && 'type' in event && typeof event.type === 'string' 
-        ? event.type 
-        : String(event);
+      const eventString =
+        typeof event === "object" &&
+        event &&
+        "type" in event &&
+        typeof event.type === "string"
+          ? event.type
+          : String(event);
       setLastEvent(eventString);
     };
     updateStatus();
-    pusher.connection.bind('state_change', updateStatus);
-    pusher.connection.bind('message', handleEvent);
+    pusher.connection.bind("state_change", updateStatus);
+    pusher.connection.bind("message", handleEvent);
     return () => {
-      pusher.connection.unbind('state_change', updateStatus);
-      pusher.connection.unbind('message', handleEvent);
+      pusher.connection.unbind("state_change", updateStatus);
+      pusher.connection.unbind("message", handleEvent);
     };
   }, [showReconnectDialog, reconnectStatus]);
 
   const handleReconnect = () => {
     const echo = window.Echo;
-    console.log(echo,'echo');
+    console.log(echo, "echo");
     if (echo && echo.connector && echo.connector.pusher) {
       setShowReconnectDialog(true);
-      setReconnectStatus('reconnecting');
+      setReconnectStatus("reconnecting");
       echo.connector.pusher.connect();
     }
   };
@@ -177,15 +203,32 @@ const RealtimeLamp: React.FC = () => {
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="p-0 h-8 w-8" aria-label="Real-time connection status">
-            <Lamp className={`h-6 w-6 ${connected ? 'text-green-500' : 'text-gray-400'}`} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="p-0 h-8 w-8"
+            aria-label="Real-time connection status"
+          >
+            <Lamp
+              className={`h-6 w-6 ${connected ? "text-green-500" : "text-gray-400"}`}
+            />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 text-sm">
           <div className="mb-2 font-semibold">Real-time Connection</div>
-          <div>Status: <span className={connected ? 'text-green-600' : 'text-red-500'}>{state}</span></div>
-          <div>Last Event: <span className="text-muted-foreground">{lastEvent || 'N/A'}</span></div>
-          <Button onClick={handleReconnect} size="sm" className="mt-2">Reconnect</Button>
+          <div>
+            Status:{" "}
+            <span className={connected ? "text-green-600" : "text-red-500"}>
+              {state}
+            </span>
+          </div>
+          <div>
+            Last Event:{" "}
+            <span className="text-muted-foreground">{lastEvent || "N/A"}</span>
+          </div>
+          <Button onClick={handleReconnect} size="sm" className="mt-2">
+            Reconnect
+          </Button>
         </PopoverContent>
       </Popover>
       <Dialog open={showReconnectDialog} onOpenChange={setShowReconnectDialog}>
@@ -193,25 +236,36 @@ const RealtimeLamp: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Reconnecting...</DialogTitle>
             <DialogDescription>
-              {reconnectStatus === 'reconnecting' && (
-                <span className="flex items-center gap-2"><Loader2 className="animate-spin h-4 w-4" /> Attempting to reconnect to real-time server...</span>
+              {reconnectStatus === "reconnecting" && (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin h-4 w-4" /> Attempting to
+                  reconnect to real-time server...
+                </span>
               )}
-              {reconnectStatus === 'success' && (
-                <span className="text-green-600">Reconnected successfully!</span>
+              {reconnectStatus === "success" && (
+                <span className="text-green-600">
+                  Reconnected successfully!
+                </span>
               )}
-              {reconnectStatus === 'failed' && (
-                <span className="text-red-600">Failed to reconnect. Please try again.</span>
+              {reconnectStatus === "failed" && (
+                <span className="text-red-600">
+                  Failed to reconnect. Please try again.
+                </span>
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogClose asChild>
-            <Button variant="outline" className="mt-4 w-full">Close</Button>
+            <Button variant="outline" className="mt-4 w-full">
+              Close
+            </Button>
           </DialogClose>
         </DialogContent>
       </Dialog>
     </>
   );
 };
+
+import { useNewOrder } from "@/context/NewOrderContext";
 
 // MainLayout Component
 const MainLayout: React.FC = () => {
@@ -221,41 +275,73 @@ const MainLayout: React.FC = () => {
   const { user, logout: storeLogout } = useAuthStore();
   const { setIsSearchVisible } = useSearch();
   const { setSelectedDate } = useDate();
+  const { triggerCreateNewOrder } = useNewOrder();
 
   // Show search when on POS route
   React.useEffect(() => {
-    const isPOSRoute = location.pathname === '/pos';
+    const isPOSRoute = location.pathname === "/pos";
     setIsSearchVisible(isPOSRoute);
   }, [location.pathname, setIsSearchVisible]);
 
+  // Handle keyboard shortcuts (Space for new order) - moved to MainLayout
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only active on POS page
+      if (location.pathname !== "/pos") return;
+
+      // Ignore if user is typing in an input, textarea, or content editable element
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.code === "Space") {
+        e.preventDefault(); // Prevent scrolling
+        triggerCreateNewOrder();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [location.pathname, triggerCreateNewOrder]);
+
   // Fetch settings for app branding
   const { data: settings } = useQuery({
-    queryKey: ['settings'],
+    queryKey: ["settings"],
     queryFn: settingService.getSettings,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const [collapsedStates, setCollapsedStates] = useState<Record<number, boolean>>({});
+  const [collapsedStates, setCollapsedStates] = useState<
+    Record<number, boolean>
+  >({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Fetch user navigation
-  const { data: navigationItems = [], isLoading: isNavigationLoading, error: navigationError } = useQuery({
-    queryKey: ['user-navigation'],
+  const {
+    data: navigationItems = [],
+    isLoading: isNavigationLoading,
+    error: navigationError,
+  } = useQuery({
+    queryKey: ["user-navigation"],
     queryFn: getUserNavigation,
     enabled: !!user,
   });
 
-  console.log('User:', user);
-  console.log('User roles:', user?.roles);
-  console.log('Navigation items:', navigationItems);
-  console.log('Navigation error:', navigationError);
+  console.log("User:", user);
+  console.log("User roles:", user?.roles);
+  console.log("Navigation items:", navigationItems);
+  console.log("Navigation error:", navigationError);
   const handleLogout = async () => {
     try {
       await apiClient.post("/logout");
     } catch (error) {
       console.error(
         "Backend logout failed, proceeding with client-side logout:",
-        error
+        error,
       );
     } finally {
       storeLogout();
@@ -266,9 +352,9 @@ const MainLayout: React.FC = () => {
 
   // Toggle collapsible state
   const toggleCollapsible = (itemId: number) => {
-    setCollapsedStates(prev => ({
+    setCollapsedStates((prev) => ({
       ...prev,
-      [itemId]: !(prev[itemId] !== undefined ? prev[itemId] : true) // Default to true (collapsed)
+      [itemId]: !(prev[itemId] !== undefined ? prev[itemId] : true), // Default to true (collapsed)
     }));
   };
 
@@ -280,7 +366,9 @@ const MainLayout: React.FC = () => {
 
   // Get title for navigation item
   const getItemTitle = (item: NavigationItem) => {
-    return item.title[i18n.language as keyof typeof item.title] || item.title.en;
+    return (
+      item.title[i18n.language as keyof typeof item.title] || item.title.en
+    );
   };
 
   // --- User Navigation Dropdown ---
@@ -382,16 +470,16 @@ const MainLayout: React.FC = () => {
   };
 
   // --- Dynamic Sidebar Navigation ---
-  const SidebarNav: React.FC<{ mobile?: boolean; closeSheet?: () => void; collapsed?: boolean }> = ({
-    mobile = false,
-    closeSheet,
-    collapsed = false,
-  }) => {
+  const SidebarNav: React.FC<{
+    mobile?: boolean;
+    closeSheet?: () => void;
+    collapsed?: boolean;
+  }> = ({ mobile = false, closeSheet, collapsed = false }) => {
     if (isNavigationLoading) {
       return (
         <div className="flex items-center justify-center h-32">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="ml-2">{t('loading')}</span>
+          <span className="ml-2">{t("loading")}</span>
         </div>
       );
     }
@@ -401,10 +489,13 @@ const MainLayout: React.FC = () => {
       const title = getItemTitle(item);
       const hasChildren = item.children && item.children.length > 0;
       const isActive = location.pathname === item.route;
-      const isSubItemActive = hasChildren && item.children?.some(child => 
-        location.pathname === child.route
-      );
-      const isCollapsed = collapsedStates[item.id] !== undefined ? collapsedStates[item.id] : true; // Default to true (collapsed)
+      const isSubItemActive =
+        hasChildren &&
+        item.children?.some((child) => location.pathname === child.route);
+      const isCollapsed =
+        collapsedStates[item.id] !== undefined
+          ? collapsedStates[item.id]
+          : true; // Default to true (collapsed)
       // console.log(item,'item')
       if (hasChildren) {
         return collapsed ? (
@@ -445,7 +536,9 @@ const MainLayout: React.FC = () => {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pl-7 rtl:pr-7 pt-1 space-y-1">
-              {item.children?.map((child) => renderNavigationItem(child, level + 1))}
+              {item.children?.map((child) =>
+                renderNavigationItem(child, level + 1),
+              )}
             </CollapsibleContent>
           </Collapsible>
         );
@@ -479,58 +572,75 @@ const MainLayout: React.FC = () => {
         }`}
       >
         {navigationItems.map((item) => renderNavigationItem(item))}
-    </nav>
-  );
+      </nav>
+    );
   };
 
   // Check if current route is MenuPage
-  const isMenuPage = location.pathname.includes('/services/offerings/menu');
+  const isMenuPage = location.pathname.includes("/services/offerings/menu");
 
   // --- Main Layout JSX ---
   return (
-    <div className={`grid min-h-screen w-full transition-all duration-300 ${
-      isMenuPage 
-        ? "grid-cols-1" 
-        : isSidebarCollapsed 
-          ? "md:grid-cols-[60px_1fr]" 
-          : "md:grid-cols-[132px_1fr] lg:grid-cols-[250px_1fr]"
-    }`}>
+    <div
+      className={`grid min-h-screen w-full transition-all duration-300 ${
+        isMenuPage
+          ? "grid-cols-1"
+          : isSidebarCollapsed
+            ? "md:grid-cols-[60px_1fr]"
+            : "md:grid-cols-[132px_1fr] lg:grid-cols-[250px_1fr]"
+      }`}
+    >
       {/* Desktop Sidebar - Hidden on MenuPage */}
       {!isMenuPage && (
         <div className="hidden border-r bg-background md:block dark:bg-muted/40">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <div className="flex items-center justify-between w-full">
-                              {!isSidebarCollapsed && (
-                  <Link to="/" className="flex items-center gap-2 font-semibold">
-                    <AppIcon 
-                      iconUrl={settings?.company_logo_url} 
-                      className="h-6 w-6" 
+          <div className="flex h-full max-h-screen flex-col gap-2">
+            <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
+              <div className="flex items-center justify-between w-full">
+                {!isSidebarCollapsed && (
+                  <Link
+                    to="/"
+                    className="flex items-center gap-2 font-semibold"
+                  >
+                    <AppIcon
+                      iconUrl={settings?.company_logo_url}
+                      className="h-6 w-6"
                       fallbackIcon={Shirt}
                     />
-                    <span className="text-lg">{settings?.app_name || t("appName", { ns: "common" })}</span>
+                    <span className="text-lg">
+                      {settings?.app_name || t("appName", { ns: "common" })}
+                    </span>
                   </Link>
                 )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="ml-auto"
-                title={isSidebarCollapsed ? t("expandSidebar", { ns: "common", defaultValue: "Expand sidebar" }) : t("collapseSidebar", { ns: "common", defaultValue: "Collapse sidebar" })}
-              >
-                {isSidebarCollapsed ? (
-                  <PanelLeftOpen className="h-4 w-4" />
-                ) : (
-                  <PanelLeftClose className="h-4 w-4" />
-                )}
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className="ml-auto"
+                  title={
+                    isSidebarCollapsed
+                      ? t("expandSidebar", {
+                          ns: "common",
+                          defaultValue: "Expand sidebar",
+                        })
+                      : t("collapseSidebar", {
+                          ns: "common",
+                          defaultValue: "Collapse sidebar",
+                        })
+                  }
+                >
+                  {isSidebarCollapsed ? (
+                    <PanelLeftOpen className="h-4 w-4" />
+                  ) : (
+                    <PanelLeftClose className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <SidebarNav collapsed={isSidebarCollapsed} />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <SidebarNav collapsed={isSidebarCollapsed} />
-          </div>
         </div>
-      </div>
       )}
 
       <div className="flex flex-col">
@@ -539,49 +649,54 @@ const MainLayout: React.FC = () => {
           {/* Mobile Navigation Trigger - Hidden on MenuPage */}
           {!isMenuPage && (
             <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">
-                  {t("toggleNavigationMenu", {
-                    ns: "common",
-                    defaultValue: "Toggle navigation menu",
-                  })}
-                </span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0">
-              {" "}
-              {/* Remove padding for full height nav */}
-              <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6 self-start w-full">
-                <Link to="/" className="flex items-center gap-2 font-semibold">
-                  <AppIcon 
-                    iconUrl={settings?.company_logo_url} 
-                    className="h-6 w-6" 
-                    fallbackIcon={Shirt}
-                  />
-                  <span className="text-lg">
-                    {settings?.app_name || t("appName", { ns: "common" })}
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">
+                    {t("toggleNavigationMenu", {
+                      ns: "common",
+                      defaultValue: "Toggle navigation menu",
+                    })}
                   </span>
-                </Link>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <SidebarNav mobile />{" "}
-                {/* Pass closeSheet if you manage sheet state */}
-              </div>
-            </SheetContent>
-          </Sheet>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col p-0">
+                {" "}
+                {/* Remove padding for full height nav */}
+                <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6 self-start w-full">
+                  <Link
+                    to="/"
+                    className="flex items-center gap-2 font-semibold"
+                  >
+                    <AppIcon
+                      iconUrl={settings?.company_logo_url}
+                      className="h-6 w-6"
+                      fallbackIcon={Shirt}
+                    />
+                    <span className="text-lg">
+                      {settings?.app_name || t("appName", { ns: "common" })}
+                    </span>
+                  </Link>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <SidebarNav mobile />{" "}
+                  {/* Pass closeSheet if you manage sheet state */}
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
 
           {/* Flexible space to push items to the right */}
           <div className="w-full flex-1 flex items-center justify-center gap-4">
             <POSSearch />
-            {location.pathname === '/pos' && <POSDatePicker onDateChange={setSelectedDate} />}
-            {location.pathname === '/pos' && <POSNewOrderButton />}
+            {location.pathname === "/pos" && (
+              <POSDatePicker onDateChange={setSelectedDate} />
+            )}
+            {location.pathname === "/pos" && <POSNewOrderButton />}
           </div>
 
           {/* Right-aligned Header Items */}
