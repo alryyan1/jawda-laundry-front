@@ -1,8 +1,23 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckCircle, CreditCard, Edit3, Eye, MoreHorizontal, FileText, MessageSquare, FileText as FileTextIcon, Package, Loader2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  CheckCircle,
+  CreditCard,
+  Edit3,
+  Eye,
+  MoreHorizontal,
+  FileText,
+  Loader2,
+} from "lucide-react";
 import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
@@ -42,56 +57,77 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   currencySymbol,
   language,
 }) => {
-  const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+  const isFullyPaid =
+    order.amount_due === 0 ||
+    (order.total_amount > 0 && order.paid_amount >= order.total_amount);
 
   return (
     <TableRow
       key={order.id}
       className={`cursor-pointer hover:bg-muted/50 ${
-        selectedOrderId === order.id ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500" : ""
+        selectedOrderId === order.id
+          ? "bg-green-50 dark:bg-green-950/20 border-l-4 border-l-green-500"
+          : ""
       } ${isFullyPaid ? "bg-green-50/50 dark:bg-green-950/10 border-l-2 border-l-green-400" : ""}`}
       onClick={() => onNavigate(`/orders/${order.id}`)}
     >
-      <TableCell className="font-mono text-sm font-bold text-center">{order.id}</TableCell>
-      <TableCell className="text-center">{order.customer?.name || t("notAvailable")}</TableCell>
-      <TableCell className="text-center">{dayjs(order.order_date).format('DD/MM/YYYY')}</TableCell>
-      <TableCell className="text-center font-mono text-xs">
-        {order.category_sequences_string || order.category_sequences ? 
-          (order.category_sequences_string || Object.values(order.category_sequences || {}).join(', ')) : 
-          "-"
-        }
+      <TableCell className="font-mono text-sm font-bold text-center">
+        {order.id}
       </TableCell>
       <TableCell className="text-center">
-        {order.delivered_date ? dayjs(order.delivered_date).format('DD/MM/YYYY') : "-"}
+        {order.customer?.name || t("notAvailable")}
       </TableCell>
       <TableCell className="text-center">
-        <button type="button" onClick={(e) => { e.stopPropagation(); onOpenTimeline(order); }} className="inline-flex items-center gap-1 hover:opacity-80">
-          <OrderStatusBadge status={order.status} />
-        </button>
+        {dayjs(order.order_date).format("DD/MM/YYYY")}
       </TableCell>
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
-       
-          {order.whatsapp_text_sent && (
-            <div className="flex items-center gap-1" title={t("whatsappTextSent", { defaultValue: "WhatsApp text sent" })}>
-              <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-500" />
-            </div>
-          )}
-          {order.whatsapp_pdf_sent && (
-            <div className="flex items-center gap-1" title={t("whatsappPdfSent", { defaultValue: "WhatsApp PDF sent" })}>
-              <FileTextIcon className="h-4 w-4 text-blue-600 dark:text-blue-500" />
-            </div>
-          )}
-          {order.order_receive_message_sent && (
-            <div className="flex items-center gap-1" title={t("receiveMessageSent", { defaultValue: "Receive message sent" })}>
-              <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-500" />
-            </div>
-          )}
-          {!order.received && !order.whatsapp_text_sent && !order.whatsapp_pdf_sent && !order.order_receive_message_sent && (
-            <span className="text-xs text-muted-foreground">-</span>
+        <div className="flex flex-col items-center gap-1 max-w-[200px] mx-auto text-xs">
+          {order.items && order.items.length > 0 ? (
+            order.items.map((item, index) => (
+              <div
+                key={item.id}
+                className={`flex items-center justify-center gap-2 w-full py-1 ${index < order.items.length - 1 ? "border-b border-border/50" : ""}`}
+                title={`${item.quantity}x ${item.serviceOffering?.productType?.name || "Unknown"} - ${item.serviceOffering?.serviceAction?.name || ""}`}
+              >
+                {item.serviceOffering?.productType?.image_url && (
+                  <img
+                    src={item.serviceOffering.productType.image_url}
+                    alt={item.serviceOffering.productType.name}
+                    className="w-6 h-6 object-cover rounded shadow-sm flex-shrink-0 bg-secondary"
+                  />
+                )}
+                <div className="truncate text-center">
+                  <span className="font-bold">{item.quantity}x</span>{" "}
+                  {item.serviceOffering?.productType?.name || "Unknown"}{" "}
+                  <span className="text-muted-foreground text-[10px]">
+                    ({item.serviceOffering?.serviceAction?.name || ""})
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <span className="text-muted-foreground">-</span>
           )}
         </div>
       </TableCell>
+      <TableCell className="text-center">
+        {order.delivered_date
+          ? dayjs(order.delivered_date).format("DD/MM/YYYY")
+          : "-"}
+      </TableCell>
+      <TableCell className="text-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenTimeline(order);
+          }}
+          className="inline-flex items-center gap-1 hover:opacity-80"
+        >
+          <OrderStatusBadge status={order.status} />
+        </button>
+      </TableCell>
+
       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col gap-1">
           {!order.completed_at && can("order:update-status") && (
@@ -102,11 +138,13 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               disabled={!!isCompleting}
               className="h-7 text-xs"
             >
-              {isCompleting ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+              {isCompleting ? (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              ) : null}
               {t("markComplete", { defaultValue: "Mark Complete" })}
             </Button>
           )}
-          {order.status === 'completed' && can("order:update-status") && (
+          {order.status === "completed" && can("order:update-status") && (
             <Button
               variant="outline"
               size="sm"
@@ -116,7 +154,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               {t("markDelivered", { defaultValue: "Mark Delivered" })}
             </Button>
           )}
-          {order.status === 'delivered' && can("order:record-payment") && (
+          {order.status === "delivered" && can("order:record-payment") && (
             <Button
               variant="outline"
               size="sm"
@@ -128,14 +166,23 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
           )}
         </div>
       </TableCell>
-      <TableCell className="text-center font-bold text-lg">{formatCurrency(order.total_amount, currencySymbol, language, 3)}</TableCell>
-      <TableCell className={`text-center font-bold text-lg ${order.paid_amount > 0 ? 'text-green-600 dark:text-green-500' : ''}`}>
+      <TableCell className="text-center font-bold text-lg">
+        {formatCurrency(order.total_amount, currencySymbol, language, 3)}
+      </TableCell>
+      <TableCell
+        className={`text-center font-bold text-lg ${order.paid_amount > 0 ? "text-green-600 dark:text-green-500" : ""}`}
+      >
         <div className="flex items-center justify-center gap-1">
           {formatCurrency(order.paid_amount, currencySymbol, language, 3)}
-          {isFullyPaid && order.paid_amount > 0 && <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />}
+          {isFullyPaid && order.paid_amount > 0 && (
+            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
+          )}
         </div>
       </TableCell>
-      <TableCell className="text-center w-12" onClick={(e) => e.stopPropagation()}>
+      <TableCell
+        className="text-center w-12"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -177,4 +224,3 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
 };
 
 export default OrdersTableRow;
-

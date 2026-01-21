@@ -2,10 +2,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  keepPreviousData,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
-
 
 import {
   type Order,
@@ -15,7 +18,14 @@ import {
   type Customer,
   type ProductType,
 } from "@/types";
-import { getOrders, downloadOrdersListExcel, downloadOrdersListPdf, markOrderAsDelivered, updateOrderStatus, sendOrderWhatsAppMessage } from "@/api/orderService";
+import {
+  getOrders,
+  downloadOrdersListExcel,
+  downloadOrdersListPdf,
+  markOrderAsDelivered,
+  updateOrderStatus,
+  sendOrderWhatsAppMessage,
+} from "@/api/orderService";
 import { toast } from "sonner";
 import { getAllCustomers } from "@/api/customerService";
 import { getAllProductTypes } from "@/api/productTypeService";
@@ -45,11 +55,7 @@ import {
 } from "@/components/ui/select";
 import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
 
-import {
-  Loader2,
-  FileText,
-  Filter,
-} from "lucide-react";
+import { Loader2, FileText, Filter } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
 import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
@@ -58,14 +64,13 @@ import OrdersTableRow from "./components/OrdersTableRow";
 import OrdersPagination from "./components/OrdersPagination";
 import { OrderStatusTimelineDialog } from "@/features/orders/components/OrderStatusTimelineDialog";
 
-
 const OrdersListPage: React.FC = () => {
   const { t, i18n } = useTranslation("orders");
   const navigate = useNavigate();
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const { getSetting } = useSettings();
-  const currencySymbol = getSetting('currency_symbol', '$') || '$';
+  const currencySymbol = getSetting("currency_symbol", "$") || "$";
 
   // --- State Management ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,11 +91,15 @@ const OrdersListPage: React.FC = () => {
   });
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
     useState<Order | null>(null);
-  const [orderItemsDialogOrder, setOrderItemsDialogOrder] = useState<Order | null>(null);
-  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
+  const [orderItemsDialogOrder, setOrderItemsDialogOrder] =
+    useState<Order | null>(null);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] =
+    useState<Order | null>(null);
   const [timelineOrder, setTimelineOrder] = useState<Order | null>(null);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const [isCompletingOrderId, setIsCompletingOrderId] = useState<number | null>(null);
+  const [isCompletingOrderId, setIsCompletingOrderId] = useState<number | null>(
+    null,
+  );
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -123,7 +132,7 @@ const OrdersListPage: React.FC = () => {
       filters.dateTo,
       filters.categorySequenceSearch,
       filters.showOnlyIncomplete,
-    ]
+    ],
   );
 
   // Handler to update order item status in memory and cache
@@ -133,81 +142,101 @@ const OrdersListPage: React.FC = () => {
       return {
         ...prevOrder,
         items: prevOrder.items.map((item) =>
-          item.id === itemId ? { ...item, status: newStatus as OrderStatus } : item
+          item.id === itemId
+            ? { ...item, status: newStatus as OrderStatus }
+            : item,
         ),
       };
     });
 
     // Update the cache for the orders list
-    queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        data: oldData.data.map((order) => {
-          if (order.id === orderItemsDialogOrder?.id) {
-            return {
-              ...order,
-              items: order.items.map((item) =>
-                item.id === itemId ? { ...item, status: newStatus as OrderStatus } : item
-              ),
-            };
-          }
-          return order;
-        }),
-      };
-    });
+    queryClient.setQueryData(
+      queryKey,
+      (oldData: PaginatedResponse<Order> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((order) => {
+            if (order.id === orderItemsDialogOrder?.id) {
+              return {
+                ...order,
+                items: order.items.map((item) =>
+                  item.id === itemId
+                    ? { ...item, status: newStatus as OrderStatus }
+                    : item,
+                ),
+              };
+            }
+            return order;
+          }),
+        };
+      },
+    );
   };
 
   // Handler to update order item picked up quantity in memory and cache
-  const handleOrderItemPickedUpQuantityChange = (itemId: number, pickedUpQuantity: number) => {
+  const handleOrderItemPickedUpQuantityChange = (
+    itemId: number,
+    pickedUpQuantity: number,
+  ) => {
     setOrderItemsDialogOrder((prevOrder) => {
       if (!prevOrder) return prevOrder;
       return {
         ...prevOrder,
         items: prevOrder.items.map((item) =>
-          item.id === itemId ? { ...item, picked_up_quantity: pickedUpQuantity } : item
+          item.id === itemId
+            ? { ...item, picked_up_quantity: pickedUpQuantity }
+            : item,
         ),
       };
     });
 
     // Update the cache for the orders list
-    queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        data: oldData.data.map((order) => {
-          if (order.id === orderItemsDialogOrder?.id) {
-            return {
-              ...order,
-              items: order.items.map((item) =>
-                item.id === itemId ? { ...item, picked_up_quantity: pickedUpQuantity } : item
-              ),
-            };
-          }
-          return order;
-        }),
-      };
-    });
+    queryClient.setQueryData(
+      queryKey,
+      (oldData: PaginatedResponse<Order> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((order) => {
+            if (order.id === orderItemsDialogOrder?.id) {
+              return {
+                ...order,
+                items: order.items.map((item) =>
+                  item.id === itemId
+                    ? { ...item, picked_up_quantity: pickedUpQuantity }
+                    : item,
+                ),
+              };
+            }
+            return order;
+          }),
+        };
+      },
+    );
   };
 
   // Handler to update order status in cache
   const handleOrderStatusChange = (orderId: number, newStatus: string) => {
     // Update the cache for the orders list
-    queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-      if (!oldData) return oldData;
-      return {
-        ...oldData,
-        data: oldData.data.map((order) => {
-          if (order.id === orderId) {
-            return {
-              ...order,
-              status: newStatus as OrderStatus,
-            };
-          }
-          return order;
-        }),
-      };
-    });
+    queryClient.setQueryData(
+      queryKey,
+      (oldData: PaginatedResponse<Order> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((order) => {
+            if (order.id === orderId) {
+              return {
+                ...order,
+                status: newStatus as OrderStatus,
+              };
+            }
+            return order;
+          }),
+        };
+      },
+    );
   };
 
   // Handler to refresh orders data when dialog closes
@@ -224,24 +253,27 @@ const OrdersListPage: React.FC = () => {
     try {
       await markOrderAsDelivered(order.id);
       // Update the cache
-      queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((o) => {
-            if (o.id === order.id) {
-              return { 
-                ...o, 
-                status: 'delivered' as OrderStatus,
-                delivered_date: new Date().toISOString()
-              };
-            }
-            return o;
-          }),
-        };
-      });
+      queryClient.setQueryData(
+        queryKey,
+        (oldData: PaginatedResponse<Order> | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((o) => {
+              if (o.id === order.id) {
+                return {
+                  ...o,
+                  status: "delivered" as OrderStatus,
+                  delivered_date: new Date().toISOString(),
+                };
+              }
+              return o;
+            }),
+          };
+        },
+      );
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
     }
   };
 
@@ -250,41 +282,49 @@ const OrdersListPage: React.FC = () => {
     try {
       if (isCompletingOrderId) return; // prevent parallel actions
       setIsCompletingOrderId(order.id);
-      await updateOrderStatus(order.id, 'completed');
-      queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((o) => {
-            if (o.id === order.id) {
-              return { 
-                ...o, 
-                status: 'completed' as OrderStatus,
-                completed_at: new Date().toISOString()
-              };
-            }
-            return o;
-          }),
-        };
-      });
+      await updateOrderStatus(order.id, "completed");
+      queryClient.setQueryData(
+        queryKey,
+        (oldData: PaginatedResponse<Order> | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((o) => {
+              if (o.id === order.id) {
+                return {
+                  ...o,
+                  status: "completed" as OrderStatus,
+                  completed_at: new Date().toISOString(),
+                };
+              }
+              return o;
+            }),
+          };
+        },
+      );
 
       // Send WhatsApp notification: Order is ready for pickup
       try {
         const message = `Your order #${order.id} is ready for pickup. Thank you!`;
         await sendOrderWhatsAppMessage(order.id, message);
-        toast.success(t("whatsappMessageSent", { defaultValue: "Pickup message sent" }));
+        toast.success(
+          t("whatsappMessageSent", { defaultValue: "Pickup message sent" }),
+        );
       } catch {
         // Non-blocking: show a soft error toast
-        toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
+        toast.error(
+          t("failedToSendMessage", {
+            ns: "orders",
+            defaultValue: "Failed to send WhatsApp message",
+          }),
+        );
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
     } finally {
       setIsCompletingOrderId(null);
     }
   };
-
-
 
   // --- Data Fetching ---
   const { data: customers = [] } = useQuery<Customer[], Error>({
@@ -318,8 +358,6 @@ const OrdersListPage: React.FC = () => {
     placeholderData: keepPreviousData,
   });
 
-
-
   useEffect(() => {
     if (currentPage !== 1) setCurrentPage(1);
   }, [
@@ -339,7 +377,6 @@ const OrdersListPage: React.FC = () => {
   const totalPages = paginatedData?.meta?.last_page || 1;
 
   // Mobile Order Card Component
-  
 
   return (
     <div className="space-y-2 sm:space-y-4 p-0 sm:p-2 max-w-full overflow-hidden">
@@ -350,8 +387,6 @@ const OrdersListPage: React.FC = () => {
         onRefresh={refetch}
         isRefreshing={isFetching && !isLoading}
       >
-
-        
         {/* Export Buttons */}
         <div className="flex items-center gap-2">
           {/* Excel Export Button */}
@@ -364,7 +399,7 @@ const OrdersListPage: React.FC = () => {
             <FileText className="h-4 w-4" />
             {t("exportExcel", { defaultValue: "Export Excel" })}
           </Button>
-          
+
           {/* PDF Export Button */}
           <Button
             variant="outline"
@@ -380,21 +415,36 @@ const OrdersListPage: React.FC = () => {
           <Button
             variant={filters.showOnlyIncomplete ? "default" : "outline"}
             size="sm"
-            onClick={() => setFilters(prev => ({ ...prev, showOnlyIncomplete: !prev.showOnlyIncomplete }))}
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                showOnlyIncomplete: !prev.showOnlyIncomplete,
+              }))
+            }
             className="flex items-center gap-2"
-            title={filters.showOnlyIncomplete ? t("showAllOrders", { defaultValue: "Show All Orders" }) : t("showIncompleteOrders", { defaultValue: "Show Only Incomplete Orders" })}
+            title={
+              filters.showOnlyIncomplete
+                ? t("showAllOrders", { defaultValue: "Show All Orders" })
+                : t("showIncompleteOrders", {
+                    defaultValue: "Show Only Incomplete Orders",
+                  })
+            }
           >
             <Filter className="h-4 w-4" />
-            {filters.showOnlyIncomplete ? t("showingIncomplete", { defaultValue: "Incomplete Only" }) : t("showIncomplete", { defaultValue: "Incomplete Only" })}
+            {filters.showOnlyIncomplete
+              ? t("showingIncomplete", { defaultValue: "Incomplete Only" })
+              : t("showIncomplete", { defaultValue: "Incomplete Only" })}
           </Button>
         </div>
-        
+
         {/* Mobile Date Range Picker */}
         {/* Mobile Date Range Picker */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full">
           <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2">
-              <Label className="text-xs sm:text-sm whitespace-nowrap">From:</Label>
+              <Label className="text-xs sm:text-sm whitespace-nowrap">
+                From:
+              </Label>
               <input
                 type="date"
                 value={filters.dateFrom || ""}
@@ -405,7 +455,9 @@ const OrdersListPage: React.FC = () => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs sm:text-sm whitespace-nowrap">To:</Label>
+              <Label className="text-xs sm:text-sm whitespace-nowrap">
+                To:
+              </Label>
               <input
                 type="date"
                 value={filters.dateTo || ""}
@@ -419,15 +471,9 @@ const OrdersListPage: React.FC = () => {
         </div>
       </PageHeader>
 
-      
-
-      
-
-
-
-             {/* Desktop Filters */}
-       <div className="hidden sm:block mb-4">
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+      {/* Desktop Filters */}
+      <div className="hidden sm:block mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
           {/* <Input
             placeholder={t("searchOrdersPlaceholder")}
             value={filters.search || ""}
@@ -465,14 +511,23 @@ const OrdersListPage: React.FC = () => {
             </SelectContent>
           </Select>
           <DarkThemeAutocomplete
-            options={[{ id: "all", name: t("allCustomers", { ns: "customers" }) }, ...customers]}
+            options={[
+              { id: "all", name: t("allCustomers", { ns: "customers" }) },
+              ...customers,
+            ]}
             getOptionLabel={(option) => option.name}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            value={customers.find(c => c.id.toString() === filters.customerId) || { id: "all", name: t("allCustomers", { ns: "customers" }) }}
+            value={
+              customers.find((c) => c.id.toString() === filters.customerId) || {
+                id: "all",
+                name: t("allCustomers", { ns: "customers" }),
+              }
+            }
             onChange={(_, newValue) =>
               setFilters((prev) => ({
                 ...prev,
-                customerId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                customerId:
+                  newValue?.id === "all" ? undefined : newValue?.id?.toString(),
               }))
             }
             renderInput={(params) => (
@@ -488,11 +543,16 @@ const OrdersListPage: React.FC = () => {
             options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
             getOptionLabel={(option) => option.name}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            value={productTypes.find(pt => pt.id.toString() === filters.productTypeId) || { id: "all", name: t("allProducts") }}
+            value={
+              productTypes.find(
+                (pt) => pt.id.toString() === filters.productTypeId,
+              ) || { id: "all", name: t("allProducts") }
+            }
             onChange={(_, newValue) =>
               setFilters((prev) => ({
                 ...prev,
-                productTypeId: newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                productTypeId:
+                  newValue?.id === "all" ? undefined : newValue?.id?.toString(),
               }))
             }
             renderInput={(params) => (
@@ -505,16 +565,19 @@ const OrdersListPage: React.FC = () => {
             )}
           />
           <Input
-            placeholder={t("searchCategorySequences", { defaultValue: "Search Category Sequences" })}
+            placeholder={t("searchCategorySequences", {
+              defaultValue: "Search Category Sequences",
+            })}
             value={filters.categorySequenceSearch || ""}
             onChange={(e) =>
-              setFilters((prev) => ({ ...prev, categorySequenceSearch: e.target.value }))
+              setFilters((prev) => ({
+                ...prev,
+                categorySequenceSearch: e.target.value,
+              }))
             }
           />
         </div>
       </div>
-
-
 
       {/* Mobile Orders List */}
       <div className="sm:hidden px-1 sm:px-0">
@@ -525,7 +588,10 @@ const OrdersListPage: React.FC = () => {
         ) : orders.length > 0 ? (
           <div className="space-y-1 sm:space-y-2">
             {orders.map((order) => {
-              const isFullyPaid = order.amount_due === 0 || (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+              const isFullyPaid =
+                order.amount_due === 0 ||
+                (order.total_amount > 0 &&
+                  order.paid_amount >= order.total_amount);
               return (
                 <MobileOrderCard
                   key={order.id}
@@ -547,7 +613,9 @@ const OrdersListPage: React.FC = () => {
         ) : (
           <Card>
             <CardContent className="p-6 sm:p-8 text-center">
-              <p className="text-muted-foreground text-sm sm:text-base">{t("noResults")}</p>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                {t("noResults")}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -559,13 +627,24 @@ const OrdersListPage: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60px] text-center font-bold text-lg">ID</TableHead>
-                <TableHead className="text-center">{t("customerName", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center">{t("orderDate", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center">{t("categorySequences", { defaultValue: "Category Sequences" })}</TableHead>
-                <TableHead className="text-center">{t("deliveredDate", { defaultValue: "Delivered Date" })}</TableHead>
-                <TableHead className="text-center">{t("status", { ns: "orders" })}</TableHead>
-                <TableHead className="text-center w-20">{t("communication", { defaultValue: "Communication" })}</TableHead>
+                <TableHead className="w-[60px] text-center font-bold text-lg">
+                  ID
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("customerName", { ns: "orders" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("orderDate", { ns: "orders" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("items", { defaultValue: "Items" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("deliveredDate", { defaultValue: "Delivered Date" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("status", { ns: "orders" })}
+                </TableHead>
                 <TableHead className="text-center">
                   {t("actions", { defaultValue: "Actions" })}
                 </TableHead>
@@ -583,7 +662,7 @@ const OrdersListPage: React.FC = () => {
             <TableBody>
               {isLoading && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
@@ -598,7 +677,10 @@ const OrdersListPage: React.FC = () => {
                     onRecordPayment={(o) => setSelectedOrderForPayment(o)}
                     onMarkCompleted={handleMarkCompleted}
                     onMarkDelivered={handleMarkDelivered}
-                    onOpenTimeline={(o) => { setTimelineOrder(o); setIsTimelineOpen(true); }}
+                    onOpenTimeline={(o) => {
+                      setTimelineOrder(o);
+                      setIsTimelineOpen(true);
+                    }}
                     isCompleting={isCompletingOrderId === order.id}
                     onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
                     can={can}
@@ -609,7 +691,7 @@ const OrdersListPage: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center">
+                  <TableCell colSpan={10} className="h-32 text-center">
                     {t("noResults")}
                   </TableCell>
                 </TableRow>
@@ -632,7 +714,7 @@ const OrdersListPage: React.FC = () => {
           total: totalItems,
         })}
       />
-      
+
       {selectedOrderForPayments && (
         <PaymentsListDialog
           order={selectedOrderForPayments}
@@ -641,12 +723,14 @@ const OrdersListPage: React.FC = () => {
         />
       )}
       {orderItemsDialogOrder && (
-        <OrderItemsDialog 
-          order={orderItemsDialogOrder} 
-          open={!!orderItemsDialogOrder} 
+        <OrderItemsDialog
+          order={orderItemsDialogOrder}
+          open={!!orderItemsDialogOrder}
           onOpenChange={handleDialogClose}
           onOrderItemStatusChange={handleOrderItemStatusChange}
-          onOrderItemPickedUpQuantityChange={handleOrderItemPickedUpQuantityChange}
+          onOrderItemPickedUpQuantityChange={
+            handleOrderItemPickedUpQuantityChange
+          }
           onOrderStatusChange={handleOrderStatusChange}
         />
       )}
@@ -658,18 +742,21 @@ const OrdersListPage: React.FC = () => {
           onOpenChange={(open) => !open && setSelectedOrderForPayment(null)}
           onOrderUpdate={(updatedOrder) => {
             // Update the order in the cache
-            queryClient.setQueryData(queryKey, (oldData: PaginatedResponse<Order> | undefined) => {
-              if (!oldData) return oldData;
-              return {
-                ...oldData,
-                data: oldData.data.map((order) => {
-                  if (order.id === updatedOrder.id) {
-                    return updatedOrder;
-                  }
-                  return order;
-                }),
-              };
-            });
+            queryClient.setQueryData(
+              queryKey,
+              (oldData: PaginatedResponse<Order> | undefined) => {
+                if (!oldData) return oldData;
+                return {
+                  ...oldData,
+                  data: oldData.data.map((order) => {
+                    if (order.id === updatedOrder.id) {
+                      return updatedOrder;
+                    }
+                    return order;
+                  }),
+                };
+              },
+            );
           }}
         />
       )}
@@ -677,10 +764,11 @@ const OrdersListPage: React.FC = () => {
       <OrderStatusTimelineDialog
         order={timelineOrder}
         isOpen={isTimelineOpen}
-        onOpenChange={(open) => { setIsTimelineOpen(open); if (!open) setTimelineOrder(null); }}
+        onOpenChange={(open) => {
+          setIsTimelineOpen(open);
+          if (!open) setTimelineOrder(null);
+        }}
       />
-
-
     </div>
   );
 };
