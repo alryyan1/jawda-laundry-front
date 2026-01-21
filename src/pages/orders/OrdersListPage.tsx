@@ -515,7 +515,14 @@ const OrdersListPage: React.FC = () => {
               { id: "all", name: t("allCustomers", { ns: "customers" }) },
               ...customers,
             ]}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={(option) => {
+              if (option.id === "all") return option.name;
+              // Cast to any to access phone since the union type might be restrictive
+              const customer = option as any;
+              return customer.phone
+                ? `${customer.name} (${customer.phone})`
+                : customer.name;
+            }}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             value={
               customers.find((c) => c.id.toString() === filters.customerId) || {
@@ -530,6 +537,19 @@ const OrdersListPage: React.FC = () => {
                   newValue?.id === "all" ? undefined : newValue?.id?.toString(),
               }))
             }
+            filterOptions={(options, { inputValue }) => {
+              const searchTerm = inputValue.toLowerCase();
+              return options.filter((option) => {
+                const nameMatch = option.name
+                  .toLowerCase()
+                  .includes(searchTerm);
+                const customer = option as any;
+                const phoneMatch =
+                  customer.phone &&
+                  customer.phone.toLowerCase().includes(searchTerm);
+                return nameMatch || phoneMatch;
+              });
+            }}
             renderInput={(params) => (
               <div ref={params.InputProps.ref}>
                 <Input
