@@ -19,6 +19,7 @@ import { BASE_URL } from "@/lib/constants";
 // but exporting it here makes this component self-describing.
 export interface CartItem {
   id: string; // Client-side UUID
+  backendId?: string; // ID from the database (for existing items)
   productType: ProductType;
   serviceOffering: ServiceOffering;
   quantity: number;
@@ -74,7 +75,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       onUpdateQuantity(item.id, value === "" ? 1 : parseInt(value, 10));
     }
   };
-  console.log(item,'item');
+  console.log(item, "item");
   return (
     <>
       {item._isAdding ? (
@@ -126,7 +127,9 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
               <div className="mr-3 h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                 <img
                   src={
-                    item.serviceOffering.productType.image_url.startsWith("http")
+                    item.serviceOffering.productType.image_url.startsWith(
+                      "http",
+                    )
                       ? item.serviceOffering.productType.image_url
                       : `${BASE_URL.replace("/api", "")}/storage/${item.productType.image_url}`
                   }

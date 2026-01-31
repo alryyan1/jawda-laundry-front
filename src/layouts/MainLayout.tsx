@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { useSearch } from "@/context/SearchContext";
 import { useDate } from "@/context/DateContext";
 import { POSSearch } from "@/components/ui/pos-search";
-import { POSNewOrderButton } from "@/components/ui/pos-new-order-button";
 import { POSDatePicker } from "@/components/ui/pos-date-picker";
 
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,7 @@ import {
   Lamp,
 } from "lucide-react";
 
-import { getUserNavigation } from "@/api/navigationService";
+import { NAVIGATION_ITEMS } from "@/lib/navigation";
 import type { NavigationItem } from "@/types/navigation.types";
 import { useEffect, useState } from "react";
 import {
@@ -320,16 +319,9 @@ const MainLayout: React.FC = () => {
   >({});
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Fetch user navigation
-  const {
-    data: navigationItems = [],
-    isLoading: isNavigationLoading,
-    error: navigationError,
-  } = useQuery({
-    queryKey: ["user-navigation"],
-    queryFn: getUserNavigation,
-    enabled: !!user,
-  });
+  const navigationItems = NAVIGATION_ITEMS;
+  const isNavigationLoading = false;
+  const navigationError = null;
 
   console.log("User:", user);
   console.log("User roles:", user?.roles);
@@ -696,7 +688,6 @@ const MainLayout: React.FC = () => {
             {location.pathname === "/pos" && (
               <POSDatePicker onDateChange={setSelectedDate} />
             )}
-            {location.pathname === "/pos" && <POSNewOrderButton />}
           </div>
 
           {/* Right-aligned Header Items */}

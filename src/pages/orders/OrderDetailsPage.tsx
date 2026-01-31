@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,8 +38,13 @@ import {
 } from "@/components/ui/select";
 
 import type { Order, OrderStatus, OrderItem as OrderItemType } from "@/types"; // Use OrderItemType alias
-import { getOrderById, updateOrderStatus, sendOrderWhatsAppInvoice, type OrderResponseWithWarnings } from "@/api/orderService";
-import { ORDER_STATUSES } from "@/lib/constants";
+import {
+  getOrderById,
+  updateOrderStatus,
+  sendOrderWhatsAppInvoice,
+  type OrderResponseWithWarnings,
+} from "@/api/orderService";
+import { ORDER_STATUSES, BASE_URL } from "@/lib/constants";
 
 import {
   ArrowLeft,
@@ -49,6 +54,7 @@ import {
   Info,
   FileText,
   Printer,
+  History,
 } from "lucide-react";
 import { Package, CreditCard } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader"; // Using PageHeader
@@ -58,8 +64,13 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { printPosPdfReceipt } from "@/lib/printUtils";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
 import { MapPin, Users } from "lucide-react";
-import { useCurrency } from '@/hooks/useCurrency';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCurrency } from "@/hooks/useCurrency";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Re-usable OrderStatusBadgeComponent (could be moved to shared components)
 const OrderStatusBadgeComponent: React.FC<{
@@ -74,7 +85,7 @@ const OrderStatusBadgeComponent: React.FC<{
   if (status === "processing")
     bgColor =
       "bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50";
-          if (status === "delivered")
+  if (status === "delivered")
     bgColor =
       "bg-green-400/20 text-green-600 dark:text-green-400 border border-green-500/50";
   if (status === "completed")
@@ -140,7 +151,7 @@ const PaymentStatusAlert: React.FC<{
         {order.payment_method &&
           ` (${t("via", { ns: "common" })} ${t(
             `payment_method_${order.payment_method}`,
-            { ns: "orders", defaultValue: order.payment_method }
+            { ns: "orders", defaultValue: order.payment_method },
           )})`}
         {order.amount_due && order.amount_due > 0 && (
           <span className="block mt-1">
@@ -186,8 +197,6 @@ const OrderDetailsPage: React.FC = () => {
     enabled: !!id,
   });
 
-
-
   // Mutation for updating order status
   const updateStatusMutation = useMutation<
     Order,
@@ -195,7 +204,10 @@ const OrderDetailsPage: React.FC = () => {
     { orderId: string | number; status: OrderStatus }
   >({
     mutationFn: async ({ orderId, status }) => {
-      const res: OrderResponseWithWarnings = await updateOrderStatus(orderId, status);
+      const res: OrderResponseWithWarnings = await updateOrderStatus(
+        orderId,
+        status,
+      );
       return res.order;
     },
     onSuccess: (updatedOrder) => {
@@ -203,14 +215,14 @@ const OrderDetailsPage: React.FC = () => {
         t("orderStatusUpdatedSuccess", {
           ns: "orders",
           status: t(`status_${updatedOrder.status}`, { ns: "orders" }),
-        })
+        }),
       );
       queryClient.setQueryData(["order", id], updatedOrder);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
     onError: (error) => {
       toast.error(
-        error.message || t("orderStatusUpdateFailed", { ns: "orders" })
+        error.message || t("orderStatusUpdateFailed", { ns: "orders" }),
       );
     },
   });
@@ -224,21 +236,24 @@ const OrderDetailsPage: React.FC = () => {
     mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
     onSuccess: (data) => {
       toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }), {
-        description: data.message
+        description: data.message,
       });
       // Refresh the order data to get updated WhatsApp status
       queryClient.invalidateQueries({ queryKey: ["order", id] });
     },
     onError: (error: unknown) => {
-      const err = error as { response?: { data?: { details?: string; message?: string } } };
+      const err = error as {
+        response?: { data?: { details?: string; message?: string } };
+      };
       // Extract detailed error message from backend response
-      const errorMessage = err?.response?.data?.details || 
-                          err?.response?.data?.message || 
-                          (error as Error)?.message || 
-                          t("whatsappInvoiceSendFailed", { ns: "orders" });
-      
+      const errorMessage =
+        err?.response?.data?.details ||
+        err?.response?.data?.message ||
+        (error as Error)?.message ||
+        t("whatsappInvoiceSendFailed", { ns: "orders" });
+
       toast.error(t("whatsappInvoiceSendFailed", { ns: "orders" }), {
-        description: errorMessage
+        description: errorMessage,
       });
     },
   });
@@ -287,16 +302,15 @@ const OrderDetailsPage: React.FC = () => {
         </Button>
       </div>
     );
-  const invoiceUrl = `${import.meta.env.VITE_API_BASE_URL.replace(
+  const apiBaseUrl = BASE_URL;
+  const invoiceUrl = `${apiBaseUrl.replace(
     "/api",
-    ""
+    "",
   )}/orders/${order.id}/invoice/download`;
   return (
     <div className="space-y-6 container mx-auto px-3 sm:px-6 py-4 [&_*]:text-[16px] sm:[&_*]:text-[17px]">
       <PageHeader
-        title={`${t("orderDetailsTitle", { ns: "orders" })} #${
-          order.id
-        }`}
+        title={`${t("orderDetailsTitle", { ns: "orders" })} #${order.id}`}
         description={t("orderPlacedOn", {
           ns: "orders",
           date: format(new Date(order.order_date), "PPP p", {
@@ -305,43 +319,88 @@ const OrderDetailsPage: React.FC = () => {
         })}
       >
         {/* Action buttons for the page header */}
-        <Button variant="outline" onClick={() => navigate("/orders")} title={t("backToOrders", { ns: "orders" })}>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/orders")}
+          title={t("backToOrders", { ns: "orders" })}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
 
-     
         <Button asChild title={t("downloadPdf", { ns: "orders" })}>
           {/* target="_blank" opens it in a new tab */}
           <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
             <FileText className="h-4 w-4" />
           </a>
         </Button>
-        <Button variant="outline" onClick={() => setIsItemsDialogOpen(true)} title={t("orderedItems", { ns: "orders" })}>
+        <Button
+          variant="outline"
+          onClick={() => setIsItemsDialogOpen(true)}
+          title={t("orderedItems", { ns: "orders" })}
+        >
           <Package className="h-4 w-4" />
         </Button>
-        <Button variant="outline" onClick={() => setIsPaymentsHistoryOpen(true)} title={t("viewPayments", { ns: "orders", defaultValue: "View Payments" })}>
+        <Button
+          variant="outline"
+          onClick={() => setIsPaymentsHistoryOpen(true)}
+          title={t("viewPayments", {
+            ns: "orders",
+            defaultValue: "View Payments",
+          })}
+        >
           <CreditCard className="h-4 w-4" />
         </Button>
-        <Button variant="outline" onClick={() => printPosPdfReceipt(order.id)} title={t("printReceipt", { ns: "orders" })}>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/orders/${order.id}/timeline`)}
+          title={t("viewTimeline", {
+            ns: "orders",
+            defaultValue: "View Timeline",
+          })}
+          className="text-primary border-primary/20 hover:bg-primary/5"
+        >
+          <History className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => printPosPdfReceipt(order.id)}
+          title={t("printReceipt", { ns: "orders" })}
+        >
           <Printer className="h-4 w-4" />
         </Button>
         {can("order:send-whatsapp") && order.customer?.phone && (
-          <Button 
+          <Button
             variant={order.whatsapp_text_sent ? "default" : "outline"}
-            className={order.whatsapp_text_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+            className={
+              order.whatsapp_text_sent
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : ""
+            }
             onClick={() => setIsWhatsAppModalOpen(true)}
-            title={order.whatsapp_text_sent ? t("messageSent", { ns: "orders" }) : t("sendMessage", { ns: "orders" })}
+            title={
+              order.whatsapp_text_sent
+                ? t("messageSent", { ns: "orders" })
+                : t("sendMessage", { ns: "orders" })
+            }
           >
             <WhatsAppIcon className="h-4 w-4" />
           </Button>
         )}
         {can("order:send-whatsapp") && order.customer?.phone && (
-          <Button 
+          <Button
             variant={order.whatsapp_pdf_sent ? "default" : "outline"}
-            className={order.whatsapp_pdf_sent ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+            className={
+              order.whatsapp_pdf_sent
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : ""
+            }
             onClick={handleSendWhatsAppInvoice}
             disabled={sendWhatsAppInvoiceMutation.isPending}
-            title={order.whatsapp_pdf_sent ? t("invoiceSent", { ns: "orders" }) : t("sendInvoice", { ns: "orders" })}
+            title={
+              order.whatsapp_pdf_sent
+                ? t("invoiceSent", { ns: "orders" })
+                : t("sendInvoice", { ns: "orders" })
+            }
           >
             <WhatsAppIcon className="h-4 w-4" />
             {sendWhatsAppInvoiceMutation.isPending ? (
@@ -354,23 +413,32 @@ const OrderDetailsPage: React.FC = () => {
       <div className="grid md:grid-cols-3 gap-6 ">
         {/* Customer & Order Info Card */}
         <Card className="md:col-span-2">
-       
           <CardContent className="space-y-4 text-base">
             <h3 className="font-bold text-lg mb-2">
               {t("customerDetails", { ns: "customers" })}
             </h3>
             <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
               <div>
-                <strong className="text-base">{t("name", { ns: "common" })}:</strong>{" "}
+                <strong className="text-base">
+                  {t("name", { ns: "common" })}:
+                </strong>{" "}
                 <span className="font-semibold">{order.customer?.name}</span>
               </div>
               <div>
-                <strong className="text-base">{t("phone", { ns: "customers" })}:</strong>{" "}
-                <span className="font-bold text-lg text-primary">{order.customer?.phone || t("notAvailable", { ns: "common" })}</span>
+                <strong className="text-base">
+                  {t("phone", { ns: "customers" })}:
+                </strong>{" "}
+                <span className="font-bold text-lg text-primary">
+                  {order.customer?.phone || t("notAvailable", { ns: "common" })}
+                </span>
               </div>
               <div>
-                <strong className="text-base">{t("email", { ns: "common" })}:</strong>{" "}
-                <span className="font-semibold">{order.customer?.email || t("notAvailable", { ns: "common" })}</span>
+                <strong className="text-base">
+                  {t("email", { ns: "common" })}:
+                </strong>{" "}
+                <span className="font-semibold">
+                  {order.customer?.email || t("notAvailable", { ns: "common" })}
+                </span>
               </div>
               {order.table && (
                 <div className="sm:col-span-2">
@@ -392,13 +460,13 @@ const OrderDetailsPage: React.FC = () => {
               )}
             </div>
             <Separator className="my-4" />
-          
+
             <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
-      
-        
               {order.staff_user && (
                 <div>
-                  <strong className="text-base">{t("processedBy", { ns: "orders" })}:</strong>{" "}
+                  <strong className="text-base">
+                    {t("processedBy", { ns: "orders" })}:
+                  </strong>{" "}
                   <span className="font-semibold">{order.staff_user.name}</span>
                 </div>
               )}
@@ -418,7 +486,6 @@ const OrderDetailsPage: React.FC = () => {
                   : t("notSet", { ns: "common" })}
               </div>
             </div>
-    
           </CardContent>
         </Card>
 
@@ -447,7 +514,10 @@ const OrderDetailsPage: React.FC = () => {
                     onValueChange={(newStatus: OrderStatus) =>
                       handleStatusChange(newStatus)
                     }
-                    disabled={updateStatusMutation.isPending || order.status === 'completed'}
+                    disabled={
+                      updateStatusMutation.isPending ||
+                      order.status === "completed"
+                    }
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue
@@ -496,34 +566,86 @@ const OrderDetailsPage: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('product')}</TableHead>
-                <TableHead className="w-[40%] text-center">{t("itemService", { ns: "orders", defaultValue: "Item / Service" })}</TableHead>
-                <TableHead className="text-center">{t("quantity", { ns: "services" })}</TableHead>
-                <TableHead className="text-center hidden sm:table-cell">{t("dimensionsLWH", { ns: "orders", defaultValue: "Dimensions (LxW)" })}</TableHead>
-                <TableHead className="text-center">{t("unitPrice", { ns: "orders", defaultValue: "Unit Price" })}</TableHead>
-                <TableHead className="text-center">{t("subtotal", { ns: "common" })}</TableHead>
+                <TableHead>{t("product")}</TableHead>
+                <TableHead className="w-[40%] text-center">
+                  {t("itemService", {
+                    ns: "orders",
+                    defaultValue: "Item / Service",
+                  })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("quantity", { ns: "services" })}
+                </TableHead>
+                <TableHead className="text-center hidden sm:table-cell">
+                  {t("dimensionsLWH", {
+                    ns: "orders",
+                    defaultValue: "Dimensions (LxW)",
+                  })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("unitPrice", { ns: "orders", defaultValue: "Unit Price" })}
+                </TableHead>
+                <TableHead className="text-center">
+                  {t("subtotal", { ns: "common" })}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {order.items?.map((item: OrderItemType) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.serviceOffering?.productType?.name}</TableCell>
                   <TableCell>
-                    <div className="font-medium">{item.serviceOffering?.display_name || t("serviceOfferingDetailsMissing", { ns: "orders" })}</div>
-                    {item.product_description_custom && (<div className="text-xs text-muted-foreground">{item.product_description_custom}</div>)}
-                    {item.notes && (<div className="text-xs text-info-foreground mt-1"><em>{t("notes")}: {item.notes}</em></div>)}
+                    {item.serviceOffering?.productType?.name}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">
+                      {item.serviceOffering?.display_name ||
+                        t("serviceOfferingDetailsMissing", { ns: "orders" })}
+                    </div>
+                    {item.product_description_custom && (
+                      <div className="text-xs text-muted-foreground">
+                        {item.product_description_custom}
+                      </div>
+                    )}
+                    {item.notes && (
+                      <div className="text-xs text-info-foreground mt-1">
+                        <em>
+                          {t("notes")}: {item.notes}
+                        </em>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-center hidden sm:table-cell">{item.length_meters && item.width_meters ? `${item.length_meters}m x ${item.width_meters}m` : "-"}</TableCell>
-                  <TableCell className="text-center">{new Intl.NumberFormat(i18n.language, { style: "currency", currency: currencyCode }).format(item.calculated_price_per_unit_item)}</TableCell>
-                  <TableCell className="text-center">{new Intl.NumberFormat(i18n.language, { style: "currency", currency: currencyCode }).format(item.sub_total)}</TableCell>
+                  <TableCell className="text-center hidden sm:table-cell">
+                    {item.length_meters && item.width_meters
+                      ? `${item.length_meters}m x ${item.width_meters}m`
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {new Intl.NumberFormat(i18n.language, {
+                      style: "currency",
+                      currency: currencyCode,
+                    }).format(item.calculated_price_per_unit_item)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {new Intl.NumberFormat(i18n.language, {
+                      style: "currency",
+                      currency: currencyCode,
+                    }).format(item.sub_total)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <TableFooter>
               <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-center">{t("grandTotal", { ns: "common" })}</TableCell>
-                <TableCell className="text-center text-lg">{new Intl.NumberFormat(i18n.language, { style: "currency", currency: currencyCode }).format(order.total_amount)}</TableCell>
+                <TableCell colSpan={4} className="text-center">
+                  {t("grandTotal", { ns: "common" })}
+                </TableCell>
+                <TableCell className="text-center text-lg">
+                  {new Intl.NumberFormat(i18n.language, {
+                    style: "currency",
+                    currency: currencyCode,
+                  }).format(order.total_amount)}
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>
@@ -531,10 +653,15 @@ const OrderDetailsPage: React.FC = () => {
       </Dialog>
 
       {/* Payments History Dialog */}
-      <Dialog open={isPaymentsHistoryOpen} onOpenChange={setIsPaymentsHistoryOpen}>
+      <Dialog
+        open={isPaymentsHistoryOpen}
+        onOpenChange={setIsPaymentsHistoryOpen}
+      >
         <DialogContent className="!max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{t("viewPayments", { ns: "orders", defaultValue: "Payments" })}</DialogTitle>
+            <DialogTitle>
+              {t("viewPayments", { ns: "orders", defaultValue: "Payments" })}
+            </DialogTitle>
           </DialogHeader>
           <OrderPaymentsList payments={order.payments || []} />
         </DialogContent>

@@ -1,6 +1,5 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/context/ThemeContext";
 
 import type { Order } from "@/types";
 import { CustomerSelection } from "./CustomerSelection";
@@ -10,11 +9,13 @@ import {
   Tags,
   Printer,
   Hash,
-  FileText,
-  UserPlus,
+  PlusCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { clearServiceOfferingsCache } from "@/api/serviceOfferingService";
 
 interface POSHeaderProps {
   selectedCustomerId: string | null;
@@ -37,13 +38,13 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
   selectedOrder,
   onCalculatorClick,
   onPdfClick,
+  onOrderSelect,
   selectedCategoryId,
   onCategorySelect,
   isNewOrderMode,
   onOrderUpdate,
 }) => {
   const { t } = useTranslation(["common", "orders"]);
-  const { getSecondaryColor } = useTheme();
 
   return (
     <div className="border-b bg-white shadow-sm flex-shrink-0 z-20 relative">
@@ -64,6 +65,41 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
             <Tags className="h-4 w-4" />
             <span className="hidden sm:inline">
               {t("allCategories", { ns: "common" })}
+            </span>
+          </Button>
+
+          {/* New Order Button (Local Reset) */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onOrderSelect(null)}
+            className="h-9 px-3 gap-2 font-medium text-primary border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all shadow-sm"
+          >
+            <PlusCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {t("newOrder", { ns: "orders", defaultValue: "New Order" })}
+            </span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              clearServiceOfferingsCache();
+              toast.success(
+                t("cacheCleared", {
+                  ns: "common",
+                  defaultValue: "Cache cleared successfully",
+                }),
+              );
+              window.location.reload(); // Reload to fetch fresh data
+            }}
+            className="h-9 px-3 gap-2 font-medium text-slate-600 border-slate-200 hover:bg-slate-50 transition-all shadow-sm"
+            title="Clear Service Offerings Cache"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {t("refresh", { ns: "common", defaultValue: "Refresh" })}
             </span>
           </Button>
 

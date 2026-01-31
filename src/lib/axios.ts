@@ -26,6 +26,31 @@ const apiClient = axios.create({
   },
 });
 
+// Request interceptor to add the token to every request
+apiClient.interceptors.request.use(
+  (config) => {
+    // Try to get token from localStorage if not already in headers
+    if (!config.headers["Authorization"]) {
+      try {
+        const storedAuth = localStorage.getItem("auth-storage");
+        if (storedAuth) {
+          const authData = JSON.parse(storedAuth);
+          const token = authData.state?.token;
+          if (token) {
+            config.headers["Authorization"] = `Bearer ${token}`;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing auth-storage from localStorage", e);
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

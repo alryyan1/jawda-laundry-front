@@ -8,16 +8,14 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
 import { useDate } from "@/context/DateContext";
+import { useSearch } from "@/context/SearchContext";
 
 import type {
   ProductType,
   ServiceOffering,
   OrderItemFormLine,
   NewOrderFormData,
-  QuoteItemPayload,
-  QuoteItemResponse,
   Order,
-  PricingStrategy,
 } from "@/types";
 
 import { CategoryColumn } from "@/features/pos/components/CategoryColumn";
@@ -35,22 +33,16 @@ import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentMo
 import PaymentCalculator from "@/components/shared/PaymentCalculator";
 import {
   createOrder,
-  getOrderItemQuote,
-  getTodayOrders,
   updateOrder,
-  updateOrderDetails,
   deleteOrderItem,
   cancelOrder,
   markOrderReceived,
-  updateOrderItemDimensions,
-  updateOrderItemQuantity,
 } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 
-import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
 import { getTodayDate } from "@/lib/dateUtils";
@@ -69,30 +61,12 @@ const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
   const { can } = useAuth();
-  const { newlyCreatedOrder, clearNewlyCreatedOrder } = useNewOrder();
   const { selectedDate } = useDate();
+  const { setSearchTerm } = useSearch();
 
   // Initialize real-time updates
   useRealtimeUpdates();
 
-  // Auto-select newly created order
-  useEffect(() => {
-    if (newlyCreatedOrder) {
-      setSelectedOrder(newlyCreatedOrder);
-      // Reset customer selection to show "required" state for new orders
-      setSelectedCustomerId(null);
-      // Clear cart for new orders
-      setCartItems([]);
-      // Set new order mode
-      setIsNewOrderMode(true);
-      clearNewlyCreatedOrder();
-    }
-  }, [newlyCreatedOrder, clearNewlyCreatedOrder]);
-
-  // Clear selected order when the date changes via POSDatePicker
-  useEffect(() => {
-    setSelectedOrder(null);
-  }, [selectedDate]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   );
@@ -108,9 +82,7 @@ const POSPage: React.FC = () => {
   >("in_house");
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastQuotedInputs, setLastQuotedInputs] = useState<
-    Record<string, string>
-  >({});
+
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isTodayOrdersOpen, setIsTodayOrdersOpen] = useState(false);
@@ -126,13 +98,10 @@ const POSPage: React.FC = () => {
   const [isNewOrderMode, setIsNewOrderMode] = useState(false);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const debouncedCartItems = useDebounce(cartItems, 500);
+  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
   // Use ref for cart items to avoid re-creating handlers
   const cartItemsRef = React.useRef(cartItems);
-  useEffect(() => {
-    cartItemsRef.current = cartItems;
-  }, [cartItems]);
 
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
@@ -205,846 +174,104 @@ const POSPage: React.FC = () => {
     },
   });
 
-  const quoteItemMutation = useMutation<
-    QuoteItemResponse,
-    Error,
-    { itemId: string; payload: QuoteItemPayload }
-  >({
-    mutationFn: async ({ payload }) => getOrderItemQuote(payload),
-    onSuccess: (data, variables) => {
-      setCartItems((prev) =>
-        prev.map((item) => {
-          if (item.id === variables.itemId) {
-            return {
-              ...item,
-              price: data.calculated_price_per_unit_item,
-              _quotedSubTotal: data.sub_total,
-              _isQuoting: false,
-              _quoteError: null,
-            };
-          }
-          return item;
-        }),
-      );
-    },
-    onError: (error, variables) => {
-      setCartItems((prev) =>
-        prev.map((item) => {
-          if (item.id === variables.itemId) {
-            return {
-              ...item,
-              _isQuoting: false,
-              _quoteError:
-                error.message ||
-                t("quoteFailedForItemGeneric", { ns: "orders" }),
-              _quotedSubTotal: undefined, // Clear quoted subtotal on error
-            };
-          }
-          return item;
-        }),
-      );
-    },
-  });
-
-  // Function to update order item dimensions in database
-  const updateOrderItemDimensionsInDB = async (
-    orderItemId: string | number,
-    dimensions: { length_meters?: number | null; width_meters?: number | null },
-  ) => {
-    try {
-      const data = await updateOrderItemDimensions(orderItemId, dimensions);
-
-      // Update the selected order with the new total
-      if (selectedOrder) {
-        setSelectedOrder((prev) =>
-          prev ? { ...prev, total_amount: data.order_total } : null,
-        );
-      }
-
-      // Update the cart item with the new dimensions and subtotal
-      setCartItems((prev) =>
-        prev.map((item) => {
-          if (item._isExistingOrderItem && selectedOrder) {
-            // Find the corresponding order item in the selected order
-            const orderItem = selectedOrder.items?.find(
-              (oi) =>
-                oi.serviceOffering?.id === item.serviceOffering.id &&
-                oi.quantity === item.quantity,
-            );
-
-            if (
-              orderItem &&
-              orderItem.id.toString() === orderItemId.toString()
-            ) {
-              return {
-                ...item,
-                length_meters: data.order_item.length_meters || undefined,
-                width_meters: data.order_item.width_meters || undefined,
-                _quotedSubTotal: data.order_item.sub_total,
-                price: data.order_item.calculated_price_per_unit_item,
-              };
-            }
-          }
-          return item;
-        }),
-      );
-
-      toast.success(
-        t("dimensionsUpdatedSuccessfully", {
-          ns: "orders",
-          defaultValue: "Dimensions updated successfully",
-        }),
-      );
-    } catch {
-      toast.error(
-        t("failedToUpdateDimensions", {
-          ns: "orders",
-          defaultValue: "Failed to update dimensions",
-        }),
-      );
-    }
-  };
-
-  // Function to update order item quantity in database
-  const updateOrderItemQuantityInDB = async (
-    orderItemId: string | number,
-    quantity: number,
-  ) => {
-    try {
-      const data = await updateOrderItemQuantity(orderItemId, quantity);
-
-      // Update the selected order with the new total
-      if (selectedOrder) {
-        setSelectedOrder((prev) =>
-          prev ? { ...prev, total_amount: data.order_total } : null,
-        );
-      }
-
-      // Update the cart item with the new quantity and subtotal
-      setCartItems((prev) =>
-        prev.map((item) => {
-          if (item._isExistingOrderItem && selectedOrder) {
-            // Find the corresponding order item in the selected order
-            const orderItem = selectedOrder.items?.find(
-              (oi) =>
-                oi.serviceOffering?.id === item.serviceOffering.id &&
-                oi.quantity === item.quantity,
-            );
-
-            if (
-              orderItem &&
-              orderItem.id.toString() === orderItemId.toString()
-            ) {
-              return {
-                ...item,
-                quantity: data.order_item.quantity,
-                _quotedSubTotal: data.order_item.sub_total,
-                price: data.order_item.calculated_price_per_unit_item,
-              };
-            }
-          }
-          return item;
-        }),
-      );
-
-      toast.success(
-        t("quantityUpdatedSuccessfully", {
-          ns: "orders",
-          defaultValue: "Quantity updated successfully",
-        }),
-      );
-    } catch {
-      toast.error(
-        t("failedToUpdateQuantity", {
-          ns: "orders",
-          defaultValue: "Failed to update quantity",
-        }),
-      );
-    }
-  };
-
-  const handleSelectCategory = React.useCallback((categoryId: string) => {
-    setSelectedCategoryId(categoryId);
-    setSelectedProductType(null);
-  }, []);
-
-  const handleSelectProduct = React.useCallback(
-    (product: ProductType) => {
-      // Prevent adding items to received orders
-      if (selectedOrder?.received) {
-        toast.error(
-          t("orderReceivedCannotEdit", {
-            ns: "orders",
-            defaultValue: "This order is received and cannot be edited",
-          }),
-        );
+  const handleOrderSelect = React.useCallback(
+    (order: Order | null) => {
+      if (!order) {
+        setSelectedOrder(null);
+        setCartItems([]);
+        setSelectedCustomerId(null);
+        setSelectedCategoryId(null);
+        setSearchTerm("");
+        setIsNewOrderMode(true);
         return;
       }
 
-      // Check if we have a customer (either from order or selected customer)
-      const hasCustomer = selectedOrder?.customer || selectedCustomerId;
-      if (!hasCustomer) {
-        toast.error(
-          t("orderNeedsCustomer", {
-            ns: "orders",
-            defaultValue:
-              "Please select a customer for this order before adding items",
-          }),
-        );
-        return;
+      setSelectedOrder(order);
+      setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
+
+      // Reset deleted items tracker
+      setDeletedItemIds([]);
+
+      // Clear current cart items
+      setCartItems([]);
+
+      // Set customer if order has one
+      if (order.customer) {
+        setSelectedCustomerId(order.customer.id.toString());
+      } else if (order.customer_id) {
+        setSelectedCustomerId(order.customer_id.toString());
+      } else {
+        setSelectedCustomerId(null);
       }
 
-      setSelectedProductType(product);
+      // Set order type
+      setOrderType(order.order_type);
 
-      // Check if product has only one service offering and auto-add to cart
-      const productOfferings = serviceOfferingsToUse.filter(
-        (offering) => offering.product_type_id === product.id,
-      );
-
-      if (productOfferings.length === 1 && hasCustomer) {
-        const offering = productOfferings[0];
-        // Add to backend first, then show in cart
-        handleAddItemToBackend(product, offering);
-      } else if (productOfferings.length > 1 && hasCustomer) {
-        // Show dialog for multiple service offerings
-        setSelectedProductForDialog(product);
-        setIsServiceOfferingDialogOpen(true);
-      } else if (isIpadView && hasCustomer) {
-        // For iPad view, switch to product view when category is selected
-        setShowCategoriesOnIpad(false);
-      }
-    },
-    [
-      selectedOrder?.received,
-      selectedOrder?.customer,
-      selectedCustomerId,
-      t,
-      serviceOfferingsToUse,
-      isIpadView,
-    ],
-  );
-
-  // Remove handleSelectOffering function since it's no longer needed
-  // const handleSelectOffering = (offering: ServiceOffering) => { ... };
-
-  const handleRemoveItem = React.useCallback(
-    async (id: string) => {
-      // Find the item to check if it's an existing order item
-      const item = cartItemsRef.current.find((cartItem) => cartItem.id === id);
-
-      if (!item) {
-        console.error("Item not found in cart:", id);
-        return;
-      }
-
-      console.log("Removing item:", {
-        id,
-        isExistingOrderItem: item._isExistingOrderItem,
-        selectedOrder: selectedOrder?.id,
-        serviceOfferingId: item.serviceOffering?.id,
-        quantity: item.quantity,
-      });
-
-      // Set loading state immediately for all items
-      setCartItems((prev) =>
-        prev.map((cartItem) =>
-          cartItem.id === id ? { ...cartItem, _isDeleting: true } : cartItem,
-        ),
-      );
-
-      try {
-        // If it's an existing order item, delete from backend first
-        if (item._isExistingOrderItem && selectedOrder) {
-          console.log("Looking for existing order item in selected order...");
-
-          // Find the actual order item ID from the selected order
-          // Use a more flexible matching approach - match by service offering and quantity first
-          const orderItem = selectedOrder.items?.find(
-            (orderItem) =>
-              orderItem.serviceOffering?.id === item.serviceOffering.id &&
-              orderItem.quantity === item.quantity,
-          );
-
-          console.log("Found order item:", orderItem);
-
-          if (orderItem) {
-            console.log("Deleting order item from backend:", orderItem.id);
-
-            // Delete from backend
-            const response = await deleteOrderItem(orderItem.id);
-
-            console.log("Backend response:", response);
-
-            // Update the selected order with the updated order from backend
-            setSelectedOrder(response.order);
-
-            // Invalidate queries to refresh data
-            queryClient.invalidateQueries({ queryKey: ["orders"] });
-            queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-
-            toast.success(
-              t("itemRemovedFromOrder", {
-                ns: "orders",
-                defaultValue: "Item removed from order successfully",
-              }),
-            );
-          } else {
-            console.warn(
-              "Order item not found in selected order, treating as new item",
-            );
-          }
-        } else {
-          console.log(
-            "Item is not an existing order item, removing from cart only",
-          );
-        }
-
-        // Remove from cart only on success (for both existing and new items)
-        setCartItems((prev) => prev.filter((cartItem) => cartItem.id !== id));
-      } catch (error) {
-        console.error("Failed to remove item from order:", error);
-        toast.error(
-          t("failedToRemoveItem", {
-            ns: "orders",
-            defaultValue: "Failed to remove item from order",
-          }),
-        );
-
-        // Remove loading state on error
-        setCartItems((prev) =>
-          prev.map((cartItem) =>
-            cartItem.id === id ? { ...cartItem, _isDeleting: false } : cartItem,
-          ),
-        );
-      }
-    },
-    [selectedOrder, queryClient, t],
-  );
-
-  const handleUpdateQuantity = React.useCallback(
-    (id: string, quantity: number) => {
-      setCartItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
-      );
-
-      // Find the cart item from ref to avoid dependency on cartItems
-      const item = cartItemsRef.current.find((cartItem) => cartItem.id === id);
-      if (!item) return;
-
-      // If this is an existing order item, save quantity to database
-      if (item._isExistingOrderItem && selectedOrder) {
-        // Find the corresponding order item in the selected order
-        const orderItem = selectedOrder.items?.find(
-          (oi) =>
-            oi.serviceOffering?.id === item.serviceOffering.id &&
-            oi.quantity === item.quantity,
-        );
-
-        if (orderItem) {
-          // Save quantity to database
-          updateOrderItemQuantityInDB(orderItem.id, quantity);
-        }
-      }
-
-      // Trigger immediate quote for dimension-based items when quantity changes
-      // Use selectedCustomerId or customer from selected order
-      const customerId =
-        selectedCustomerId || selectedOrder?.customer?.id?.toString();
-      if (item.productType.is_dimension_based && customerId && quantity > 0) {
-        const lengthNum = item.length_meters || 0;
-        const widthNum = item.width_meters || 0;
-
-        if (lengthNum > 0 && widthNum > 0) {
-          const quotePayload: QuoteItemPayload = {
-            service_offering_id: item.serviceOffering.id,
-            customer_id: customerId,
-            quantity: quantity,
-            length_meters: lengthNum,
-            width_meters: widthNum,
-          };
-
-          const currentQuoteInputSignature = JSON.stringify(quotePayload);
-
-          // Access lastQuotedInputs directly if possible, or leave it as dependency
-          // Ideally we should ref this too, but for now let's keep it simple
-
-          // Note: accessing state inside callback without dependency is stale,
-          // but here we are using setLastQuotedInputs functional update for the write.
-          // For the READ (comparison), we need the value.
-          // We will keep lastQuotedInputs in dependency for now.
-          // To strictly avoid re-creation, we would need a lastQuotedInputsRef too.
-
-          // Let's assume re-creation on quote state change is acceptable as it's less frequent than typing.
-
-          // Actually, we can't check lastQuotedInputs[item.id] without dependency.
-          // But we can check it inside the setter? No, we need it for the 'if' condition.
-
-          // Proceeding with lastQuotedInputs dependency.
-          // But wait, lastQuotedInputs only changes when we quote.
-          // Typing quantity triggers this often? No, only valid dimensions & qty > 0.
-
-          if (lastQuotedInputs[item.id] !== currentQuoteInputSignature) {
-            setLastQuotedInputs((prev) => ({
-              ...prev,
-              [item.id]: currentQuoteInputSignature,
-            }));
-
-            setCartItems((prev) =>
-              prev.map((cartItem) =>
-                cartItem.id === id
-                  ? { ...cartItem, _isQuoting: true, _quoteError: null }
-                  : cartItem,
-              ),
-            );
-
-            quoteItemMutation.mutate({ itemId: id, payload: quotePayload });
-          }
-        }
-      }
-    },
-    [selectedOrder, selectedCustomerId, lastQuotedInputs, quoteItemMutation],
-  );
-
-  const handleUpdateDimensions = React.useCallback(
-    (id: string, dimensions: { length?: number; width?: number }) => {
-      setCartItems((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                length_meters: dimensions.length,
-                width_meters: dimensions.width,
-              }
-            : item,
-        ),
-      );
-
-      // Find the cart item
-      const item = cartItemsRef.current.find((cartItem) => cartItem.id === id);
-      if (!item) return;
-
-      // If this is an existing order item, save dimensions to database
-      if (item._isExistingOrderItem && selectedOrder) {
-        // Find the corresponding order item in the selected order
-        const orderItem = selectedOrder.items?.find(
-          (oi) =>
-            oi.serviceOffering?.id === item.serviceOffering.id &&
-            oi.quantity === item.quantity,
-        );
-
-        if (orderItem) {
-          // Save dimensions to database
-          updateOrderItemDimensionsInDB(orderItem.id, {
-            length_meters: dimensions.length || null,
-            width_meters: dimensions.width || null,
-          });
-        }
-      }
-
-      // Trigger immediate quote for dimension-based items
-      // Use selectedCustomerId or customer from selected order
-      const customerId =
-        selectedCustomerId || selectedOrder?.customer?.id?.toString();
-      if (
-        item.productType.is_dimension_based &&
-        customerId &&
-        item.quantity > 0
-      ) {
-        const lengthNum = dimensions.length || 0;
-        const widthNum = dimensions.width || 0;
-
-        if (lengthNum > 0 && widthNum > 0) {
-          const quotePayload: QuoteItemPayload = {
-            service_offering_id: item.serviceOffering.id,
-            customer_id: customerId,
-            quantity: item.quantity,
-            length_meters: lengthNum,
-            width_meters: widthNum,
-          };
-
-          const currentQuoteInputSignature = JSON.stringify(quotePayload);
-
-          if (lastQuotedInputs[item.id] !== currentQuoteInputSignature) {
-            setLastQuotedInputs((prev) => ({
-              ...prev,
-              [item.id]: currentQuoteInputSignature,
-            }));
-
-            setCartItems((prev) =>
-              prev.map((cartItem) =>
-                cartItem.id === id
-                  ? { ...cartItem, _isQuoting: true, _quoteError: null }
-                  : cartItem,
-              ),
-            );
-
-            quoteItemMutation.mutate({ itemId: id, payload: quotePayload });
-          }
-        }
-      }
-    },
-    [selectedOrder, selectedCustomerId, lastQuotedInputs, quoteItemMutation],
-  );
-
-  const handleUpdateNotes = (id: string, notes: string) => {
-    setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, notes } : item)),
-    );
-  };
-
-  const handleOrderSelect = React.useCallback((order: Order) => {
-    setSelectedOrder(order);
-    setIsNewOrderMode(false); // Exit new order mode when selecting an existing order
-
-    // Clear current cart items
-    setCartItems([]);
-
-    // Set customer if order has one
-    if (order.customer) {
-      setSelectedCustomerId(order.customer.id.toString());
-    } else {
-      setSelectedCustomerId(null);
-    }
-
-    // Set order type
-    setOrderType(order.order_type);
-
-    // Set table if order has one
-
-    // Convert order items to cart items and populate cart only if order has items
-    if (order.items && order.items.length > 0) {
-      const cartItemsFromOrder: CartItem[] = order.items.map((item) => ({
-        id: uuidv4(), // Generate new ID for cart item
-        productType: {
-          id: item.serviceOffering?.product_type_id || 0,
-          product_category_id:
-            item.serviceOffering?.productType?.product_category_id || 0,
-          name: item.serviceOffering?.productType?.name || "Unknown Product",
-          is_dimension_based:
-            item.serviceOffering?.productType?.is_dimension_based || false,
-          is_active: item.serviceOffering?.productType?.is_active || true,
-        } as ProductType,
-        serviceOffering: item.serviceOffering || ({} as ServiceOffering),
-        quantity: item.quantity,
-        price: item.calculated_price_per_unit_item,
-        notes: item.notes || undefined,
-        length_meters: item.length_meters || undefined,
-        width_meters: item.width_meters || undefined,
-        _isQuoting: false,
-        _quotedSubTotal: item.sub_total,
-        _isExistingOrderItem: true, // Mark as existing order item
-      }));
-
-      setCartItems(cartItemsFromOrder);
-    }
-    // If order has no items, cart remains empty (which is correct for new orders)
-
-    // Update dining table status to occupied if the order has a table
-  }, []);
-
-  const handleBackToCategories = () => {
-    setShowCategoriesOnIpad(true);
-    setSelectedProductType(null);
-    // setSelectedOfferingId(null); // Removed this line
-  };
-
-  const handleServiceOfferingSelect = (offering: ServiceOffering) => {
-    // Prevent adding items to received orders
-    if (selectedOrder?.received) {
-      toast.error(
-        t("orderReceivedCannotEdit", {
-          ns: "orders",
-          defaultValue: "This order is received and cannot be edited",
-        }),
-      );
-      setIsServiceOfferingDialogOpen(false);
-      setSelectedProductForDialog(null);
-      return;
-    }
-
-    // Check if we have a customer (either from order or selected customer)
-    const hasCustomer = selectedOrder?.customer || selectedCustomerId;
-    if (!hasCustomer) {
-      toast.error(
-        t("orderNeedsCustomer", {
-          ns: "orders",
-          defaultValue:
-            "Please select a customer for this order before adding items",
-        }),
-      );
-      setIsServiceOfferingDialogOpen(false);
-      setSelectedProductForDialog(null);
-      return;
-    }
-
-    if (selectedProductForDialog) {
-      // Add to backend first, then show in cart
-      handleAddItemToBackend(selectedProductForDialog, offering);
-      setIsServiceOfferingDialogOpen(false);
-      setSelectedProductForDialog(null);
-    }
-  };
-
-  const handleCustomerSelected = React.useCallback(
-    (customerId: string | null) => {
-      setSelectedCustomerId(customerId);
-
-      // If we have a selected order and a customer is selected, update it
-      if (selectedOrder && customerId) {
-        // Only update if the customer ID is actually different
-        if (selectedOrder.customer_id?.toString() !== customerId) {
-          // Update the existing order with the selected customer
-          updateOrderDetails(selectedOrder.id, {
-            customer_id: parseInt(customerId),
-          })
-            .then((updatedOrder) => {
-              setSelectedOrder(updatedOrder);
-              queryClient.invalidateQueries({ queryKey: ["orders"] });
-              queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-              toast.success(
-                t("customerAssignedToOrder", {
-                  ns: "orders",
-                  defaultValue: "Customer assigned to order successfully",
-                }),
-              );
-            })
-            .catch((error) => {
-              console.error("Failed to update order with customer:", error);
-              toast.error(
-                t("failedToAssignCustomer", {
-                  ns: "orders",
-                  defaultValue: "Failed to assign customer to order",
-                }),
-              );
-            });
-        }
-      } else if (isNewOrderMode && customerId) {
-        // If we're in new order mode, create a new order with the selected customer
-        const newOrderData = {
-          customer_id: customerId,
-          items: [], // Empty items array for new order
-          order_type: orderType,
-        };
-        createOrderMutation.mutate(newOrderData);
-      }
-      queryClient.invalidateQueries({ queryKey: ["customersForSelect"] });
-    },
-    [
-      selectedOrder,
-      isNewOrderMode,
-      orderType,
-
-      createOrderMutation,
-      queryClient,
-      t,
-    ],
-  );
-
-  const handleAddItemToBackend = async (
-    product: ProductType,
-    offering: ServiceOffering,
-  ) => {
-    if (!selectedOrder) {
-      toast.error(
-        t("noOrderSelected", {
-          ns: "orders",
-          defaultValue: "No order selected",
-        }),
-      );
-      return;
-    }
-
-    // Create a temporary cart item with loading state
-    const tempItemId = uuidv4();
-    const tempItem: CartItem = {
-      id: tempItemId,
-      productType: product,
-      serviceOffering: offering,
-      quantity: 1,
-      price: product.is_dimension_based
-        ? offering.default_price_per_sq_meter || 0
-        : offering.default_price || 0,
-      _isQuoting: false,
-      _isAdding: true, // Flag to show loading state
-    };
-
-    // Add temporary item to cart with loading state
-    setCartItems((prev) => [...prev, tempItem]);
-
-    try {
-      // Prepare the order data with existing items + new item
-      const existingItems =
-        selectedOrder.items?.map((item) => ({
-          id: item.id.toString(),
-          service_offering_id: item.serviceOffering?.id || 0,
-          product_type_id:
-            item.serviceOffering?.productType?.id?.toString() || "",
-          service_action_id:
-            item.serviceOffering?.serviceAction?.id?.toString() || "",
+      // Convert order items to cart items and populate cart only if order has items
+      if (order.items && order.items.length > 0) {
+        const cartItemsFromOrder: CartItem[] = order.items.map((item) => ({
+          id: uuidv4(), // Generate new ID for cart item
+          backendId: item.id.toString(), // Store backend ID
+          productType: {
+            id: item.serviceOffering?.product_type_id || 0,
+            product_category_id:
+              item.serviceOffering?.productType?.product_category_id || 0,
+            name: item.serviceOffering?.productType?.name || "Unknown Product",
+            is_dimension_based:
+              item.serviceOffering?.productType?.is_dimension_based || false,
+            is_active: item.serviceOffering?.productType?.is_active || true,
+          } as ProductType,
+          serviceOffering: item.serviceOffering || ({} as ServiceOffering),
           quantity: item.quantity,
+          price: item.calculated_price_per_unit_item,
           notes: item.notes || undefined,
           length_meters: item.length_meters || undefined,
           width_meters: item.width_meters || undefined,
-          _derivedServiceOffering: item.serviceOffering,
-          _pricingStrategy: (item.serviceOffering?.productType
-            ?.is_dimension_based
-            ? "dimension_based"
-            : "fixed") as "fixed" | "dimension_based",
-          _quoted_price_per_unit_item: item.calculated_price_per_unit_item,
-          _quoted_sub_total: item.sub_total,
-        })) || [];
+          _isQuoting: false,
+          _quotedSubTotal: item.sub_total,
+          _isExistingOrderItem: true, // Mark as existing order item
+        }));
 
-      const newItem = {
-        id: tempItemId,
-        service_offering_id: offering.id,
-        product_type_id: product.id.toString(),
-        service_action_id: offering.service_action_id.toString(),
-        quantity: 1,
-        notes: undefined,
-        length_meters: undefined,
-        width_meters: undefined,
-        _derivedServiceOffering: offering,
-        _pricingStrategy: (product.is_dimension_based
-          ? "dimension_based"
-          : "fixed") as PricingStrategy,
-        _quoted_price_per_unit_item: tempItem.price,
-        _quoted_sub_total: tempItem.price,
-      };
+        setCartItems(cartItemsFromOrder);
+      }
+    },
+    [setSearchTerm],
+  );
 
-      const orderData = {
-        customer_id: selectedOrder.customer?.id?.toString() || "",
-        items: [...existingItems, newItem],
-        notes: selectedOrder.notes || undefined,
-        due_date: selectedOrder.due_date || undefined,
-        order_type: selectedOrder.order_type,
-      };
+  // Use ref for cart items to avoid re-creating handlers
+  useEffect(() => {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
 
-      // Call the updateOrder API to add item to the existing order
-      const updatedOrder = await updateOrder(
-        selectedOrder.id,
-        orderData,
-        allServiceOfferings,
-      );
+  const {
+    newlyCreatedOrder,
+    clearNewlyCreatedOrder,
+    shouldCreateNewOrder,
+    resetCreateNewOrderTrigger,
+  } = useNewOrder();
 
-      // Update the selected order with the new data
-      setSelectedOrder(updatedOrder.order);
-
-      // Remove the temporary item and add the real item from the updated order
-      setCartItems((prev) => {
-        const filtered = prev.filter((item) => item.id !== tempItemId);
-        // Find the newly added item in the updated order
-        const newOrderItem = updatedOrder.order.items?.find(
-          (item) =>
-            item.serviceOffering?.id === offering.id && item.quantity === 1,
-        );
-
-        if (newOrderItem) {
-          const realCartItem: CartItem = {
-            id: uuidv4(), // Generate new ID for cart item
-            productType: {
-              id: newOrderItem.serviceOffering?.product_type_id || 0,
-              product_category_id:
-                newOrderItem.serviceOffering?.productType
-                  ?.product_category_id || 0,
-              name:
-                newOrderItem.serviceOffering?.productType?.name ||
-                "Unknown Product",
-              is_dimension_based:
-                newOrderItem.serviceOffering?.productType?.is_dimension_based ||
-                false,
-              is_active:
-                newOrderItem.serviceOffering?.productType?.is_active || true,
-            } as ProductType,
-            serviceOffering:
-              newOrderItem.serviceOffering || ({} as ServiceOffering),
-            quantity: newOrderItem.quantity,
-            price: newOrderItem.calculated_price_per_unit_item,
-            notes: newOrderItem.notes || undefined,
-            length_meters: newOrderItem.length_meters || undefined,
-            width_meters: newOrderItem.width_meters || undefined,
-            _isQuoting: false,
-            _quotedSubTotal: newOrderItem.sub_total,
-            _isExistingOrderItem: true, // Mark as existing order item since it's now saved to backend
-          };
-          return [...filtered, realCartItem];
-        }
-        return filtered;
-      });
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-
-      toast.success(
-        t("itemAddedToOrder", {
-          ns: "orders",
-          defaultValue: "Item added to order successfully",
-        }),
-      );
-    } catch (error) {
-      console.error("Failed to add item to order:", error);
-      toast.error(
-        t("failedToAddItem", {
-          ns: "orders",
-          defaultValue: "Failed to add item to order",
-        }),
-      );
-
-      // Remove the temporary item on error
-      setCartItems((prev) => prev.filter((item) => item.id !== tempItemId));
+  // Handle new order trigger (from keyboard shortcut or other context triggers)
+  useEffect(() => {
+    if (shouldCreateNewOrder) {
+      handleOrderSelect(null);
+      resetCreateNewOrderTrigger();
     }
-  };
+  }, [shouldCreateNewOrder, handleOrderSelect, resetCreateNewOrderTrigger]);
 
-  const handleCheckout = async () => {
-    // If we have a selected order, we should receive it instead of creating a new one
-    if (selectedOrder) {
-      // Receive the selected order
-      await handleReceiveOrder();
-      return;
+  // Auto-select newly created order
+  useEffect(() => {
+    if (newlyCreatedOrder) {
+      handleOrderSelect(newlyCreatedOrder);
+      clearNewlyCreatedOrder();
     }
+  }, [newlyCreatedOrder, clearNewlyCreatedOrder, handleOrderSelect]);
 
-    // Otherwise, create a new order (this should rarely happen now with the new workflow)
-    if (!selectedCustomerId) {
-      toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
-      return;
-    }
+  // Clear selected order when the date changes via POSDatePicker
+  useEffect(() => {
+    setSelectedOrder(null);
+  }, [selectedDate]);
 
-    if (cartItems.length === 0) {
-      toast.error(t("cartIsEmpty", { ns: "orders" }));
-      return;
-    }
-
-    setIsProcessing(true);
-
-    const orderItems: OrderItemFormLine[] = cartItems.map((item) => ({
-      id: item.id,
-      service_offering_id: item.serviceOffering.id,
-      product_type_id: item.productType.id.toString(),
-      service_action_id: item.serviceOffering.service_action_id.toString(),
-      quantity: item.quantity,
-      notes: item.notes,
-      length_meters: item.length_meters,
-      width_meters: item.width_meters,
-      _derivedServiceOffering: item.serviceOffering,
-      _pricingStrategy: item.productType.is_dimension_based
-        ? "dimension_based"
-        : "fixed",
-      _quoted_price_per_unit_item: item.price,
-      _quoted_sub_total: item._quotedSubTotal || item.price * item.quantity,
-    }));
-
-    const orderData: NewOrderFormData = {
-      customer_id: selectedCustomerId,
-      items: orderItems,
-      notes: undefined, // TODO: Add UI for order notes
-      due_date: undefined, // TODO: Add UI for due date
-      order_type: orderType,
-    };
-
-    createOrderMutation.mutate(orderData);
-  };
-
-  const handleReceiveOrder = async () => {
+  const handleReceiveOrder = React.useCallback(async () => {
     if (!selectedOrder) {
       toast.error(
         t("noOrderSelected", {
@@ -1067,7 +294,7 @@ const POSPage: React.FC = () => {
     }
 
     // Check if order has a customer (required for receiving)
-    if (!selectedOrder.customer) {
+    if (!selectedOrder.customer && !selectedCustomerId) {
       toast.error(
         t("orderNeedsCustomer", {
           ns: "orders",
@@ -1077,10 +304,6 @@ const POSPage: React.FC = () => {
       );
       return;
     }
-
-    console.log(
-      "Receiving order - backend will recalculate total from order items",
-    );
 
     // Mark order as received - backend will recalculate total from order items
     try {
@@ -1108,7 +331,6 @@ const POSPage: React.FC = () => {
 
       // Auto-send WhatsApp notifications based on settings
       if (settings) {
-        // Auto-send WhatsApp invoice if enabled
         if (
           settings.pos_auto_send_whatsapp_invoice &&
           response.order.customer?.phone
@@ -1133,19 +355,6 @@ const POSPage: React.FC = () => {
             );
           }
         }
-
-        // // Auto-send WhatsApp text if enabled
-        // if (settings.pos_auto_send_whatsapp_text && response.order.customer?.phone) {
-        //   try {
-        //     await apiClient.post(`/orders/${response.order.id}/send-whatsapp-message`, {
-        //       message: `Hello ${response.order.customer.name}, your order #${response.order.id} is ready for pickup. Thank you for choosing our service!`
-        //     });
-        //     toast.success(t("messageSentSuccessfully", { ns: "orders", defaultValue: "Message sent successfully via WhatsApp" }));
-        //   } catch (error) {
-        //     console.error('Failed to auto-send WhatsApp message:', error);
-        //     toast.error(t("failedToSendMessage", { ns: "orders", defaultValue: "Failed to send WhatsApp message" }));
-        //   }
-        // }
       }
     } catch (error) {
       console.error("Failed to receive order:", error);
@@ -1158,7 +367,345 @@ const POSPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
+  }, [selectedOrder, selectedCustomerId, settings, queryClient, t]);
+
+  const handleCheckout = React.useCallback(async () => {
+    if (!selectedCustomerId && !selectedOrder?.customer) {
+      toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      toast.error(t("cartIsEmpty", { ns: "orders" }));
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Construct item payload
+      const orderItems: OrderItemFormLine[] = cartItems.map((item) => ({
+        id: item.backendId || item.id, // Use backendId if available (for updates), otherwise UUID (for creates)
+        service_offering_id: item.serviceOffering.id,
+        product_type_id: item.productType.id.toString(),
+        service_action_id: item.serviceOffering.service_action_id.toString(),
+        quantity: item.quantity,
+        notes: item.notes,
+        length_meters: item.length_meters,
+        width_meters: item.width_meters,
+        _derivedServiceOffering: item.serviceOffering,
+        _pricingStrategy: item.productType.is_dimension_based
+          ? "dimension_based"
+          : "fixed",
+        _quoted_price_per_unit_item: item.price,
+        _quoted_sub_total: item._quotedSubTotal || item.price * item.quantity,
+      }));
+
+      // If we have a selected order, update it first
+      if (selectedOrder) {
+        // 1. Handle explicit deletions
+        if (deletedItemIds.length > 0) {
+          await Promise.all(deletedItemIds.map((id) => deleteOrderItem(id)));
+          setDeletedItemIds([]);
+        }
+
+        // 2. Prepare update data
+        const orderData = {
+          customer_id:
+            selectedCustomerId || selectedOrder.customer?.id?.toString() || "",
+          items: orderItems,
+          notes: selectedOrder.notes || undefined,
+          due_date: selectedOrder.due_date || undefined,
+          order_type: orderType,
+        };
+
+        // 3. Update order
+        const updatedOrderResponse = await updateOrder(
+          selectedOrder.id,
+          orderData,
+          allServiceOfferings,
+        );
+
+        setSelectedOrder(updatedOrderResponse.order);
+
+        // 4. Proceed to receive
+        await handleReceiveOrder();
+      } else {
+        // Create new order
+        const orderData: NewOrderFormData = {
+          customer_id: selectedCustomerId!,
+          items: orderItems,
+          notes: undefined,
+          due_date: undefined,
+          order_type: orderType,
+        };
+
+        createOrderMutation.mutate(orderData);
+      }
+    } catch (error) {
+      console.error("Checkout failed:", error);
+      toast.error(
+        t("checkoutFailed", {
+          ns: "orders",
+          defaultValue: "Failed to process order",
+        }),
+      );
+      setIsProcessing(false);
+    }
+  }, [
+    selectedCustomerId,
+    selectedOrder,
+    cartItems,
+    deletedItemIds,
+    orderType,
+    allServiceOfferings,
+    createOrderMutation,
+    handleReceiveOrder,
+    t,
+  ]);
+
+  // Function to update order item dimensions in database
+
+  const handleSelectCategory = React.useCallback((categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedProductType(null);
+  }, []);
+
+  // Remove handleSelectOffering function since it's no longer needed
+  // const handleSelectOffering = (offering: ServiceOffering) => { ... };
+
+  const handleRemoveItem = React.useCallback(
+    (id: string) => {
+      const item = cartItemsRef.current.find((cartItem) => cartItem.id === id);
+
+      if (!item) {
+        return;
+      }
+
+      // If it's an existing order item with a backend ID, mark it for deletion
+      if (item.backendId) {
+        setDeletedItemIds((prev) => [...prev, item.backendId!]);
+      }
+
+      // Remove from local cart state
+      setCartItems((prev) => prev.filter((cartItem) => cartItem.id !== id));
+
+      toast.success(
+        t("itemRemovedFromOrder", {
+          ns: "orders",
+          defaultValue: "Item removed from order",
+        }),
+      );
+    },
+    [t],
+  );
+
+  const handleUpdateQuantity = React.useCallback(
+    (id: string, quantity: number) => {
+      // Update local state and calculate subtotal locally
+      setCartItems((prev) =>
+        prev.map((item) => {
+          if (item.id === id) {
+            const unitPrice = item.price || 0;
+            let subTotal = unitPrice * quantity;
+
+            if (item.productType.is_dimension_based) {
+              const length = item.length_meters || 0;
+              const width = item.width_meters || 0;
+              subTotal = length * width * quantity * unitPrice;
+            }
+
+            return {
+              ...item,
+              quantity,
+              _quotedSubTotal: subTotal,
+            };
+          }
+          return item;
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleUpdateDimensions = React.useCallback(
+    (id: string, dimensions: { length?: number; width?: number }) => {
+      // Update local state and calculate subtotal locally
+      setCartItems((prev) =>
+        prev.map((item) => {
+          if (item.id === id) {
+            const unitPrice = item.price || 0;
+            const length = dimensions.length ?? item.length_meters ?? 0;
+            const width = dimensions.width ?? item.width_meters ?? 0;
+            const subTotal = length * width * item.quantity * unitPrice;
+
+            return {
+              ...item,
+              length_meters: dimensions.length,
+              width_meters: dimensions.width,
+              _quotedSubTotal: subTotal,
+            };
+          }
+          return item;
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleUpdateNotes = (id: string, notes: string) => {
+    setCartItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, notes } : item)),
+    );
   };
+
+  const handleBackToCategories = () => {
+    setShowCategoriesOnIpad(true);
+    setSelectedProductType(null);
+    // setSelectedOfferingId(null); // Removed this line
+  };
+
+  const handleCustomerSelected = React.useCallback(
+    (customerId: string | null) => {
+      setSelectedCustomerId(customerId);
+      // Removed immediate backend call to updateOrderDetails.
+      // Changes will be persisted duringCheckout for existing orders.
+    },
+    [],
+  );
+
+  const handleAddToCart = React.useCallback(
+    (product: ProductType, offering: ServiceOffering) => {
+      // Client-side logic for both New and Existing Orders
+      const tempItemId = uuidv4();
+      const newItem: CartItem = {
+        id: tempItemId,
+        productType: product,
+        serviceOffering: offering,
+        quantity: 1,
+        price: product.is_dimension_based
+          ? offering.default_price_per_sq_meter || 0
+          : offering.default_price || 0,
+        _isQuoting: false,
+        _isAdding: false,
+        // For new items, no backendId yet
+        _isExistingOrderItem: false,
+      };
+
+      setCartItems((prev) => [...prev, newItem]);
+      toast.success(t("itemAddedToOrder", { ns: "orders" }));
+    },
+    [t],
+  );
+
+  const handleSelectProduct = React.useCallback(
+    (product: ProductType) => {
+      // Prevent adding items to received orders
+      if (selectedOrder?.received) {
+        toast.error(
+          t("orderReceivedCannotEdit", {
+            ns: "orders",
+            defaultValue: "This order is received and cannot be edited",
+          }),
+        );
+        return;
+      }
+
+      // Check if we have a customer (either from order or selected customer)
+      const hasCustomer =
+        selectedOrder?.customer ||
+        selectedOrder?.customer_id ||
+        selectedCustomerId;
+      if (!hasCustomer) {
+        toast.error(
+          t("orderNeedsCustomer", {
+            ns: "orders",
+            defaultValue:
+              "Please select a customer for this order before adding items",
+          }),
+        );
+        return;
+      }
+
+      setSelectedProductType(product);
+
+      // Check if product has only one service offering and auto-add to cart
+      const productOfferings = serviceOfferingsToUse.filter(
+        (offering) => offering.product_type_id === product.id,
+      );
+
+      if (productOfferings.length === 1 && hasCustomer) {
+        const offering = productOfferings[0];
+        handleAddToCart(product, offering);
+      } else if (productOfferings.length > 1 && hasCustomer) {
+        // Show dialog for multiple service offerings
+        setSelectedProductForDialog(product);
+        setIsServiceOfferingDialogOpen(true);
+      } else if (isIpadView && hasCustomer) {
+        // For iPad view, switch to product view when category is selected
+        setShowCategoriesOnIpad(false);
+      }
+    },
+    [
+      selectedOrder?.received,
+      selectedOrder?.customer,
+      selectedOrder?.customer_id,
+      selectedCustomerId,
+      t,
+      serviceOfferingsToUse,
+      isIpadView,
+      handleAddToCart,
+    ],
+  );
+
+  const handleServiceOfferingSelect = React.useCallback(
+    (offering: ServiceOffering) => {
+      // Prevent adding items to received orders
+      if (selectedOrder?.received) {
+        toast.error(
+          t("orderReceivedCannotEdit", {
+            ns: "orders",
+            defaultValue: "This order is received and cannot be edited",
+          }),
+        );
+        setIsServiceOfferingDialogOpen(false);
+        setSelectedProductForDialog(null);
+        return;
+      }
+
+      // Check if we have a customer
+      const hasCustomer =
+        selectedOrder?.customer ||
+        selectedOrder?.customer_id ||
+        selectedCustomerId;
+      if (!hasCustomer) {
+        toast.error(
+          t("orderNeedsCustomer", {
+            ns: "orders",
+            defaultValue:
+              "Please select a customer for this order before adding items",
+          }),
+        );
+        setIsServiceOfferingDialogOpen(false);
+        setSelectedProductForDialog(null);
+        return;
+      }
+
+      if (selectedProductForDialog) {
+        // Add to cart
+        handleAddToCart(selectedProductForDialog, offering);
+        setIsServiceOfferingDialogOpen(false);
+        setSelectedProductForDialog(null);
+      }
+    },
+    [
+      selectedOrder,
+      selectedCustomerId,
+      selectedProductForDialog,
+      handleAddToCart,
+      t,
+    ],
+  );
 
   const handleCancelOrder = async () => {
     if (!selectedOrder) {
@@ -1344,57 +891,6 @@ const POSPage: React.FC = () => {
     }
   };
 
-  // Effect for quoting items
-  useEffect(() => {
-    // Use selectedCustomerId or customer from selected order
-    const customerId =
-      selectedCustomerId || selectedOrder?.customer?.id?.toString();
-    if (!debouncedCartItems || debouncedCartItems.length === 0 || !customerId)
-      return;
-
-    debouncedCartItems.forEach((item) => {
-      if (!item._isQuoting && item.quantity > 0) {
-        let readyToQuote = true;
-        const quotePayload: QuoteItemPayload = {
-          service_offering_id: item.serviceOffering.id,
-          customer_id: customerId,
-          quantity: item.quantity,
-        };
-
-        if (item.productType.is_dimension_based) {
-          if (item.length_meters && item.width_meters) {
-            quotePayload.length_meters = item.length_meters;
-            quotePayload.width_meters = item.width_meters;
-          } else {
-            readyToQuote = false;
-          }
-        }
-
-        const currentQuoteInputSignature = JSON.stringify(quotePayload);
-
-        if (
-          readyToQuote &&
-          lastQuotedInputs[item.id] !== currentQuoteInputSignature
-        ) {
-          setLastQuotedInputs((prev) => ({
-            ...prev,
-            [item.id]: currentQuoteInputSignature,
-          }));
-
-          setCartItems((prev) =>
-            prev.map((cartItem) =>
-              cartItem.id === item.id
-                ? { ...cartItem, _isQuoting: true }
-                : cartItem,
-            ),
-          );
-
-          quoteItemMutation.mutate({ itemId: item.id, payload: quotePayload });
-        }
-      }
-    });
-  }, [debouncedCartItems, selectedCustomerId]);
-
   // Effect to detect iPad screen size
   useEffect(() => {
     const checkIpadView = () => {
@@ -1437,7 +933,13 @@ const POSPage: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cartItems.length, isProcessing, selectedOrder]);
+  }, [
+    cartItems.length,
+    isProcessing,
+    selectedOrder,
+    handleReceiveOrder,
+    handleCheckout,
+  ]);
 
   return (
     <div
@@ -1453,17 +955,17 @@ const POSPage: React.FC = () => {
         selectedOrder={selectedOrder}
         onCalculatorClick={() => setIsCalculatorOpen(true)}
         onPdfClick={() => setIsPdfDialogOpen(true)}
-        onOrderSelect={setSelectedOrder}
+        onOrderSelect={handleOrderSelect}
         selectedCategoryId={selectedCategoryId}
         onCategorySelect={setSelectedCategoryId}
         isNewOrderMode={isNewOrderMode}
-        onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
+        onOrderUpdate={handleOrderSelect}
       />
 
       <main className="flex-1 container mx-auto mt-1 overflow-hidden">
         <div className="flex gap-2 h-full">
-          {/* Show product columns only when a customer is selected */}
-          {selectedCustomerId || selectedOrder?.customer ? (
+          {/* Show product columns when a customer is selected OR in new order mode */}
+          {selectedCustomerId || selectedOrder?.customer || isNewOrderMode ? (
             <>
               {/* iPad Layout */}
               {isIpadView ? (
@@ -1599,13 +1101,12 @@ const POSPage: React.FC = () => {
                 <>
                   {/* Desktop Layout */}
                   {/* Left Section: Categories */}
-             
-                      <CategoryColumn
-                        onSelectCategory={handleSelectCategory}
-                        selectedCategoryId={selectedCategoryId}
-                        selectedCustomerId={selectedCustomerId}
-                      />
-                   
+
+                  <CategoryColumn
+                    onSelectCategory={handleSelectCategory}
+                    selectedCategoryId={selectedCategoryId}
+                    selectedCustomerId={selectedCustomerId}
+                  />
 
                   {/* Middle Section: Products and Services */}
                   <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
@@ -1676,9 +1177,7 @@ const POSPage: React.FC = () => {
                           onUpdateQuantity={handleUpdateQuantity}
                           onUpdateDimensions={handleUpdateDimensions}
                           onUpdateNotes={handleUpdateNotes}
-                          onCheckout={
-                            selectedOrder ? handleReceiveOrder : handleCheckout
-                          }
+                          onCheckout={handleCheckout}
                           onCancelOrder={
                             selectedOrder?.received
                               ? handleCancelOrder
@@ -1745,32 +1244,8 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsCustomerModalOpen}
         onSuccess={(customer) => {
           setSelectedCustomerId(customer.id.toString());
-          // If we have a selected order without a customer, update it
-          if (selectedOrder && !selectedOrder.customer) {
-            // Update the existing order with the newly created customer
-            updateOrderDetails(selectedOrder.id, { customer_id: customer.id })
-              .then((updatedOrder) => {
-                setSelectedOrder(updatedOrder);
-                queryClient.invalidateQueries({ queryKey: ["orders"] });
-                queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-                toast.success(
-                  t("customerAssignedToOrder", {
-                    ns: "orders",
-                    defaultValue: "Customer assigned to order successfully",
-                  }),
-                );
-              })
-              .catch((error) => {
-                console.error("Failed to update order with customer:", error);
-                toast.error(
-                  t("failedToAssignCustomer", {
-                    ns: "orders",
-                    defaultValue: "Failed to assign customer to order",
-                  }),
-                );
-              });
-          }
           queryClient.invalidateQueries({ queryKey: ["customersForSelect"] });
+          // Note: Backend assignment to existing orders is now handled at checkout
         }}
       />
 

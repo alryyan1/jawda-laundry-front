@@ -103,6 +103,8 @@ export interface Order {
     | string
     | null;
   payment_method?: string | null;
+  dining_table_id?: number | null;
+  table?: { id: number; name: string } | null;
   notes?: string | null;
   order_date: string;
   due_date?: string | null;

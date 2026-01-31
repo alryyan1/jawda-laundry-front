@@ -75,6 +75,12 @@ const OrdersListPage = React.lazy(
 const OrderDetailsPage = React.lazy(
   () => import("@/pages/orders/OrderDetailsPage"),
 );
+const OrderTimelinePage = React.lazy(
+  () => import("@/pages/orders/OrderTimelinePage"),
+);
+const OrdersTimelinePage = React.lazy(
+  () => import("@/pages/orders/OrdersTimelinePage"),
+);
 // const EditOrderPage = React.lazy(() => import('@/pages/orders/EditOrderPage')); // Future
 
 // Service Management Pages (Admin)
@@ -366,6 +372,22 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <OrderDetailsPage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "orders/:id/timeline",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <OrderTimelinePage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "orders/timeline",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <OrdersTimelinePage />
               </React.Suspense>
             ),
           },

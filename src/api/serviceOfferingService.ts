@@ -1,11 +1,9 @@
 // src/api/serviceOfferingService.ts
 import apiClient from "./apiClient";
-import  type {
+import type {
   ServiceOffering,
   PaginatedResponse,
   PricingStrategy, // Make sure PricingStrategy type is correctly defined and exported in your types
-  ProductType, // For payload if productType/serviceAction objects are sent
-  ServiceAction, // For payload
 } from "@/types"; // Or from specific type files e.g. '@/types/service.types'
 
 // This interface should match the data structure expected by your form and what you send to the API
@@ -25,33 +23,41 @@ export interface ServiceOfferingFormData {
  * Helper function to prepare payload for create/update.
  * Converts string IDs and prices to numbers, handles optional fields.
  */
-const preparePayload = (formData: Partial<ServiceOfferingFormData>): any => {
-  const payload: any = { ...formData };
+const preparePayload = (
+  formData: Partial<ServiceOfferingFormData>,
+): Record<string, unknown> => {
+  const payload: Record<string, unknown> = {
+    ...formData,
+    product_type_id:
+      formData.product_type_id !== undefined
+        ? parseInt(String(formData.product_type_id), 10)
+        : undefined,
+    service_action_id:
+      formData.service_action_id !== undefined
+        ? parseInt(String(formData.service_action_id), 10)
+        : undefined,
+    default_price:
+      formData.default_price !== undefined
+        ? formData.default_price === "" || formData.default_price === null
+          ? null
+          : parseFloat(String(formData.default_price))
+        : undefined,
+    default_price_per_sq_meter:
+      formData.default_price_per_sq_meter !== undefined
+        ? formData.default_price_per_sq_meter === "" ||
+          formData.default_price_per_sq_meter === null
+          ? null
+          : parseFloat(String(formData.default_price_per_sq_meter))
+        : undefined,
+  };
 
-  if (formData.product_type_id !== undefined) {
-    payload.product_type_id = parseInt(String(formData.product_type_id), 10);
-  }
-  if (formData.service_action_id !== undefined) {
-    payload.service_action_id = parseInt(
-      String(formData.service_action_id),
-      10
-    );
-  }
+  // Remove undefined values that might result from conditional assignments
+  Object.keys(payload).forEach((key) => {
+    if (payload[key] === undefined) {
+      delete payload[key];
+    }
+  });
 
-  if (formData.default_price !== undefined) {
-    payload.default_price =
-      formData.default_price === "" || formData.default_price === null
-        ? null
-        : parseFloat(String(formData.default_price));
-  }
-  if (formData.default_price_per_sq_meter !== undefined) {
-    payload.default_price_per_sq_meter =
-      formData.default_price_per_sq_meter === "" ||
-      formData.default_price_per_sq_meter === null
-        ? null
-        : parseFloat(String(formData.default_price_per_sq_meter));
-  }
-  // is_active is already boolean from Switch component
   return payload;
 };
 
@@ -66,18 +72,22 @@ export const getServiceOfferings = async (
     service_action_id?: number | string;
     is_active?: boolean;
     search?: string;
-  }
+  },
 ): Promise<PaginatedResponse<ServiceOffering>> => {
-  const params: any = { page, per_page: perPage, ...filters };
+  const params: Record<string, unknown> = {
+    page,
+    per_page: perPage,
+    ...filters,
+  };
   // Remove undefined/null filter values
   Object.keys(params).forEach(
     (key) =>
-      (params[key] === undefined || params[key] === null) && delete params[key]
+      (params[key] === undefined || params[key] === null) && delete params[key],
   );
 
   const { data } = await apiClient.get<PaginatedResponse<ServiceOffering>>(
     "/service-offerings",
-    { params }
+    { params },
   );
   return data;
 };
@@ -86,18 +96,57 @@ export const getServiceOfferings = async (
  * Fetches all active service offerings (non-paginated), typically for select dropdowns.
  * Can be filtered by product_type_id.
  */
+export const clearServiceOfferingsCache = () => {
+  // Find all keys starting with service_offerings_select_ and remove them
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("service_offerings_select_")) {
+      localStorage.removeItem(key);
+      i--; // Adjust index after removal
+    }
+  }
+};
+
 export const getAllServiceOfferingsForSelect = async (
-  productTypeId?: number | string
+  productTypeId?: number | string,
 ): Promise<ServiceOffering[]> => {
-  const params: any = {};
+  const cacheKey = productTypeId
+    ? `service_offerings_select_${productTypeId}`
+    : "service_offerings_select_all";
+
+  // Check localStorage cache
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      const { data, timestamp } = JSON.parse(cached);
+      // Cache for 24 hours
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+        return data as ServiceOffering[];
+      }
+    } catch (e) {
+      console.warn("Parsed cached service offerings failed", e);
+    }
+  }
+
+  const params: Record<string, unknown> = {};
   if (productTypeId) {
     params.product_type_id = productTypeId;
   }
   // Assuming backend /all-for-select endpoint filters by is_active=true by default
   const { data } = await apiClient.get<{ data: ServiceOffering[] }>(
     "/service-offerings/all-for-select",
-    { params }
+    { params },
   );
+
+  // Store in localStorage
+  localStorage.setItem(
+    cacheKey,
+    JSON.stringify({
+      data: data.data,
+      timestamp: Date.now(),
+    }),
+  );
+
   return data.data; // API ResourceCollection wraps in 'data'
 };
 
@@ -105,10 +154,10 @@ export const getAllServiceOfferingsForSelect = async (
  * Fetches a single service offering by its ID.
  */
 export const getServiceOfferingById = async (
-  id: string | number
+  id: string | number,
 ): Promise<ServiceOffering> => {
   const { data } = await apiClient.get<{ data: ServiceOffering }>(
-    `/service-offerings/${id}`
+    `/service-offerings/${id}`,
   );
   return data.data; // API Resource wraps in 'data'
 };
@@ -117,13 +166,14 @@ export const getServiceOfferingById = async (
  * Creates a new service offering.
  */
 export const createServiceOffering = async (
-  formData: ServiceOfferingFormData
+  formData: ServiceOfferingFormData,
 ): Promise<ServiceOffering> => {
   const payload = preparePayload(formData);
   const { data } = await apiClient.post<{ data: ServiceOffering }>(
     "/service-offerings",
-    payload
+    payload,
   );
+  clearServiceOfferingsCache();
   return data.data;
 };
 
@@ -132,13 +182,14 @@ export const createServiceOffering = async (
  */
 export const updateServiceOffering = async (
   id: string | number,
-  formData: Partial<ServiceOfferingFormData>
+  formData: Partial<ServiceOfferingFormData>,
 ): Promise<ServiceOffering> => {
   const payload = preparePayload(formData);
   const { data } = await apiClient.put<{ data: ServiceOffering }>(
     `/service-offerings/${id}`,
-    payload
+    payload,
   );
+  clearServiceOfferingsCache();
   return data.data;
 };
 
@@ -147,12 +198,13 @@ export const updateServiceOffering = async (
  */
 export const updateFirstOfferingPrice = async (
   productTypeId: string | number,
-  defaultPrice: number
+  defaultPrice: number,
 ): Promise<ServiceOffering> => {
   const { data } = await apiClient.put<{ data: ServiceOffering }>(
     `/product-types/${productTypeId}/first-offering-price`,
-    { default_price: defaultPrice }
+    { default_price: defaultPrice },
   );
+  clearServiceOfferingsCache();
   return data.data;
 };
 
@@ -161,10 +213,11 @@ export const updateFirstOfferingPrice = async (
  * Backend returns a message object.
  */
 export const deleteServiceOffering = async (
-  id: string | number
+  id: string | number,
 ): Promise<{ message: string }> => {
   const { data } = await apiClient.delete<{ message: string }>(
-    `/service-offerings/${id}`
+    `/service-offerings/${id}`,
   );
+  clearServiceOfferingsCache();
   return data;
 };
