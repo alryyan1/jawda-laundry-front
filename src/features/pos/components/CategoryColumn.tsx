@@ -1,15 +1,10 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LayoutGrid } from "lucide-react";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { materialColors } from "@/lib/colors";
-import { Loader2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 import { getProductCategories } from "@/api/productCategoryService";
 import type { ProductCategory } from "@/types";
@@ -25,87 +20,132 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   selectedCategoryId,
   selectedCustomerId,
 }) => {
-  const { data: allCategories = [], isLoading: isLoadingAllCategories } =
-    useQuery<ProductCategory[], Error>({
-      queryKey: ["productCategories"],
-      queryFn: getProductCategories,
-    });
-
-  const isLoading = isLoadingAllCategories;
+  const { data: allCategories = [], isLoading } = useQuery<
+    ProductCategory[],
+    Error
+  >({
+    queryKey: ["productCategories"],
+    queryFn: getProductCategories,
+  });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="w-[110px] bg-white border-r border-slate-100 flex flex-col h-full shadow-sm">
+        <div className="p-3 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
+          <Skeleton className="h-4 w-16 mx-auto" />
+        </div>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-2 space-y-2 flex flex-col items-center">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+        </ScrollArea>
       </div>
     );
   }
 
   return (
-    <TooltipProvider>
-      <ScrollArea className="h-[calc(100vh-100px)]">
-        <div className="grid grid-cols-1 gap-2 p-1">
-          {allCategories.map((category) => (
-            <Tooltip key={category.id}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => onSelectCategory(category.id.toString())}
-                  className={cn(
-                    "flex flex-col h-[100px]    rounded-lg transition-all cursor-pointer",
-                    "bg-gradient-to-br shadow-md hover:shadow-lg transform hover:-translate-y-0.5",
-                    selectedCategoryId === category.id.toString()
-                      ? "from-sky-400 to-sky-600 text-white  ring-sky-400/30"
-                      : "hover:border-sky-400/20",
-                  )}
-                  style={
-                    {
-                      "--tw-gradient-from":
-                        selectedCategoryId === category.id.toString()
-                          ? "#38BDF8"
-                          : materialColors.grey[50],
-                      "--tw-gradient-to":
-                        selectedCategoryId === category.id.toString()
-                          ? "#0284C7"
-                          : materialColors.grey[100],
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="relative  mb-2 rounded-lg bg-white/90 flex items-center justify-center overflow-hidden">
-                    {category.image_url ? (
-                      <>
-                        <img
-                          src={category.image_url}
-                          alt={category.name}
-                          className="w-full h-full object-contain "
-                          style={{ objectPosition: "center" }}
-                        />
-                        <span
-                          className="absolute left-1/2 bottom-2 whitespace-nowrap overflow-visible -translate-x-1/2 px-4 py-1 bg-white/80 border border-gray-300 rounded text-xs font-semibold text-gray-800 shadow"
-                          style={{ pointerEvents: "none" }}
-                        >
-                          {category.name}
-                        </span>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center p-2">
-                        <span className="text-sm font-medium text-gray-800 text-center line-clamp-2 overflow-hidden">
-                          {category.name}
-                        </span>
-                      </div>
+    <div className="w-[110px] bg-white border-r border-slate-100 flex flex-col h-full shadow-[2px_0_5px_-3px_rgba(0,0,0,0.05)] relative z-20">
+      {/* Header */}
+      <div className="p-3 border-b border-slate-100 bg-white/80 backdrop-blur-sm text-center">
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          Categories
+        </h3>
+      </div>
+
+      {/* Categories List */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-2 space-y-2">
+          {/* All Categories Button */}
+          <button
+            onClick={() => onSelectCategory("")}
+            className={cn(
+              "group w-full flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 border-2",
+              !selectedCategoryId
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-slate-100 bg-slate-50 hover:border-primary/30 hover:bg-slate-100",
+            )}
+          >
+            <div
+              className={cn(
+                "p-2 rounded-full mb-1 transition-colors",
+                !selectedCategoryId
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-slate-200 text-slate-500 group-hover:bg-slate-300",
+              )}
+            >
+              <LayoutGrid className="h-5 w-5" />
+            </div>
+            <span
+              className={cn(
+                "text-[10px] font-bold uppercase text-center leading-tight",
+                !selectedCategoryId ? "text-primary" : "text-slate-600",
+              )}
+            >
+              All
+            </span>
+          </button>
+
+          {/* Dynamic Categories */}
+          {allCategories.map((category) => {
+            const isSelected = selectedCategoryId === category.id.toString();
+
+            return (
+              <button
+                key={category.id}
+                onClick={() => onSelectCategory(category.id.toString())}
+                className={cn(
+                  "group relative w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 border-2 overflow-hidden",
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20 scale-105 z-10"
+                    : "border-transparent bg-white shadow-sm hover:border-slate-200 hover:shadow-md hover:-translate-y-0.5",
+                )}
+              >
+                {category.image_url ? (
+                  <>
+                    <img
+                      src={category.image_url}
+                      alt={category.name}
+                      className={cn(
+                        "absolute inset-0 w-full h-full object-cover transition-all duration-300",
+                        isSelected
+                          ? "opacity-20 mix-blend-multiply scale-110"
+                          : "opacity-100 group-hover:scale-105",
+                      )}
+                    />
+                    {/* Overlay for selected state to make text readable */}
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-primary/90" />
                     )}
-                  </div>
-                  {/* <span className="text-sm font-medium line-clamp-1 p-1">
+                  </>
+                ) : (
+                  <div
+                    className={cn(
+                      "absolute inset-0 w-full h-full opacity-10",
+                      isSelected ? "bg-white" : "bg-slate-200",
+                    )}
+                  />
+                )}
+
+                <span
+                  className={cn(
+                    "relative z-10 text-[10px] font-bold uppercase text-center leading-tight line-clamp-2 px-1 break-words w-full",
+                    isSelected
+                      ? "text-white"
+                      : "text-slate-700 bg-white/90 rounded py-0.5 shadow-sm backdrop-blur-[2px]",
+                  )}
+                >
                   {category.name}
-                </span> */}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{category.name}</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </ScrollArea>
-    </TooltipProvider>
+
+      {/* Footer Decoration */}
+      <div className="h-4 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none" />
+    </div>
   );
 };

@@ -86,6 +86,7 @@ export interface Order {
 
   order_type: "in_house" | "take_away" | "delivery";
   daily_order_number?: number;
+  customer_id?: number | null;
   customer: Customer | null;
 
   staff_user?: User;

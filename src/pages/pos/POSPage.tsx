@@ -1599,15 +1599,13 @@ const POSPage: React.FC = () => {
                 <>
                   {/* Desktop Layout */}
                   {/* Left Section: Categories */}
-                  <Card className="w-[100px] flex-shrink-0">
-                    <CardContent className="p-1 h-full">
+             
                       <CategoryColumn
                         onSelectCategory={handleSelectCategory}
                         selectedCategoryId={selectedCategoryId}
                         selectedCustomerId={selectedCustomerId}
                       />
-                    </CardContent>
-                  </Card>
+                   
 
                   {/* Middle Section: Products and Services */}
                   <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
@@ -1670,7 +1668,7 @@ const POSPage: React.FC = () => {
 
                   {/* Right Section: Cart - Only show when there are items */}
                   {cartItems.length > 0 && (
-                    <Card className="w-[400px] flex-shrink-0">
+                    <Card className="w-[300px] flex-shrink-0">
                       <CardContent className="p-1 h-full">
                         <CartColumn
                           items={cartItems}

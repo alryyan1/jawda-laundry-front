@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, User as UserIcon } from "lucide-react";
+import { Loader2, Eye, EyeOff, User as UserIcon, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { loginUser } from "@/api/authService";
@@ -18,10 +18,15 @@ import type { AuthResponse } from "@/api/authService";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // Create a function to get translated schema
-const createLoginSchema = (t: (key: string) => string) => z.object({
-  username: z.string().nonempty({ message: t("validation.usernameRequired") }),
-  password: z.string().nonempty({ message: t("validation.passwordRequired") }),
-});
+const createLoginSchema = (t: (key: string) => string) =>
+  z.object({
+    username: z
+      .string()
+      .nonempty({ message: t("validation.usernameRequired") }),
+    password: z
+      .string()
+      .nonempty({ message: t("validation.passwordRequired") }),
+  });
 
 type LoginFormValues = {
   username: string;
@@ -40,7 +45,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const loginSchema = createLoginSchema(t);
-  
+
   const {
     register,
     handleSubmit,
@@ -64,7 +69,11 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
       }
     } catch (error: unknown) {
       // The backend now returns the error on the 'username' key for invalid credentials
-      const axiosError = error as { response?: { data?: { errors?: { username?: string[] }, message?: string } } };
+      const axiosError = error as {
+        response?: {
+          data?: { errors?: { username?: string[] }; message?: string };
+        };
+      };
       const backendError =
         axiosError.response?.data?.errors?.username?.[0] ||
         axiosError.response?.data?.message;
@@ -74,38 +83,57 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="login-username">
+    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+      <div className="grid gap-2">
+        <Label
+          htmlFor="login-username"
+          className="font-medium text-muted-foreground"
+        >
           {t("username", { ns: "common" })}
         </Label>
-        <div className="relative">
-          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 " />
+        <div className="relative group">
+          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             id="login-username"
             type="text"
             autoComplete="username"
             placeholder={t("usernamePlaceholder", {
               ns: "auth",
-              defaultValue: "e.g., admin",
+              defaultValue: "Enter your username",
             })}
             {...register("username")}
             aria-invalid={errors.username ? "true" : "false"}
-            className={cn("pl-9", errors.username && "border-destructive")}
+            className={cn(
+              "h-11 pl-10 border-slate-200 bg-slate-50/50 focus:bg-white transition-all duration-200",
+              errors.username && "border-destructive ring-destructive/10",
+            )}
           />
         </div>
         {errors.username && (
-          <p className="text-xs text-destructive" role="alert">
+          <p className="text-sm font-medium text-destructive" role="alert">
             {t(errors.username.message as string)}
           </p>
         )}
       </div>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="login-password">
-          {t("password", { ns: "common" })}
-        </Label>
-        <div className="relative">
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label
+            htmlFor="login-password"
+            className="font-medium text-muted-foreground"
+          >
+            {t("password", { ns: "common" })}
+          </Label>
+          <a
+            href="#"
+            className="text-xs font-medium text-primary hover:underline pointer-events-none opacity-50"
+            tabIndex={-1}
+          >
+            Forgot password?
+          </a>
+        </div>
+        <div className="relative group">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             id="login-password"
             type={showPassword ? "text" : "password"}
@@ -113,13 +141,16 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
             placeholder="••••••••"
             {...register("password")}
             aria-invalid={errors.password ? "true" : "false"}
-            className={cn("pr-10", errors.password && "border-destructive")}
+            className={cn(
+              "h-11 pl-10 pr-10 border-slate-200 bg-slate-50/50 focus:bg-white transition-all duration-200",
+              errors.password && "border-destructive ring-destructive/10",
+            )}
           />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground rtl:left-1 rtl:right-auto"
+            className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={
               showPassword
@@ -135,7 +166,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
           </Button>
         </div>
         {errors.password && (
-          <p className="text-xs text-destructive" role="alert">
+          <p className="text-sm font-medium text-destructive" role="alert">
             {t(errors.password.message as string)}
           </p>
         )}
@@ -143,7 +174,7 @@ export const LoginForm: React.FC<LoginFormProps> = () => {
 
       <Button
         type="submit"
-        className="w-full mt-2 h-10 text-sm"
+        className="w-full h-11 text-base font-semibold shadow-md active:shadow-sm"
         disabled={isSubmitting}
       >
         {isSubmitting && (

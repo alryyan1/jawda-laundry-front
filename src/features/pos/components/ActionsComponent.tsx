@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import { 
-  CreditCard, 
-  DollarSign, 
+import { Separator } from "@/components/ui/separator";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import {
+  CreditCard,
+  DollarSign,
   Calendar,
   FileText,
   CheckCircle,
@@ -15,7 +16,11 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  Clock,
+  Printer,
+  User,
+  Phone,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { Order, Payment } from "@/types";
@@ -45,365 +50,301 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
   const { t, i18n } = useTranslation(["common", "orders"]);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
 
-  // Calculate payment totals from actual payments array
   const totalAmount = order.total_amount || 0;
   const payments = order.payments || [];
-   console.log(order,'order in actions component')
-  // Calculate paid amount from payments array (more accurate)
+
   const paidAmountFromPayments = payments
-    .filter(payment => payment.type === 'payment')
+    .filter((payment) => payment.type === "payment")
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  
-  // Use the higher value between order.paid_amount and calculated payments
+
   const paidAmount = Math.max(order.paid_amount || 0, paidAmountFromPayments);
   const remainingAmount = totalAmount - paidAmount;
-  
-  // More accurate payment status calculation
+
   const isFullyPaid = totalAmount > 0 && paidAmount >= totalAmount;
   const hasPartialPayment = paidAmount > 0 && paidAmount < totalAmount;
 
-  // Get payment status for display
   const getPaymentStatusDisplay = () => {
-    if (isFullyPaid) return { text: t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" }), variant: "success" as const };
-    if (hasPartialPayment) return { text: t("partiallyPaid", { ns: "orders", defaultValue: "Partially Paid" }), variant: "default" as const };
-    return { text: t("unpaid", { ns: "orders", defaultValue: "Unpaid" }), variant: "destructive" as const };
+    if (isFullyPaid)
+      return {
+        text: t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" }),
+        variant: "success" as const,
+        color: "text-green-700 bg-green-50 border-green-200",
+      };
+    if (hasPartialPayment)
+      return {
+        text: t("partiallyPaid", {
+          ns: "orders",
+          defaultValue: "Partially Paid",
+        }),
+        variant: "default" as const,
+        color: "text-blue-700 bg-blue-50 border-blue-200",
+      };
+    return {
+      text: t("unpaid", { ns: "orders", defaultValue: "Unpaid" }),
+      variant: "destructive" as const,
+      color: "text-red-700 bg-red-50 border-red-200",
+    };
   };
 
   const paymentStatus = getPaymentStatusDisplay();
 
+  const InfoRow = ({
+    icon: Icon,
+    label,
+    value,
+  }: {
+    icon: any;
+    label: string;
+    value: string;
+  }) => (
+    <div className="flex items-start gap-3 py-2">
+      <div className="mt-0.5 p-1.5 rounded-full bg-slate-100 text-slate-500">
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <div className="flex-1 space-y-0.5">
+        <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+          {label}
+        </div>
+        <div className="text-sm font-semibold text-slate-900">{value}</div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col h-full space-y-4">
-      {/* Order Details Card */}
-      <Card className="border-l-4 border-l-purple-500">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <FileText className="h-5 w-5 text-purple-600" />
-              {t("orderDetails", { ns: "orders", defaultValue: "Order Details" })}
-            </h3>
-            <Badge variant="secondary" className="font-medium">
-              #{order.id}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("createdAt", { ns: "orders", defaultValue: "Created" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.created_at
-                    ? new Date(order.created_at).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
-                </div>
-              </div>
+    <div className="flex flex-col h-full gap-4 max-w-2xl mx-auto px-1">
+      {/* Order Status Card */}
+      <Card className="shadow-sm border-slate-200 overflow-hidden">
+        <div className="bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+              <FileText className="h-4 w-4" />
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("pickupDate", { ns: "orders", defaultValue: "Pickup Date" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.pickup_date
+            <div>
+              <h3 className="font-bold text-slate-800">Order #{order.id}</h3>
+              <p className="text-xs text-slate-500">
+                {order.created_at
+                  ? new Date(order.created_at).toLocaleDateString()
+                  : "N/A"}
+              </p>
+            </div>
+          </div>
+          <Badge
+            variant="outline"
+            className={cn(
+              "px-2.5 py-0.5 capitalize bg-white",
+              paymentStatus.color,
+            )}
+          >
+            {paymentStatus.text}
+          </Badge>
+        </div>
+
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+            <div className="p-4 space-y-1">
+              <InfoRow
+                icon={User}
+                label={t("customer", {
+                  ns: "common",
+                  defaultValue: "Customer",
+                })}
+                value={
+                  order.customer?.name || t("guest", { defaultValue: "Guest" })
+                }
+              />
+              <InfoRow
+                icon={Phone}
+                label={t("phone", { ns: "common", defaultValue: "Phone" })}
+                value={
+                  order.customer?.phone ||
+                  t("notAvailable", { defaultValue: "N/A" })
+                }
+              />
+              <InfoRow
+                icon={Clock}
+                label={t("pickupDate", {
+                  ns: "orders",
+                  defaultValue: "Pickup Date",
+                })}
+                value={
+                  order.pickup_date
                     ? new Date(order.pickup_date).toLocaleString(i18n.language)
-                    : t("notSet", { ns: "common", defaultValue: "Not set" })}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("completedAt", { ns: "orders", defaultValue: "Completed" })}
-                </div>
-                <div className="text-sm font-medium">
-                  {order.completed_at
+                    : t("notSet", { ns: "common", defaultValue: "Not set" })
+                }
+              />
+              <InfoRow
+                icon={CheckCircle}
+                label={t("completedAt", {
+                  ns: "orders",
+                  defaultValue: "Completed",
+                })}
+                value={
+                  order.completed_at
                     ? new Date(order.completed_at).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                    : t("pending", { ns: "common", defaultValue: "Pending" })
+                }
+              />
+            </div>
+            <div className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded bg-slate-50/50">
+                  <span className="text-sm text-slate-500">Total</span>
+                  <span className="text-lg font-bold text-slate-900">
+                    {formatCurrency(totalAmount, "USD", i18n.language, 3)}
+                  </span>
                 </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  {t("deliveredDate", { ns: "orders", defaultValue: "Delivered" })}
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-sm text-slate-500">Paid</span>
+                  <span className="text-sm font-semibold text-green-600">
+                    {formatCurrency(paidAmount, "USD", i18n.language, 3)}
+                  </span>
                 </div>
-                <div className="text-sm font-medium">
-                  {order.delivered_date
-                    ? new Date(order.delivered_date).toLocaleString(i18n.language)
-                    : t("notAvailable", { ns: "common", defaultValue: "N/A" })}
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-sm text-slate-500">Balance</span>
+                  <span className="text-sm font-semibold text-red-600">
+                    {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
+                  </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Status Card */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-600" />
-              {t("paymentStatus", { ns: "orders", defaultValue: "Payment Status" })}
-            </h3>
-            <Badge 
-              variant={paymentStatus.variant}
-              className={cn(
-                "font-medium",
-                paymentStatus.variant === "success" && "bg-green-100 text-green-800 border-green-200",
-                paymentStatus.variant === "default" && "bg-yellow-100 text-yellow-800 border-yellow-200",
-                paymentStatus.variant === "destructive" && "bg-red-100 text-red-800 border-red-200"
-              )}
-            >
-              {paymentStatus.text}
-            </Badge>
-          </div>
-          
-          {/* Payment Summary */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">
-                {t("totalAmount", { ns: "orders", defaultValue: "Total" })}
-              </div>
-              <div className="text-lg font-bold text-gray-900">
-                {formatCurrency(totalAmount, "USD", i18n.language, 3)}
-              </div>
-            </div>
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">
-                {t("paidAmount", { ns: "orders", defaultValue: "Paid" })}
-              </div>
-              <div className="text-lg font-bold text-green-700">
-                {formatCurrency(paidAmount, "USD", i18n.language, 3)}
-              </div>
-            </div>
-            <div className="text-center p-3 bg-red-50 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">
-                {t("remainingAmount", { ns: "orders", defaultValue: "Due" })}
-              </div>
-              <div className="text-lg font-bold text-red-700">
-                {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
               </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+          <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-wrap gap-3">
             <Button
               onClick={onPaymentClick}
               disabled={isProcessing || isFullyPaid}
               className={cn(
-                "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
-                isFullyPaid 
-                  ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-100" 
-                  : "bg-blue-600 hover:bg-blue-700"
+                "flex-1 h-10 font-medium shadow-sm",
+                isFullyPaid
+                  ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
+                  : "",
               )}
-              variant={isFullyPaid ? "outline" : "default"}
+              variant={isFullyPaid ? "secondary" : "default"}
             >
               {isFullyPaid ? (
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="mr-2 h-4 w-4" />
               ) : (
-                <DollarSign className="h-4 w-4" />
+                <DollarSign className="mr-2 h-4 w-4" />
               )}
-              <span className="text-sm">
-                {isFullyPaid 
-                  ? t("fullyPaid", { ns: "orders", defaultValue: "Fully Paid" })
-                  : t("recordPayment", { ns: "orders", defaultValue: "Record Payment" })
-                }
-              </span>
+              {isFullyPaid ? "Paid in Full" : "Add Payment"}
             </Button>
 
             <Button
               onClick={onInvoiceClick}
-              disabled={isProcessing || order.whatsapp_pdf_sent || isSendingInvoice}
-              variant={order.whatsapp_pdf_sent ? "default" : "outline"}
-              className={cn(
-                "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
-                order.whatsapp_pdf_sent 
-                  ? "bg-green-600 hover:bg-green-700 text-white" 
-                  : "border-gray-300 hover:bg-gray-50"
-              )}
+              disabled={isProcessing || isSendingInvoice}
+              variant="outline"
+              className="flex-1 h-10 font-medium bg-white"
             >
               {isSendingInvoice ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : order.whatsapp_pdf_sent ? (
-                <CheckCircle className="h-4 w-4" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <WhatsAppIcon className="h-4 w-4" />
+                <WhatsAppIcon className="mr-2 h-4 w-4 text-green-600" />
               )}
-              <span className="text-sm">
-                {isSendingInvoice 
-                  ? t("sending", { ns: "common", defaultValue: "Sending..." })
-                  : order.whatsapp_pdf_sent 
-                  ? t("invoiceSent", { ns: "orders", defaultValue: "Invoice Sent" })
-                  : t("sendInvoice", { ns: "orders", defaultValue: "Send Invoice" })
-                }
-              </span>
+              WhatsApp Invoice
             </Button>
 
-            {/* WhatsApp Text Button */}
-            {onWhatsAppTextClick && order.customer?.phone && (
-              <Button
-                onClick={onWhatsAppTextClick}
-                disabled={isProcessing || order.whatsapp_text_sent || isSendingMessage}
-                variant={order.whatsapp_text_sent ? "default" : "outline"}
-                className={cn(
-                  "h-11 flex items-center justify-center gap-2 font-medium flex-1 min-w-[120px]",
-                  order.whatsapp_text_sent 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "border-gray-300 hover:bg-gray-50"
-                )}
-              >
-                {isSendingMessage ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : order.whatsapp_text_sent ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <WhatsAppIcon className="h-4 w-4" />
-                )}
-                <span className="text-sm">
-                  {isSendingMessage 
-                    ? t("sending", { ns: "common", defaultValue: "Sending..." })
-                    : order.whatsapp_text_sent 
-                    ? t("messageSent", { ns: "orders", defaultValue: "Message Sent" })
-                    : t("sendMessage", { ns: "orders", defaultValue: "Send Message" })
-                  }
-                </span>
-              </Button>
-            )}
+            <Button
+              onClick={onPdfClick}
+              variant="outline"
+              size="icon"
+              className="h-10 w-10 bg-white"
+              title="Print Receipt"
+            >
+              <Printer className="h-4 w-4 text-slate-600" />
+            </Button>
           </div>
-         
         </CardContent>
       </Card>
 
-      {/* Payment History Toggle Button */}
-      <Button
-        onClick={() => setShowPaymentHistory(!showPaymentHistory)}
-        variant="outline"
-        className="w-full h-12 flex items-center justify-between px-4 font-medium border-gray-300 hover:bg-gray-50"
-      >
-        <div className="flex items-center gap-3">
-          <FileText className="h-5 w-5 text-gray-600" />
-          <span className="text-base">
-            {t("paymentHistory", { ns: "orders", defaultValue: "Payment History" })}
-          </span>
-          <Badge variant="secondary" className="text-xs">
-            {payments.length} {t("payments", { ns: "orders", defaultValue: "payments" })}
-          </Badge>
+      {/* Payment History Section */}
+      <Card className="shadow-sm border-slate-200 flex-1 flex flex-col overflow-hidden">
+        <div
+          className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center cursor-pointer hover:bg-slate-100/80 transition-colors"
+          onClick={() => setShowPaymentHistory(!showPaymentHistory)}
+        >
+          <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payment History ({payments.length})
+          </h3>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+            {showPaymentHistory ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
         </div>
-        {showPaymentHistory ? (
-          <ChevronUp className="h-4 w-4 text-gray-500" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-gray-500" />
-        )}
-      </Button>
 
-      {/* Payment History Card - Conditionally Rendered */}
-      {showPaymentHistory && (
-        <Card className="flex-1">
-          <CardContent className="p-4 h-full flex flex-col">
-            <ScrollArea className="flex-1">
-              {payments.length > 0 ? (
-                <div className="space-y-3">
-                  {payments.map((payment: Payment, index: number) => (
-                    <div key={payment.id || index} className="p-4 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            "p-2 rounded-full",
-                            payment.type === 'payment' ? "bg-green-100" : "bg-red-100"
-                          )}>
-                            {payment.type === 'payment' ? (
-                              <DollarSign className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <AlertCircle className="h-4 w-4 text-red-600" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900">
-                              {formatCurrency(payment.amount, "USD", i18n.language, 3)}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {payment.type === 'payment' 
-                                ? t("payment", { ns: "orders", defaultValue: "Payment" })
-                                : t("refund", { ns: "orders", defaultValue: "Refund" })
-                              }
-                            </div>
-                          </div>
-                        </div>
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs font-medium border-gray-300"
-                        >
-                          {payment.method}
-                        </Badge>
+        {showPaymentHistory && (
+          <ScrollArea className="flex-1 bg-white">
+            {payments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                  <DollarSign className="h-6 w-6 opacity-50" />
+                </div>
+                <p className="text-sm">No payments recorded</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {payments.map((payment, index) => (
+                  <div
+                    key={payment.id || index}
+                    className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "mt-1 p-1.5 rounded-full",
+                          payment.type === "payment"
+                            ? "bg-green-100 text-green-600"
+                            : "bg-red-100 text-red-600",
+                        )}
+                      >
+                        {payment.type === "payment" ? (
+                          <DollarSign className="h-3 w-3" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3" />
+                        )}
                       </div>
-                      
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        {payment.payment_date && (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(payment.payment_date).toLocaleDateString(i18n.language, {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                            })}</span>
-                          </div>
-                        )}
-                        
-                        {payment.transaction_id && (
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-3 w-3" />
-                            <span className="font-mono text-xs">
-                              {t("transactionId", { ns: "orders", defaultValue: "Transaction" })}: {payment.transaction_id}
-                            </span>
-                          </div>
-                        )}
-                        
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {formatCurrency(
+                            payment.amount,
+                            "USD",
+                            i18n.language,
+                            3,
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                          <span>{payment.method}</span>
+                          <span>•</span>
+                          <span>
+                            {payment.payment_date
+                              ? new Date(
+                                  payment.payment_date,
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </span>
+                        </div>
                         {payment.notes && (
-                          <div className="text-xs italic bg-gray-50 p-2 rounded">
+                          <p className="text-xs text-slate-500 mt-1 italic group-hover:text-slate-700">
                             "{payment.notes}"
-                          </div>
+                          </p>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
-                  <div className="p-4 bg-gray-100 rounded-full mb-4">
-                    <DollarSign className="h-8 w-8 text-gray-400" />
+                    {payment.transaction_id && (
+                      <div className="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                        {payment.transaction_id}
+                      </div>
+                    )}
                   </div>
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    {t("noPaymentsYet", { ns: "orders", defaultValue: "No payments recorded yet" })}
-                  </h4>
-                  <p className="text-sm text-gray-500 max-w-xs">
-                    {t("recordFirstPayment", { ns: "orders", defaultValue: "Record the first payment using the button above" })}
-                  </p>
-                </div>
-              )}
-            </ScrollArea>
-
-            {/* Quick Actions Footer */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <Button
-                onClick={onPdfClick}
-                variant="outline"
-                size="sm"
-                className="w-full h-10 flex items-center justify-center gap-2 font-medium"
-                disabled={isProcessing}
-              >
-                <Download className="h-4 w-4" />
-                {t("viewReceipt", { ns: "orders", defaultValue: "View Receipt" })}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        )}
+      </Card>
     </div>
   );
-}; 
+};
