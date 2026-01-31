@@ -1,10 +1,9 @@
-// src/features/pos/components/ProductColumn.tsx
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Search, Loader2, CheckCircle, Shirt } from "lucide-react";
 
-import type { ProductType } from "@/types";
 import { getAllProductTypes } from "@/api/productTypeService";
-import { pricingRuleService } from "@/api/pricingRuleService";
+import type { ProductType } from "@/types";
 import type { CartItem } from "./CartItem";
 
 import { useDebounce } from "@/hooks/useDebounce";
@@ -12,45 +11,12 @@ import { useSearch } from "@/context/SearchContext";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, getImageUrl } from "@/lib/utils";
-import { CheckCircle, Shirt } from "lucide-react";
-
-// --- MUI Import ---
-import Badge from '@mui/material/Badge';
-import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-
-// A minimal MUI theme to make the badge fit the Shadcn theme
-// You could define this in a central place if you use more MUI components
-const muiTheme = createTheme({
-  palette: {
-    primary: {
-      main: 'hsl(var(--primary))', // Use CSS variable from Shadcn
-    },
-    secondary: {
-      main: 'hsl(var(--secondary))',
-    },
-  },
-  components: {
-    MuiBadge: {
-        styleOverrides: {
-            badge: {
-                // Custom styles for the badge itself
-                height: '18px',
-                minWidth: '18px',
-                fontSize: '0.7rem',
-                padding: '0 5px',
-                fontWeight: '600',
-            }
-        }
-    }
-  }
-});
-
 
 interface ProductColumnProps {
   categoryId: string | null;
   onSelectProduct: (product: ProductType) => void;
   activeProductId?: string | null;
-  selectedCustomerId?: string | null;
+  selectedCustomerId?: string | null; // Kept for compatibility but unused
   cartItems?: CartItem[];
 }
 
@@ -63,192 +29,138 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
 }) => {
   const { searchTerm } = useSearch();
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  
-  // Dynamic grid columns based on container width
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [gridColumns, setGridColumns] = useState(3);
 
-  // Calculate grid columns based on container width
-  useEffect(() => {
-    const calculateGridColumns = () => {
-      if (!containerRef.current) return;
-      
-      const containerWidth = containerRef.current.offsetWidth;
-      const minItemWidth = 120; // Minimum width for each product item
-      const gap = 8; // Gap between items (gap-2 = 8px)
-      
-      // Calculate how many columns can fit
-      const availableWidth = containerWidth - gap; // Account for gap
-      const columns = Math.max(1, Math.floor(availableWidth / (minItemWidth + gap)));
-      
-      // Cap at 6 columns maximum for very wide screens
-      const maxColumns = Math.min(columns, 6);
-      setGridColumns(maxColumns);
-    };
-
-    calculateGridColumns();
-    
-    // Add resize listener
-    const resizeObserver = new ResizeObserver(calculateGridColumns);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  // Fetch customer products with pricing rules if customer is selected
-  const { data: customerProductsWithPricingRules, isLoading: isLoadingCustomerProducts } = useQuery({
-    queryKey: ["customerProductsWithPricingRules", selectedCustomerId],
-    queryFn: () => pricingRuleService.getCustomerProductsWithPricingRules(parseInt(selectedCustomerId!)),
-    enabled: !!selectedCustomerId,
-    // staleTime: 5 * 60 * 1000,
-  });
-
-  // Fetch all product types (fallback when no customer or no customer-specific products)
-  const { data: allProducts = [], isLoading: isLoadingAllProducts, error } = useQuery<ProductType[], Error>({
+  // Fetch all products - simplified logic, no customer pricing rules
+  const {
+    data: allProducts = [],
+    isLoading,
+    error,
+  } = useQuery<ProductType[], Error>({
     queryKey: ["productTypes"],
     queryFn: () => getAllProductTypes(),
     staleTime: 5 * 60 * 1000,
   });
 
-
-
-  // Determine which products to show based on customer selection
-  const productsToShow = useMemo(() => {
-    if (selectedCustomerId && customerProductsWithPricingRules?.product_types && customerProductsWithPricingRules.product_types.length > 0) {
-      // Use customer products that have pricing rules
-      return customerProductsWithPricingRules.product_types.map((productType: {
-        id: number;
-        category?: { id: number };
-        name: string;
-        is_dimension_based: boolean;
-        is_active: boolean;
-        image_url?: string;
-        service_offerings_count?: number;
-      }) => ({
-        id: productType.id,
-        product_category_id: productType.category?.id || 0,
-        name: productType.name,
-        is_dimension_based: productType.is_dimension_based,
-        is_active: productType.is_active,
-        image_url: productType.image_url,
-        service_offerings_count: productType.service_offerings_count || 0,
-        category: productType.category,
-      } as ProductType));
-    } else {
-      // Use all product types (fallback when no customer or no pricing rules)
-      return allProducts;
-    }
-  }, [selectedCustomerId, customerProductsWithPricingRules, allProducts]);
-
+  // Filter products
   const filteredProducts = useMemo(() => {
-    return productsToShow.filter((product: ProductType) => {
-      const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = product.name.toLowerCase().includes(lowerCaseSearch) || product.id.toString() === lowerCaseSearch;
-      const matchesCategory = !categoryId || product.category?.id.toString() === categoryId;
-      return matchesSearch && matchesCategory;
-    });
-  }, [productsToShow, categoryId, debouncedSearchTerm]);
+    let result = allProducts;
 
-  // Check if a product is in the cart
-  const isProductInCart = (productId: number): boolean => {
-    return cartItems.some(item => item.productType.id === productId);
-  };
+    // Filter by Category
+    if (categoryId) {
+      result = result.filter((p) => p.category?.id.toString() === categoryId);
+    }
 
-  const isLoading = isLoadingCustomerProducts || isLoadingAllProducts;
+    // Filter by Search
+    const query = debouncedSearchTerm.toLowerCase().trim();
+    if (query) {
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) || p.id.toString() === query,
+      );
+    }
 
-  if (isLoading) { /* ... same as before ... */ }
-  if (error) { /* ... same as before ... */ }
+    return result;
+  }, [allProducts, categoryId, debouncedSearchTerm]);
+
+  const isProductInCart = (productId: number) =>
+    cartItems.some((item) => item.productType.id === productId);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <div className="text-center text-destructive">
+          <p className="font-semibold">Error loading products</p>
+          <p className="text-sm opacity-80">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <MuiThemeProvider theme={muiTheme}>
-      <div className="flex flex-col h-full " ref={containerRef}>
-        <ScrollArea className="flex-grow h-[calc(100vh-100px)]">
-          <div className="p-0">
-            {filteredProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center text-muted-foreground min-h-[50px]">
-                {/* ... empty state message ... */}
-              </div>
-            ) : (
-              <div className="grid gap-2" 
-                   style={{ 
-                     gridTemplateColumns: `repeat(${gridColumns}, 1fr)`,
-                     maxWidth: "100%"
-                   }}>
-                {filteredProducts.map((product: ProductType) => (
-                  <div key={product.id} className={cn(
-                    "rounded-lg transition-all",
-                    activeProductId === product.id.toString() && "ring-2 ring-primary ring-offset-2"
-                  )}>
-                    <button
-                      onClick={() => onSelectProduct(product)}
-                      className={cn(
-                        "w-full flex flex-col items-center justify-center p-1 rounded-lg transition-all text-center cursor-pointer",
-                        "bg-card hover:bg-card/90",
-                        "shadow-sm hover:shadow-md",
-                        "transform hover:-translate-y-0.5",
-                        "border border-border hover:border-primary/50",
-                        isProductInCart(product.id) && "bg-sky-500/10 border-sky-500"
-                        
-                      )}
-                      style={{ minHeight: "130px" }}
-                    >
-                      
-                      {/* --- MUI Badge Implementation --- */}
-                      <Badge
-                        badgeContent={product.service_offerings_count || 0}
-                        color="info"
-                       
-                        // Use invisible prop to hide the badge if count is 0
-                        invisible={!product.service_offerings_count || product.service_offerings_count === 0}
-                        anchorOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                      >
-                          {/* Green check circle for products in cart */}
-                          {isProductInCart(product.id) && (
-                            <div className="absolute -top-1 -left-8 bg-green-500 rounded-full p-0.5 shadow-md">
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        <div className="w-16 h-16 mb-2 rounded-lg bg-secondary flex items-center justify-center overflow-hidden relative">
-                          {product.image_url ? (
-                            <img 
-                              src={getImageUrl(product.image_url)} 
-                              alt={product.name} 
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const fallback = target.nextElementSibling as HTMLElement;
-                                if (fallback) fallback.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div 
-                            className={`w-full h-full flex items-center justify-center bg-muted ${product.image_url ? 'hidden' : 'flex'}`}
-                            style={{ display: product.image_url ? 'none' : 'flex' }}
-                          >
-                            <Shirt className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                        </div>
-                      </Badge>
-                      <span className="text-sm font-medium line-clamp-2 px-1 text-card-foreground">
-                        {product.name}
-                      </span>
+    <div className="flex h-full flex-col bg-slate-50/50">
+      <ScrollArea className="flex-1 h-[calc(100vh-100px)]">
+        <div className="p-4">
+          {filteredProducts.length === 0 ? (
+            <div className="flex h-64 flex-col items-center justify-center text-muted-foreground">
+              <Search className="h-10 w-10 opacity-20 mb-2" />
+              <p>No products found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4">
+              {filteredProducts.map((product) => {
+                const inCart = isProductInCart(product.id);
+                const isActive = activeProductId === product.id.toString();
+                const offeringCount = product.service_offerings_count || 0;
 
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-    </MuiThemeProvider>
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => onSelectProduct(product)}
+                    className={cn(
+                      "group relative flex flex-col items-center overflow-hidden rounded-xl border bg-white p-3 text-center shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                      isActive
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-slate-200 hover:border-slate-300",
+                      inCart && "bg-sky-50/50 border-sky-200",
+                    )}
+                  >
+                    {/* Badge for offering count */}
+                    {offeringCount > 0 && (
+                      <span
+                        className={cn(
+                          "absolute right-2 top-2 z-10 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-sm",
+                          inCart
+                            ? "bg-sky-500 text-white"
+                            : "bg-slate-100 text-slate-600 group-hover:bg-slate-200",
+                        )}
+                      >
+                        {offeringCount}
+                      </span>
+                    )}
+
+                    {/* In Cart Indicator */}
+                    {inCart && (
+                      <div className="absolute left-2 top-2 z-10 text-sky-500 bg-white rounded-full shadow-sm">
+                        <CheckCircle className="h-5 w-5 fill-sky-100" />
+                      </div>
+                    )}
+
+                    {/* Image Container */}
+                    <div className="mb-3 flex aspect-square w-full items-center justify-center rounded-lg bg-slate-50 p-2 group-hover:bg-slate-100 transition-colors">
+                      {product.image_url ? (
+                        <img
+                          src={getImageUrl(product.image_url)}
+                          alt={product.name}
+                          className="h-full w-full object-contain mix-blend-multiply"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Shirt className="h-10 w-10 text-slate-300" />
+                      )}
+                    </div>
+
+                    {/* Name */}
+                    <span className="line-clamp-2 text-sm font-semibold text-slate-700 group-hover:text-slate-900">
+                      {product.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 };

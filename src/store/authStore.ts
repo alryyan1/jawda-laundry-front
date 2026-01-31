@@ -1,8 +1,8 @@
 // src/store/authStore.ts
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import apiClient from '@/lib/axios'; // Your configured axios instance
-import type { User } from '@/types/auth.types';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import apiClient from "@/lib/axios"; // Your configured axios instance
+import type { User } from "@/types/auth.types";
 
 interface AuthState {
   token: string | null;
@@ -24,9 +24,10 @@ export const useAuthStore = create(
       setToken: (token) => {
         set({ token, isAuthenticated: !!token });
         if (token) {
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          apiClient.defaults.headers.common["Authorization"] =
+            `Bearer ${token}`;
         } else {
-          delete apiClient.defaults.headers.common['Authorization'];
+          delete apiClient.defaults.headers.common["Authorization"];
         }
       },
       setUser: (user) => set({ user }),
@@ -43,7 +44,7 @@ export const useAuthStore = create(
       fetchUser: async () => {
         if (get().token && !get().user) {
           try {
-            const response = await apiClient.get('/user');
+            const response = await apiClient.get("/user");
             get().setUser(response.data.data); // Assuming response.data is the user object
           } catch (error) {
             console.error("Failed to fetch user, logging out:", error);
@@ -53,21 +54,13 @@ export const useAuthStore = create(
       },
     }),
     {
-      name: 'auth-storage', // Name of the item in storage
+      name: "auth-storage", // Name of the item in storage
       storage: createJSONStorage(() => localStorage), // Or sessionStorage
-      partialize: (state: AuthState) => ({
-        token: state.token ?? null,
-        isAuthenticated: !!state.isAuthenticated
-      }) as AuthState, // Persist both token and isAuthenticated state, type-cast to fix TS error
-    }
-  )
+      partialize: (state: AuthState) =>
+        ({
+          token: state.token ?? null,
+          isAuthenticated: !!state.isAuthenticated,
+        }) as AuthState, // Persist both token and isAuthenticated state, type-cast to fix TS error
+    },
+  ),
 );
-
-// Initialize token from storage on app load
-// This ensures the Authorization header is set if a token exists from a previous session
-const initialToken = useAuthStore.getState().token;
-if (initialToken) {
-  apiClient.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
-  // Attempt to fetch user data if token exists but user is not in store (e.g., after refresh)
-  useAuthStore.getState().fetchUser();
-}

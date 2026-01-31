@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BASE_URL } from "@/lib/constants";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -49,10 +50,6 @@ import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
 
-import {
-  pricingRuleService,
-  type ServiceOfferingWithPricing,
-} from "@/api/pricingRuleService";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
@@ -140,52 +137,7 @@ const POSPage: React.FC = () => {
   // Get today's date for statistics (using local timezone)
   const today = getTodayDate(); // YYYY-MM-DD format
 
-  // Fetch customer service offerings with pricing rules if customer is selected
-  const { data: customerServiceOfferings = [] } = useQuery({
-    queryKey: ["customerServiceOfferings", selectedCustomerId],
-    queryFn: async () => {
-      if (!selectedCustomerId) return [];
-
-      try {
-        // Get all customer pricing rules using the dedicated endpoint
-        const pricingRulesResponse =
-          await pricingRuleService.getAllCustomerPricingRules(
-            parseInt(selectedCustomerId),
-          );
-        const pricingRules = pricingRulesResponse.pricing_rules || [];
-
-        // Convert service offerings with pricing to ServiceOffering format
-        const customerOfferings: ServiceOffering[] = pricingRules.map(
-          (rule: ServiceOfferingWithPricing) =>
-            ({
-              id: rule.id,
-              product_type_id: rule.product_type_id,
-              service_action_id: rule.service_action_id,
-              name: `${rule.productType.name} - ${rule.serviceAction.name}`,
-              display_name: `${rule.productType.name} - ${rule.serviceAction.name}`,
-              description: undefined,
-              default_price: parseFloat(rule.default_price),
-              default_price_per_sq_meter: parseFloat(
-                rule.default_price_per_sq_meter,
-              ),
-              is_active: rule.is_active,
-              serviceAction: rule.serviceAction,
-              productType: rule.productType,
-              created_at: rule.created_at,
-              updated_at: rule.updated_at,
-            }) as unknown as ServiceOffering,
-        );
-
-        return customerOfferings;
-      } catch (error) {
-        console.error("Failed to fetch customer service offerings:", error);
-        return [];
-      }
-    },
-    enabled: !!selectedCustomerId,
-  });
-
-  // Fetch all service offerings for order creation (fallback)
+  // Fetch all service offerings for order creation
   const { data: allServiceOfferings = [] } = useQuery<ServiceOffering[], Error>(
     {
       queryKey: ["allServiceOfferingsForSelect"],
@@ -195,13 +147,7 @@ const POSPage: React.FC = () => {
   );
 
   // Determine which service offerings to use
-  const serviceOfferingsToUse = React.useMemo(
-    () =>
-      selectedCustomerId && customerServiceOfferings.length > 0
-        ? customerServiceOfferings
-        : allServiceOfferings,
-    [selectedCustomerId, customerServiceOfferings, allServiceOfferings],
-  );
+  const serviceOfferingsToUse = allServiceOfferings;
 
   // Fetch dining tables for in-house orders
 
@@ -1666,46 +1612,42 @@ const POSPage: React.FC = () => {
                   {/* Middle Section: Products and Services */}
                   <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
                     {/* Products */}
-                    <Card className="flex-1 flex flex-col">
-                      <CardContent className="flex-1 min-h-0 p-1">
-                        <div className="flex-1 min-h-0">
-                          {selectedOrder?.received ? (
-                            // Show ActionsComponent when order is received
-                            <ActionsComponent
-                              order={selectedOrder}
-                              onPaymentClick={() => setIsPaymentModalOpen(true)}
-                              onInvoiceClick={handleSendInvoice}
-                              onPdfClick={() => setIsPdfDialogOpen(true)}
-                              onWhatsAppTextClick={handleSendWhatsAppText}
-                              isProcessing={isProcessing}
-                              isSendingInvoice={isSendingInvoice}
-                              isSendingMessage={isSendingMessage}
+                    <div className="flex-1 min-h-0">
+                      {selectedOrder?.received ? (
+                        // Show ActionsComponent when order is received
+                        <ActionsComponent
+                          order={selectedOrder}
+                          onPaymentClick={() => setIsPaymentModalOpen(true)}
+                          onInvoiceClick={handleSendInvoice}
+                          onPdfClick={() => setIsPdfDialogOpen(true)}
+                          onWhatsAppTextClick={handleSendWhatsAppText}
+                          isProcessing={isProcessing}
+                          isSendingInvoice={isSendingInvoice}
+                          isSendingMessage={isSendingMessage}
+                        />
+                      ) : (
+                        // Show ProductColumn when order is not completed
+                        <>
+                          {settings?.pos_show_products_as_list ? (
+                            <ProductListColumn
+                              categoryId={selectedCategoryId}
+                              onSelectProduct={handleSelectProduct}
+                              activeProductId={selectedProductType?.id.toString()}
+                              selectedCustomerId={selectedCustomerId}
+                              cartItems={cartItems}
                             />
                           ) : (
-                            // Show ProductColumn when order is not completed
-                            <>
-                              {settings?.pos_show_products_as_list ? (
-                                <ProductListColumn
-                                  categoryId={selectedCategoryId}
-                                  onSelectProduct={handleSelectProduct}
-                                  activeProductId={selectedProductType?.id.toString()}
-                                  selectedCustomerId={selectedCustomerId}
-                                  cartItems={cartItems}
-                                />
-                              ) : (
-                                <ProductColumn
-                                  categoryId={selectedCategoryId}
-                                  onSelectProduct={handleSelectProduct}
-                                  activeProductId={selectedProductType?.id.toString()}
-                                  selectedCustomerId={selectedCustomerId}
-                                  cartItems={cartItems}
-                                />
-                              )}
-                            </>
+                            <ProductColumn
+                              categoryId={selectedCategoryId}
+                              onSelectProduct={handleSelectProduct}
+                              activeProductId={selectedProductType?.id.toString()}
+                              selectedCustomerId={selectedCustomerId}
+                              cartItems={cartItems}
+                            />
                           )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </>
+                      )}
+                    </div>
 
                     {/* Removed ServiceOfferingColumn - now handled by dialog */}
                   </div>
@@ -1846,7 +1788,7 @@ const POSPage: React.FC = () => {
         onOpenChange={setIsPdfDialogOpen}
         pdfUrl={
           selectedOrder
-            ? `${import.meta.env.VITE_API_BASE_URL.replace("/api", "")}/orders/${selectedOrder.id}/pos-invoice-pdf`
+            ? `${BASE_URL.replace("/api", "")}/orders/${selectedOrder.id}/pos-invoice-pdf`
             : null
         }
         title={t("paymentReceipt", {

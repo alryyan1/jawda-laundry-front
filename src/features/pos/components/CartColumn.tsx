@@ -71,86 +71,16 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     <div 
       className={cn(
         "flex flex-col h-full relative",
-        isReceived && "bg-gradient-to-br from-sky-50 to-green-50 border border-sky-200 rounded-lg"
+        isReceived && "bg-gradient-to-br  border-sky-200 rounded-lg"
       )}
     >
       {/* Cart Items Avatar Header - Positioned at top border */}
-      {items.length > 0 && (
-        <div className={cn(
-          "rounded-lg p-1 shadow-lg",
-          isReceived 
-            ? "bg-gradient-to-br from-sky-100 to-green-100 border border-sky-300 shadow-sky-200/50" 
-            : "bg-white border border-gray-200"
-        )}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center ">
-              <span className="text-sm font-medium text-muted-foreground">
-                {selectedItemId 
-                  ? t("cartItem", { ns: "orders", defaultValue: "Cart Item" })
-                  : t("cartItems", { ns: "orders", defaultValue: "Cart Items" })
-                }:
-              </span>
-              <span className="text-sm text-muted-foreground">
-                ({selectedItemId ? 1 : items.length})
-              </span>
-            </div>
-            {selectedItemId && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleShowAll}
-                className="h-6 px-2 text-xs"
-              >
-                <Users className="h-3 w-3 mr-1" />
-                {t("showAll", { ns: "common", defaultValue: "Show All" })}
-              </Button>
-            )}
-          </div>
-          
-          {/* Avatar Numbers */}
-          <div className="flex flex-wrap gap-1">
-            {items.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => handleAvatarClick(item.id)}
-                className={cn(
-                  "w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-semibold transition-all hover:scale-110 hover:shadow-md cursor-pointer",
-                  selectedItemId === item.id
-                    ? "bg-sky-500 text-white border-sky-500 shadow-md"
-                    : selectedItemId === null
-                    ? "bg-sky-100 text-sky-700 border-sky-300 hover:bg-sky-200"
-                    : "bg-gray-100 text-gray-600 border-sky-200 hover:bg-gray-200"
-                )}
-                title={`${item.productType.name} - ${item.serviceOffering.display_name} (${item.quantity}x)`}
-              >
-                {index + 1}
-              </button>
-            ))}
-          </div>
-          
-          {/* Order Category Sequence Display */}
-          {orderNumber && (
-            <div className="mt-2 text-center">
-              <div className={cn(
-                "text-lg font-bold",
-                isReceived ? "text-green-700" : "text-sky-700"
-              )}>
-                {orderNumber}
-                {isReceived && (
-                  <span className="ml-2 text-green-600">✓</span>
-                )}
-              </div>
-            </div>
-          )}
-          
-    
-        </div>
-      )}
+     
 
       <ScrollArea className="flex-grow h-[calc(100vh-500px)] ">
         <div className={cn(
           "p-1 space-y-4",
-          isReceived && "bg-gradient-to-br from-sky-50/50 to-green-50/50 rounded-lg"
+          isReceived && ""
         )}>
           {itemsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground min-h-[200px]">

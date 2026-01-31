@@ -6,20 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Loader2,
-  X,
-  Plus,
-  Minus,
-  Ruler,
-  AlertCircle,
-} from "lucide-react";
+import { Loader2, X, Plus, Minus, Ruler, AlertCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { useSettings } from "@/context/SettingsContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BASE_URL } from "@/lib/constants";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -46,7 +40,7 @@ interface CartItemProps {
   onUpdateQuantity: (id: string, quantity: number) => void;
   onUpdateDimensions: (
     id: string,
-    dimensions: { length?: number; width?: number }
+    dimensions: { length?: number; width?: number },
   ) => void;
   onUpdateNotes: (id: string, notes: string) => void;
   isReadOnly?: boolean;
@@ -68,7 +62,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
 
   // Get currency from settings, fallback to USD
-  const currency = getSetting('currency_symbol', 'OMR');
+  const currency = getSetting("currency_symbol", "OMR");
 
   const isDimensionBased = item.productType.is_dimension_based;
 
@@ -80,7 +74,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       onUpdateQuantity(item.id, value === "" ? 1 : parseInt(value, 10));
     }
   };
-
+  console.log(item,'item');
   return (
     <>
       {item._isAdding ? (
@@ -119,204 +113,221 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
           </div>
         </div>
       ) : (
-        <div dir={i18n.language === "ar" ? "rtl" : "ltr"}
+        <div
+          dir={i18n.language === "ar" ? "rtl" : "ltr"}
           className={cn(
-            "relative rounded-lg border bg-card text-card-foreground shadow-sm",
-            item._isQuoting && "opacity-70 pointer-events-none"
+            "relative  border bg-card text-card-foreground shadow-sm",
+            item._isQuoting && "opacity-70 pointer-events-none",
           )}
         >
-        {/* Header */}
+          {/* Header */}
           <div className="flex items-center  justify-center p-1 border-b">
-          <div className="flex-1 pr-2">
-            <Badge variant="info" className="text-xs mb-1">
-              {item.serviceOffering.display_name}
-            </Badge>
-            <p className=" text-2xl">
-              {item.productType.name}
-            </p>
-            {item.productType.category && (
-              <p className="text-xs font-bold text-sky-500">
-                {item.productType.category.name}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-           
-            {!effectiveReadOnly && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:text-destructive"
-                onClick={() => onRemoveItem(item.id)}
-                disabled={item._isDeleting}
-              >
-                {item._isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-1 space-y-1">
-          {/* Dimensions */}
-          {isDimensionBased && (
-            <div className="grid grid-cols-5 gap-2 items-end">
-              <div className="col-span-2">
-                <Label className="text-xs mb-1 font-normal">
-                  {t("length", { ns: "orders" })} (m)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={item.length_meters || ""}
-                  onChange={(e) =>
-                    onUpdateDimensions(item.id, {
-                      length: parseFloat(e.target.value) || undefined,
-                      width: item.width_meters,
-                    })
+            {item?.serviceOffering?.productType?.image_url && (
+              <div className="mr-3 h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                <img
+                  src={
+                    item.serviceOffering.productType.image_url.startsWith("http")
+                      ? item.serviceOffering.productType.image_url
+                      : `${BASE_URL.replace("/api", "")}/storage/${item.productType.image_url}`
                   }
-                  onFocus={(e) => e.target.select()}
-                  className="h-8"
-                  disabled={effectiveReadOnly || item._isQuoting}
+                  alt={item.productType.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
                 />
               </div>
-              <div className="col-span-2">
-                <Label className="text-xs mb-1 font-normal">
-                  {t("width", { ns: "orders" })} (m)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={item.width_meters || ""}
-                  onChange={(e) =>
-                    onUpdateDimensions(item.id, {
-                      length: item.length_meters,
-                      width: parseFloat(e.target.value) || undefined,
-                    })
-                  }
-                  onFocus={(e) => e.target.select()}
-                  className="h-8"
-                  disabled={effectiveReadOnly || item._isQuoting}
-                />
-              </div>
-              <div className="col-span-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => setIsSizeDialogOpen(true)}
-                  disabled={effectiveReadOnly || item._isQuoting}
-                >
-                  <Ruler className="h-4 w-4" />
-                  <span className="sr-only">
-                    {t("selectPredefinedSize", { ns: "services" })}
-                  </span>
-                </Button>
-              </div>
+            )}
+            <div className="flex-1 pr-2">
+              <Badge variant="info" className="text-xs mb-1">
+                {item.serviceOffering.display_name}
+              </Badge>
+              <p className=" text-2xl">{item.productType.name}</p>
+              {item.productType.category && (
+                <p className="text-xs font-bold text-sky-500">
+                  {item.productType.category.name}
+                </p>
+              )}
             </div>
-          )}
+            <div className="flex items-center gap-1">
+              {!effectiveReadOnly && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 hover:text-destructive"
+                  onClick={() => onRemoveItem(item.id)}
+                  disabled={item._isDeleting}
+                >
+                  {item._isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
 
-          {/* Quantity and Price */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {effectiveReadOnly ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {t("quantity", { ns: "orders" })}:
-                  </span>
-                  <span className="font-medium">{item.quantity}</span>
-                </div>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                    disabled={item.quantity <= 1 || item._isQuoting}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
+          {/* Content */}
+          <div className="p-1 space-y-1">
+            {/* Dimensions */}
+            {isDimensionBased && (
+              <div className="grid grid-cols-5 gap-2 items-end">
+                <div className="col-span-2">
+                  <Label className="text-xs mb-1 font-normal">
+                    {t("length", { ns: "orders" })} (m)
+                  </Label>
                   <Input
                     type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={handleQuantityChange}
-                    className="w-16 h-7 px-2 text-center"
-                    disabled={item._isQuoting}
+                    step="0.01"
+                    min="0"
+                    value={item.length_meters || ""}
+                    onChange={(e) =>
+                      onUpdateDimensions(item.id, {
+                        length: parseFloat(e.target.value) || undefined,
+                        width: item.width_meters,
+                      })
+                    }
                     onFocus={(e) => e.target.select()}
+                    className="h-8"
+                    disabled={effectiveReadOnly || item._isQuoting}
                   />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs mb-1 font-normal">
+                    {t("width", { ns: "orders" })} (m)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={item.width_meters || ""}
+                    onChange={(e) =>
+                      onUpdateDimensions(item.id, {
+                        length: item.length_meters,
+                        width: parseFloat(e.target.value) || undefined,
+                      })
+                    }
+                    onFocus={(e) => e.target.select()}
+                    className="h-8"
+                    disabled={effectiveReadOnly || item._isQuoting}
+                  />
+                </div>
+                <div className="col-span-1">
                   <Button
+                    type="button"
                     variant="outline"
                     size="icon"
-                    className="h-7 w-7"
-                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                    disabled={item._isQuoting}
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => setIsSizeDialogOpen(true)}
+                    disabled={effectiveReadOnly || item._isQuoting}
                   >
-                    <Plus className="h-3 w-3" />
+                    <Ruler className="h-4 w-4" />
+                    <span className="sr-only">
+                      {t("selectPredefinedSize", { ns: "services" })}
+                    </span>
                   </Button>
-                </>
-              )}
-            </div>
-            <div className="text-right">
-              {item._isQuoting ? (
-                <div className="flex items-center gap-2 h-10">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrency(item.price, currency, i18n.language, 3)} ×{" "}
-                    {item.quantity}
-                  </p>
-                  <p className="font-medium">
-                    {formatCurrency(
-                      item._quotedSubTotal || item.price * item.quantity,
-                      currency,
-                      i18n.language,
-                      3
-                    )}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
 
-
-          {/* Notes appear when toggled or if they already have content */}
-          {(isDetailsOpen || item.notes) && (
-            <div className="pt-2">
-              <div className="grid gap-1.5">
-                <Label className="text-xs">
-                  {t("itemNotesOptional", { ns: "orders" })}
-                </Label>
-                <Textarea
-                  value={item.notes || ""}
-                  onChange={(e) => onUpdateNotes(item.id, e.target.value)}
-                  placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
-                  className="h-16 resize-none text-xs"
-                  disabled={effectiveReadOnly || item._isQuoting}
-                />
+            {/* Quantity and Price */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {effectiveReadOnly ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {t("quantity", { ns: "orders" })}:
+                    </span>
+                    <span className="font-medium">{item.quantity}</span>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() =>
+                        onUpdateQuantity(item.id, item.quantity - 1)
+                      }
+                      disabled={item.quantity <= 1 || item._isQuoting}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={handleQuantityChange}
+                      className="w-16 h-7 px-2 text-center"
+                      disabled={item._isQuoting}
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() =>
+                        onUpdateQuantity(item.id, item.quantity + 1)
+                      }
+                      disabled={item._isQuoting}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="text-right">
+                {item._isQuoting ? (
+                  <div className="flex items-center gap-2 h-10">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      {formatCurrency(item.price, currency, i18n.language, 3)} ×{" "}
+                      {item.quantity}
+                    </p>
+                    <p className="font-medium">
+                      {formatCurrency(
+                        item._quotedSubTotal || item.price * item.quantity,
+                        currency,
+                        i18n.language,
+                        3,
+                      )}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
-          )}
 
-          {/* Quote Error Display */}
-          {item._quoteError && !item._isQuoting && (
-            <div className="pt-2 border-t border-destructive/50 flex items-center gap-2 text-xs text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <p>{item._quoteError}</p>
-            </div>
-          )}
+            {/* Notes appear when toggled or if they already have content */}
+            {(isDetailsOpen || item.notes) && (
+              <div className="pt-2">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">
+                    {t("itemNotesOptional", { ns: "orders" })}
+                  </Label>
+                  <Textarea
+                    value={item.notes || ""}
+                    onChange={(e) => onUpdateNotes(item.id, e.target.value)}
+                    placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
+                    className="h-16 resize-none text-xs"
+                    disabled={effectiveReadOnly || item._isQuoting}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Quote Error Display */}
+            {item._quoteError && !item._isQuoting && (
+              <div className="pt-2 border-t border-destructive/50 flex items-center gap-2 text-xs text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                <p>{item._quoteError}</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {item.productType && isDimensionBased && !effectiveReadOnly && (

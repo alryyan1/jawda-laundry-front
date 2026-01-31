@@ -1,30 +1,25 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import tailwindcss from '@tailwindcss/vite'
-import path from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
+import tailwindcss from "@tailwindcss/vite";
+import { reactClickToComponent } from "vite-plugin-react-click-to-component";
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    host: true, 
+    host: true,
     port: 3000,
   },
 
-
-  plugins: [
-    react(),
-    tailwindcss()
-  ],
+  plugins: [react(), tailwindcss(), reactClickToComponent()],
   resolve: {
-    
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-  
-  
+
   // Enable more detailed source maps in development
   css: {
     devSourcemap: true,
   },
-})
+});

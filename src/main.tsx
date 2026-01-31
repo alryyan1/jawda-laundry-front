@@ -16,7 +16,7 @@ import './lib/websocket';
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <Suspense fallback="Loading translations...">
       <SettingsProvider>
         <AppThemeProvider>
@@ -36,5 +36,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </SettingsProvider>
       
     </Suspense>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 );
