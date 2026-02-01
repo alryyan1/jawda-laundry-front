@@ -42,6 +42,7 @@ import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
 import { handleOrderResponse } from "@/utils/warningHandler";
 import { getAllServiceOfferingsForSelect } from "@/api/serviceOfferingService";
+import { getProductCategories } from "@/api/productCategoryService";
 
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
@@ -75,6 +76,13 @@ const POSPage: React.FC = () => {
   );
   const [selectedProductType, setSelectedProductType] =
     useState<ProductType | null>(null);
+
+  // Fetch product categories to check count
+  const { data: allCategories = [] } = useQuery<ProductCategory[], Error>({
+    queryKey: ["productCategories"],
+    queryFn: getProductCategories,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<
@@ -151,7 +159,7 @@ const POSPage: React.FC = () => {
 
       setSelectedCategoryId(null);
       setSelectedProductType(null);
-      setOrderType(createdOrder.order_type);
+      // setOrderType(createdOrder.order_type);
       setIsProcessing(false);
 
       // Clear dialog state
@@ -634,7 +642,7 @@ const POSPage: React.FC = () => {
       const productOfferings = serviceOfferingsToUse.filter(
         (offering) => offering.product_type_id === product.id,
       );
-      console.log(productOfferings,'productOfferings');
+      console.log(productOfferings, "productOfferings");
       if (productOfferings.length === 1 && hasCustomer) {
         const offering = productOfferings[0];
         handleAddToCart(product, offering);
@@ -1062,35 +1070,33 @@ const POSPage: React.FC = () => {
 
                         {/* Cart - Only show when there are items */}
                         {cartItems.length > 0 && (
-                          
-                              <CartColumn
-                                items={cartItems}
-                                onRemoveItem={handleRemoveItem}
-                                onUpdateQuantity={handleUpdateQuantity}
-                                onUpdateDimensions={handleUpdateDimensions}
-                                onUpdateNotes={handleUpdateNotes}
-                                onCheckout={
-                                  selectedOrder
-                                    ? handleReceiveOrder
-                                    : handleCheckout
-                                }
-                                onCancelOrder={
-                                  selectedOrder?.received
-                                    ? handleCancelOrder
-                                    : undefined
-                                }
-                                isProcessing={isProcessing}
-                                mode={selectedOrder ? "order_edit" : "cart"}
-                                orderNumber={
-                                  selectedOrder?.category_sequences_string ||
-                                  selectedOrder?.daily_order_number?.toString() ||
-                                  selectedOrder?.id?.toString()
-                                }
-                                isReadOnly={selectedOrder?.received}
-                                isReceived={selectedOrder?.received === true}
-                                paymentStatus={selectedOrder?.payment_status}
-                              />
-                            
+                          <CartColumn
+                            items={cartItems}
+                            onRemoveItem={handleRemoveItem}
+                            onUpdateQuantity={handleUpdateQuantity}
+                            onUpdateDimensions={handleUpdateDimensions}
+                            onUpdateNotes={handleUpdateNotes}
+                            onCheckout={
+                              selectedOrder
+                                ? handleReceiveOrder
+                                : handleCheckout
+                            }
+                            onCancelOrder={
+                              selectedOrder?.received
+                                ? handleCancelOrder
+                                : undefined
+                            }
+                            isProcessing={isProcessing}
+                            mode={selectedOrder ? "order_edit" : "cart"}
+                            orderNumber={
+                              selectedOrder?.category_sequences_string ||
+                              selectedOrder?.daily_order_number?.toString() ||
+                              selectedOrder?.id?.toString()
+                            }
+                            isReadOnly={selectedOrder?.received}
+                            isReceived={selectedOrder?.received === true}
+                            paymentStatus={selectedOrder?.payment_status}
+                          />
                         )}
                       </>
                     </div>
@@ -1101,11 +1107,15 @@ const POSPage: React.FC = () => {
                   {/* Desktop Layout */}
                   {/* Left Section: Categories */}
 
-                  <CategoryColumn
-                    onSelectCategory={handleSelectCategory}
-                    selectedCategoryId={selectedCategoryId}
-                    selectedCustomerId={selectedCustomerId}
-                  />
+                  {/* Desktop Layout */}
+                  {/* Left Section: Categories - Only show if more than 1 category */}
+                  {allCategories.length > 1 && (
+                    <CategoryColumn
+                      onSelectCategory={handleSelectCategory}
+                      selectedCategoryId={selectedCategoryId}
+                      selectedCustomerId={selectedCustomerId}
+                    />
+                  )}
 
                   {/* Middle Section: Products and Services */}
                   <div className="flex-1 flex gap-2 min-h-0 mx-2 relative">
@@ -1168,31 +1178,27 @@ const POSPage: React.FC = () => {
 
                   {/* Right Section: Cart - Only show when there are items */}
                   {cartItems.length > 0 && (
-                  
-                        <CartColumn
-                          items={cartItems}
-                          onRemoveItem={handleRemoveItem}
-                          onUpdateQuantity={handleUpdateQuantity}
-                          onUpdateDimensions={handleUpdateDimensions}
-                          onUpdateNotes={handleUpdateNotes}
-                          onCheckout={handleCheckout}
-                          onCancelOrder={
-                            selectedOrder?.received
-                              ? handleCancelOrder
-                              : undefined
-                          }
-                          isProcessing={isProcessing}
-                          mode={selectedOrder ? "order_edit" : "cart"}
-                          orderNumber={
-                            selectedOrder?.category_sequences_string ||
-                            selectedOrder?.daily_order_number?.toString() ||
-                            selectedOrder?.id?.toString()
-                          }
-                          isReadOnly={selectedOrder?.received}
-                          isReceived={selectedOrder?.received === true}
-                          paymentStatus={selectedOrder?.payment_status}
-                        />
-                
+                    <CartColumn
+                      items={cartItems}
+                      onRemoveItem={handleRemoveItem}
+                      onUpdateQuantity={handleUpdateQuantity}
+                      onUpdateDimensions={handleUpdateDimensions}
+                      onUpdateNotes={handleUpdateNotes}
+                      onCheckout={handleCheckout}
+                      onCancelOrder={
+                        selectedOrder?.received ? handleCancelOrder : undefined
+                      }
+                      isProcessing={isProcessing}
+                      mode={selectedOrder ? "order_edit" : "cart"}
+                      orderNumber={
+                        selectedOrder?.category_sequences_string ||
+                        selectedOrder?.daily_order_number?.toString() ||
+                        selectedOrder?.id?.toString()
+                      }
+                      isReadOnly={selectedOrder?.received}
+                      isReceived={selectedOrder?.received === true}
+                      paymentStatus={selectedOrder?.payment_status}
+                    />
                   )}
                 </>
               )}
