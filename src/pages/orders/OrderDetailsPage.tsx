@@ -1,20 +1,12 @@
-// src/pages/orders/OrderDetailsPage.tsx
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import { toast } from "sonner";
-import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -23,12 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For payment status
-import { Label } from "@/components/ui/label";
-// Removed pickup date editing per business rule
 import {
   Select,
   SelectContent,
@@ -36,34 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import type { Order, OrderStatus, OrderItem as OrderItemType } from "@/types"; // Use OrderItemType alias
+import type { Order, OrderStatus, OrderItem as OrderItemType } from "@/types";
 import {
   getOrderById,
   updateOrderStatus,
-  sendOrderWhatsAppInvoice,
   type OrderResponseWithWarnings,
 } from "@/api/orderService";
 import { ORDER_STATUSES, BASE_URL } from "@/lib/constants";
-
-import {
-  ArrowLeft,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Info,
-  FileText,
-  Printer,
-  History,
-} from "lucide-react";
-import { Package, CreditCard } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader"; // Using PageHeader
+import { Loader2 } from "lucide-react";
 import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
 import { OrderPaymentsList } from "@/features/orders/components/OrderPaymentsList";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { printPosPdfReceipt } from "@/lib/printUtils";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
-import { MapPin, Users } from "lucide-react";
 import { useCurrency } from "@/hooks/useCurrency";
 import {
   Dialog,
@@ -71,103 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// Re-usable OrderStatusBadgeComponent (could be moved to shared components)
-const OrderStatusBadgeComponent: React.FC<{
-  status: OrderStatus;
-  className?: string;
-}> = ({ status, className }) => {
-  const { t } = useTranslation("orders");
-  let bgColor = "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
-  if (status === "pending")
-    bgColor =
-      "bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-500/50";
-  if (status === "processing")
-    bgColor =
-      "bg-blue-400/20 text-blue-600 dark:text-blue-400 border border-blue-500/50";
-  if (status === "delivered")
-    bgColor =
-      "bg-green-400/20 text-green-600 dark:text-green-400 border border-green-500/50";
-  if (status === "completed")
-    bgColor =
-      "bg-slate-400/20 text-slate-600 dark:text-slate-400 border border-slate-500/50";
-  if (status === "cancelled")
-    bgColor =
-      "bg-red-400/20 text-red-600 dark:text-red-400 border border-red-500/50";
-
-  return (
-    <Badge
-      className={`capitalize px-2.5 py-1 text-xs font-medium ${bgColor} ${className}`}
-    >
-      {t(`status_${status}`)}
-    </Badge>
-  );
-};
-
-// Payment Status Display (Example)
-const PaymentStatusAlert: React.FC<{
-  order: Order;
-  className?: string;
-  i18n: { language: string };
-}> = ({ order, className, i18n }) => {
-  const { t } = useTranslation("orders");
-  const { currencyCode } = useCurrency();
-  if (!order.payment_status) return null;
-
-  // Only use allowed variants: "default" | "destructive" | null | undefined
-  let variant: "default" | "destructive" | null | undefined = "default";
-  let Icon = Info;
-  const title = t(`payment_status_${order.payment_status}`);
-
-  switch (order.payment_status) {
-    case "paid":
-      variant = null;
-      Icon = CheckCircle2;
-      break; // Use null for success
-    case "pending":
-      variant = "default";
-      Icon = AlertCircle;
-      break;
-    case "partially_paid":
-      variant = "default";
-      Icon = Info;
-      break;
-    case "refunded":
-      variant = "destructive";
-      Icon = AlertCircle;
-      break;
-  }
-
-  return (
-    <Alert variant={variant} className={className}>
-      <Icon className="h-4 w-4" />
-      <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>
-        {t("paidAmount")}:{" "}
-        {new Intl.NumberFormat(i18n.language, {
-          style: "currency",
-          currency: currencyCode,
-        }).format(order.paid_amount)}
-        {order.payment_method &&
-          ` (${t("via", { ns: "common" })} ${t(
-            `payment_method_${order.payment_method}`,
-            { ns: "orders", defaultValue: order.payment_method },
-          )})`}
-        {order.amount_due && order.amount_due > 0 && (
-          <span className="block mt-1">
-            {t("amountDue")}:{" "}
-            <span className="font-semibold text-destructive">
-              {new Intl.NumberFormat(i18n.language, {
-                style: "currency",
-                currency: currencyCode,
-              }).format(order.amount_due)}
-            </span>
-          </span>
-        )}
-      </AlertDescription>
-    </Alert>
-  );
-};
+import { ProductImage } from "@/components/ProductImage";
 
 const OrderDetailsPage: React.FC = () => {
   const { t, i18n } = useTranslation([
@@ -183,7 +58,6 @@ const OrderDetailsPage: React.FC = () => {
   const { currencyCode } = useCurrency();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
-  const [isItemsDialogOpen, setIsItemsDialogOpen] = useState(false);
   const [isPaymentsHistoryOpen, setIsPaymentsHistoryOpen] = useState(false);
   const { can } = useAuth();
   const {
@@ -227,48 +101,11 @@ const OrderDetailsPage: React.FC = () => {
     },
   });
 
-  // Mutation for sending WhatsApp invoice
-  const sendWhatsAppInvoiceMutation = useMutation<
-    { message: string },
-    Error,
-    string | number
-  >({
-    mutationFn: (orderId) => sendOrderWhatsAppInvoice(orderId),
-    onSuccess: (data) => {
-      toast.success(t("whatsappInvoiceSentSuccess", { ns: "orders" }), {
-        description: data.message,
-      });
-      // Refresh the order data to get updated WhatsApp status
-      queryClient.invalidateQueries({ queryKey: ["order", id] });
-    },
-    onError: (error: unknown) => {
-      const err = error as {
-        response?: { data?: { details?: string; message?: string } };
-      };
-      // Extract detailed error message from backend response
-      const errorMessage =
-        err?.response?.data?.details ||
-        err?.response?.data?.message ||
-        (error as Error)?.message ||
-        t("whatsappInvoiceSendFailed", { ns: "orders" });
-
-      toast.error(t("whatsappInvoiceSendFailed", { ns: "orders" }), {
-        description: errorMessage,
-      });
-    },
-  });
-
   // Pickup date is fixed at creation and cannot be changed
 
   const handleStatusChange = (newStatus: OrderStatus) => {
     if (order && newStatus !== order.status) {
       updateStatusMutation.mutate({ orderId: order.id, status: newStatus });
-    }
-  };
-
-  const handleSendWhatsAppInvoice = () => {
-    if (order) {
-      sendWhatsAppInvoiceMutation.mutate(order.id);
     }
   };
 
@@ -307,326 +144,192 @@ const OrderDetailsPage: React.FC = () => {
     "/api",
     "",
   )}/orders/${order.id}/invoice/download`;
-  return (
-    <div className="space-y-6 container mx-auto px-3 sm:px-6 py-4 [&_*]:text-[16px] sm:[&_*]:text-[17px]">
-      <PageHeader
-        title={`${t("orderDetailsTitle", { ns: "orders" })} #${order.id}`}
-        description={t("orderPlacedOn", {
-          ns: "orders",
-          date: format(new Date(order.order_date), "PPP p", {
-            locale: currentLocale,
-          }),
-        })}
-      >
-        {/* Action buttons for the page header */}
-        <Button
-          variant="outline"
-          onClick={() => navigate("/orders")}
-          title={t("backToOrders", { ns: "orders" })}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
 
-        <Button asChild title={t("downloadPdf", { ns: "orders" })}>
-          {/* target="_blank" opens it in a new tab */}
-          <a href={invoiceUrl} target="_blank" rel="noopener noreferrer">
-            <FileText className="h-4 w-4" />
-          </a>
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setIsItemsDialogOpen(true)}
-          title={t("orderedItems", { ns: "orders" })}
-        >
-          <Package className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setIsPaymentsHistoryOpen(true)}
-          title={t("viewPayments", {
-            ns: "orders",
-            defaultValue: "View Payments",
-          })}
-        >
-          <CreditCard className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/orders/${order.id}/timeline`)}
-          title={t("viewTimeline", {
-            ns: "orders",
-            defaultValue: "View Timeline",
-          })}
-          className="text-primary border-primary/20 hover:bg-primary/5"
-        >
-          <History className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => printPosPdfReceipt(order.id)}
-          title={t("printReceipt", { ns: "orders" })}
-        >
-          <Printer className="h-4 w-4" />
-        </Button>
-        {can("order:send-whatsapp") && order.customer?.phone && (
-          <Button
-            variant={order.whatsapp_text_sent ? "default" : "outline"}
-            className={
-              order.whatsapp_text_sent
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : ""
-            }
-            onClick={() => setIsWhatsAppModalOpen(true)}
-            title={
-              order.whatsapp_text_sent
-                ? t("messageSent", { ns: "orders" })
-                : t("sendMessage", { ns: "orders" })
-            }
-          >
-            <WhatsAppIcon className="h-4 w-4" />
-          </Button>
-        )}
-        {can("order:send-whatsapp") && order.customer?.phone && (
-          <Button
-            variant={order.whatsapp_pdf_sent ? "default" : "outline"}
-            className={
-              order.whatsapp_pdf_sent
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : ""
-            }
-            onClick={handleSendWhatsAppInvoice}
-            disabled={sendWhatsAppInvoiceMutation.isPending}
-            title={
-              order.whatsapp_pdf_sent
-                ? t("invoiceSent", { ns: "orders" })
-                : t("sendInvoice", { ns: "orders" })
-            }
-          >
-            <WhatsAppIcon className="h-4 w-4" />
-            {sendWhatsAppInvoiceMutation.isPending ? (
-              <Loader2 className="absolute h-4 w-4 animate-spin" />
-            ) : null}
-          </Button>
-        )}
-        {/* <Button><Edit3 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" /> {t('editOrder', { ns: 'orders' })}</Button> */}
-      </PageHeader>
-      <div className="grid md:grid-cols-3 gap-6 ">
-        {/* Customer & Order Info Card */}
-        <Card className="md:col-span-2">
-          <CardContent className="space-y-4 text-base">
-            <h3 className="font-bold text-lg mb-2">
-              {t("customerDetails", { ns: "customers" })}
-            </h3>
-            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
-              <div>
-                <strong className="text-base">
-                  {t("name", { ns: "common" })}:
-                </strong>{" "}
-                <span className="font-semibold">{order.customer?.name}</span>
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-screen bg-gray-50/50">
+      {/* Left Main Content Area */}
+      <div className="flex-1 space-y-6">
+        {/* Order Header Card */}
+        <Card className="border-none shadow-sm bg-white">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row justify-between gap-8">
+              {/* Left Side: Customer Info */}
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-gray-800">
+                  {order.customer?.name || t("guest", { ns: "common" })}
+                </h1>
+                <div className="text-gray-500 space-y-1">
+                  <p>{order.customer?.phone || "-"}</p>
+                  {/* Address field is not directly available on Order type, defaulting to empty or Customer address if available in future */}
+                  <p>{order.notes || "-"}</p>
+                  <p className="pt-2 text-gray-400 text-sm">TAX: TAX@TAX</p>
+                </div>
               </div>
-              <div>
-                <strong className="text-base">
-                  {t("phone", { ns: "customers" })}:
-                </strong>{" "}
-                <span className="font-bold text-lg text-primary">
-                  {order.customer?.phone || t("notAvailable", { ns: "common" })}
-                </span>
-              </div>
-              <div>
-                <strong className="text-base">
-                  {t("email", { ns: "common" })}:
-                </strong>{" "}
-                <span className="font-semibold">
-                  {order.customer?.email || t("notAvailable", { ns: "common" })}
-                </span>
-              </div>
-              {order.table && (
-                <div className="sm:col-span-2">
-                  <strong className="text-base flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {t("table", { ns: "orders", defaultValue: "Table" })}:
-                  </strong>{" "}
-                  <span className="font-semibold flex items-center gap-2">
-                    {order.table.name}
-                    <span className="text-sm text-muted-foreground">
-                      ({order.table.number})
-                    </span>
-                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      {order.table.capacity}
-                    </span>
+
+              {/* Right Side: Order Meta */}
+              <div className="md:text-right space-y-2">
+                <div>
+                  <span className="font-bold text-gray-700">
+                    {t("orderId", { ns: "orders", defaultValue: "ORDER ID" })}
+                    :{" "}
+                  </span>
+                  <span className="font-bold">#ORD-{order.id}</span>
+                </div>
+                <div className="text-gray-600">
+                  <span>
+                    {t("orderDate", {
+                      ns: "orders",
+                      defaultValue: "Order Date",
+                    })}
+                    :{" "}
+                  </span>
+                  <span>
+                    {format(new Date(order.order_date), "dd/MM/yyyy", {
+                      locale: currentLocale,
+                    })}
                   </span>
                 </div>
-              )}
-            </div>
-            <Separator className="my-4" />
-
-            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
-              {order.staff_user && (
-                <div>
-                  <strong className="text-base">
-                    {t("processedBy", { ns: "orders" })}:
-                  </strong>{" "}
-                  <span className="font-semibold">{order.staff_user.name}</span>
+                <div className="text-gray-600 flex md:justify-end items-center gap-2">
+                  <span>
+                    {t("deliveryDate", {
+                      ns: "orders",
+                      defaultValue: "Delivery Date",
+                    })}
+                    :{" "}
+                  </span>
+                  <div className="flex items-center bg-gray-100 px-2 py-0.5 rounded text-sm">
+                    {order.pickup_date
+                      ? format(new Date(order.pickup_date), "dd/MM/yyyy", {
+                          locale: currentLocale,
+                        })
+                      : "-"}
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Pickup Date - read-only */}
-            <Separator className="my-4" />
-            <div>
-              <Label className="text-base font-bold mb-2 block">
-                {t("pickupDate", { ns: "orders" })}
-              </Label>
-              <div className="text-sm text-muted-foreground">
-                {order.pickup_date
-                  ? format(new Date(order.pickup_date), "PPP p", {
-                      locale: currentLocale,
-                    })
-                  : t("notSet", { ns: "common" })}
+                <div className="flex md:justify-end items-center gap-2 pt-2">
+                  <span className="text-gray-600">
+                    {t("orderStatus", {
+                      ns: "orders",
+                      defaultValue: "Order Status",
+                    })}
+                    :
+                  </span>
+                  {/* Status Dropdown */}
+                  {can("order:update-status") ? (
+                    <Select
+                      value={order.status}
+                      onValueChange={(newStatus: OrderStatus) =>
+                        handleStatusChange(newStatus)
+                      }
+                      disabled={
+                        updateStatusMutation.isPending ||
+                        order.status === "completed"
+                      }
+                    >
+                      <SelectTrigger className="w-[140px] h-9 bg-gray-500 text-white border-0 focus:ring-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORDER_STATUSES.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {t(`status_${status}`, { ns: "orders" })}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge className="bg-gray-500">{order.status}</Badge>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Status & Payment Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("statusAndPayment", { ns: "orders" })}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                {t("currentStatus", { ns: "orders" })}
-              </Label>
-              <OrderStatusBadgeComponent
-                status={order.status}
-                className="mt-1 text-base px-3 py-1.5 w-full justify-center"
-              />
-              {/* Status Change Select */}
-              {can("order:update-status") && (
-                <div className="mt-3">
-                  <Label className="text-xs text-muted-foreground">
-                    {t("changeStatus", { ns: "orders" })}
-                  </Label>
-                  <Select
-                    value={order.status}
-                    onValueChange={(newStatus: OrderStatus) =>
-                      handleStatusChange(newStatus)
-                    }
-                    disabled={
-                      updateStatusMutation.isPending ||
-                      order.status === "completed"
-                    }
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue
-                        placeholder={t("changeStatus", { ns: "orders" })}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ORDER_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {t(`status_${status}`, { ns: "orders" })}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {updateStatusMutation.isPending && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("updating", { ns: "common" })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <Separator />
-            <PaymentStatusAlert order={order} i18n={i18n} />
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => setIsPaymentModalOpen(true)}
-            >
-              {t("recordOrUpdatePayment", {
-                ns: "orders",
-                defaultValue: "Record/Update Payment",
-              })}
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-      {/* Items Dialog */}
-      <Dialog open={isItemsDialogOpen} onOpenChange={setIsItemsDialogOpen}>
-        <DialogContent className="!max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>{t("orderedItems", { ns: "orders" })}</DialogTitle>
-          </DialogHeader>
+        {/* Items List Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("product")}</TableHead>
-                <TableHead className="w-[40%] text-center">
-                  {t("itemService", {
+            <TableHeader className="bg-gray-100">
+              <TableRow className="border-none hover:bg-gray-100">
+                <TableHead className="w-[50px] font-bold text-gray-500">
+                  #
+                </TableHead>
+                <TableHead className="font-bold text-gray-500">
+                  {t("serviceName", {
                     ns: "orders",
-                    defaultValue: "Item / Service",
+                    defaultValue: "SERVICE NAME",
                   })}
                 </TableHead>
-                <TableHead className="text-center">
-                  {t("quantity", { ns: "services" })}
+                <TableHead className="text-center font-bold text-gray-500">
+                  {t("color", { ns: "common", defaultValue: "COLOR" })}
                 </TableHead>
-                <TableHead className="text-center hidden sm:table-cell">
-                  {t("dimensionsLWH", {
-                    ns: "orders",
-                    defaultValue: "Dimensions (LxW)",
-                  })}
+                <TableHead className="text-center font-bold text-gray-500">
+                  {t("rate", { ns: "common", defaultValue: "RATE" })}
                 </TableHead>
-                <TableHead className="text-center">
-                  {t("unitPrice", { ns: "orders", defaultValue: "Unit Price" })}
+                <TableHead className="text-center font-bold text-gray-500">
+                  {t("qty", { ns: "common", defaultValue: "QTY" })}
                 </TableHead>
-                <TableHead className="text-center">
-                  {t("subtotal", { ns: "common" })}
+                <TableHead className="text-right font-bold text-gray-500 pr-6">
+                  {t("total", { ns: "common", defaultValue: "TOTAL" })}
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {order.items?.map((item: OrderItemType) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    {item.serviceOffering?.productType?.name}
+              {order.items?.map((item: OrderItemType, index: number) => (
+                <TableRow
+                  key={item.id}
+                  className="border-b border-gray-50 hover:bg-gray-50/50"
+                >
+                  <TableCell className="font-medium text-gray-500">
+                    {index + 1}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">
-                      {item.serviceOffering?.display_name ||
-                        t("serviceOfferingDetailsMissing", { ns: "orders" })}
+                    <div className="flex items-center gap-4">
+                      {/* Product Image Placeholder or Actual Image */}
+                      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border bg-gray-100 flex items-center justify-center">
+                        <ProductImage
+                          url={item.serviceOffering?.productType?.image_url}
+                          alt={item.serviceOffering?.productType?.name || ""}
+                          className="h-full w-full object-cover"
+                          isIconFallback={
+                            item.serviceOffering?.productType?.id !== 1
+                          }
+                        />
+                      </div>
+                      <div>
+                        {/* English Name - fallback to display_name or productType name */}
+                        <div className="font-bold text-gray-800 uppercase">
+                          {item.serviceOffering?.productType?.name ||
+                            item.serviceOffering?.display_name}
+                        </div>
+                        {/* Arabic Name - Not explicitly available in current types, showing product type name as fallback */}
+                        {/* 
+                        <div className="text-sm font-medium text-gray-600 text-right w-full">
+                           {item.serviceOffering?.name?.ar} 
+                        </div> 
+                        */}
+                        {/* Service Type / Action */}
+                        <div className="text-xs text-blue-500 font-semibold mt-1 uppercase">
+                          [
+                          {item.serviceOffering?.serviceAction?.name ||
+                            "Service"}
+                          ]
+                        </div>
+                      </div>
                     </div>
-                    {item.product_description_custom && (
-                      <div className="text-xs text-muted-foreground">
-                        {item.product_description_custom}
-                      </div>
-                    )}
-                    {item.notes && (
-                      <div className="text-xs text-info-foreground mt-1">
-                        <em>
-                          {t("notes")}: {item.notes}
-                        </em>
-                      </div>
-                    )}
                   </TableCell>
-                  <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-center hidden sm:table-cell">
-                    {item.length_meters && item.width_meters
-                      ? `${item.length_meters}m x ${item.width_meters}m`
-                      : "-"}
+                  <TableCell className="text-center text-gray-500">
+                    {item.color || "-"}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center font-medium text-gray-600">
                     {new Intl.NumberFormat(i18n.language, {
                       style: "currency",
                       currency: currencyCode,
                     }).format(item.calculated_price_per_unit_item)}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center font-medium text-gray-600">
+                    {item.quantity}
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-gray-600 pr-6">
                     {new Intl.NumberFormat(i18n.language, {
                       style: "currency",
                       currency: currencyCode,
@@ -635,24 +338,49 @@ const OrderDetailsPage: React.FC = () => {
                 </TableRow>
               ))}
             </TableBody>
-            <TableFooter>
-              <TableRow className="font-semibold bg-muted/50">
-                <TableCell colSpan={4} className="text-center">
-                  {t("grandTotal", { ns: "common" })}
-                </TableCell>
-                <TableCell className="text-center text-lg">
-                  {new Intl.NumberFormat(i18n.language, {
-                    style: "currency",
-                    currency: currencyCode,
-                  }).format(order.total_amount)}
-                </TableCell>
-              </TableRow>
-            </TableFooter>
           </Table>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
 
-      {/* Payments History Dialog */}
+      {/* Right Sidebar */}
+      <div className="w-full lg:w-[350px] space-y-6">
+        <Card className="border-none shadow-sm bg-white h-auto">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl text-gray-700 font-medium">
+              {t("payments", { ns: "orders", defaultValue: "Payments" })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            {/* Payment Status Alert moved here if needed or kept minimal */}
+            {order.payment_status !== "paid" && (
+              <div className="text-sm text-red-500 font-medium mb-2">
+                Status: {t(`payment_status_${order.payment_status}`)}
+              </div>
+            )}
+
+            {/* Add Payment Button */}
+            <Button
+              className="w-full h-12 text-base font-semibold bg-[#a7f3d0] hover:bg-[#6ee7b7] text-green-800 border-none shadow-none transition-colors"
+              onClick={() => setIsPaymentModalOpen(true)}
+            >
+              {t("addPayment", { ns: "orders", defaultValue: "ADD PAYMENT" })}
+            </Button>
+
+            {/* Print Invoice Button */}
+            <Button
+              className="w-full h-12 text-base font-semibold bg-[#fcd34d] hover:bg-[#fbbf24] text-yellow-900 border-none shadow-none transition-colors"
+              onClick={() => window.open(invoiceUrl, "_blank")}
+            >
+              {t("printInvoice", {
+                ns: "orders",
+                defaultValue: "Print Invoice",
+              })}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modals */}
       <Dialog
         open={isPaymentsHistoryOpen}
         onOpenChange={setIsPaymentsHistoryOpen}
@@ -666,7 +394,7 @@ const OrderDetailsPage: React.FC = () => {
           <OrderPaymentsList payments={order.payments || []} />
         </DialogContent>
       </Dialog>
-      {/* The Modal itself, rendered but hidden */}
+
       {can("order:record-payment") && (
         <RecordPaymentModal
           order={order}

@@ -56,6 +56,7 @@ import {
   Utensils,
   Loader2,
   Lamp,
+  MonitorPlay,
 } from "lucide-react";
 
 import { NAVIGATION_ITEMS } from "@/lib/navigation";
@@ -135,6 +136,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   TrendingDown: TrendingUp,
   FileText: ChartBar,
   UtensilsCrossed: Utensils,
+  MonitorPlay: MonitorPlay,
 };
 
 // Real-time connection status lamp
@@ -461,6 +463,27 @@ const MainLayout: React.FC = () => {
     );
   };
 
+  // Helper to get icon color based on key
+  const getItemColor = (key: string, isActive: boolean) => {
+    if (isActive) return "text-white";
+
+    const colors: Record<string, string> = {
+      dashboard: "text-red-500",
+      pos: "text-red-500",
+      orders: "text-blue-500",
+      "all-orders": "text-blue-500",
+      "orders-timeline": "text-blue-500",
+      customers: "text-purple-500",
+      services: "text-blue-500",
+      expenses: "text-pink-500",
+      reports: "text-orange-500",
+      settings: "text-orange-500",
+      tools: "text-orange-500",
+    };
+
+    return colors[key] || "text-gray-500";
+  };
+
   // --- Dynamic Sidebar Navigation ---
   const SidebarNav: React.FC<{
     mobile?: boolean;
@@ -488,46 +511,61 @@ const MainLayout: React.FC = () => {
         collapsedStates[item.id] !== undefined
           ? collapsedStates[item.id]
           : true; // Default to true (collapsed)
-      // console.log(item,'item')
+
+      const iconColorClass = getItemColor(
+        item.key,
+        !!(isActive || isSubItemActive),
+      );
+
       if (hasChildren) {
         return collapsed ? (
           <Button
             key={item.id}
-            variant={isSubItemActive ? "secondary" : "ghost"}
-            className="w-full justify-center px-2"
+            variant="ghost"
+            className={`w-full justify-center px-2 mb-1 ${isSubItemActive ? "bg-blue-500 text-white rounded-xl hover:bg-blue-600" : "hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-600"}`}
             title={title}
             onClick={() => toggleCollapsible(item.id)}
           >
-            <IconComponent className="h-4 w-4" />
+            <IconComponent className={`h-5 w-5 ${iconColorClass}`} />
           </Button>
         ) : (
           <Collapsible
             key={item.id}
             open={!isCollapsed}
             onOpenChange={() => toggleCollapsible(item.id)}
-            className="w-full"
+            className="w-full mb-1"
           >
             <CollapsibleTrigger asChild>
               <Button
-                variant={isSubItemActive ? "secondary" : "ghost"}
-                className="w-full justify-between"
+                variant="ghost"
+                className={`w-full justify-between mb-1 h-auto py-3 ${
+                  isSubItemActive
+                    ? "bg-blue-500 text-white hover:bg-blue-600 hover:text-white rounded-xl shadow-md"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 rounded-xl"
+                }`}
               >
                 <span className="flex items-center">
                   <IconComponent
-                    className={`mr-3 h-4 w-4 rtl:ml-3 rtl:mr-0 ${
-                      mobile ? "h-5 w-5" : ""
-                    }`}
+                    className={`mr-3 h-5 w-5 rtl:ml-3 rtl:mr-0 ${iconColorClass}`}
                   />
-                  {title}
+                  <span
+                    className={`font-medium ${isSubItemActive ? "text-white" : "text-gray-600 dark:text-gray-300"}`}
+                  >
+                    {title}
+                  </span>
                 </span>
                 {!isCollapsed ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown
+                    className={`h-4 w-4 ${isSubItemActive ? "text-white" : "text-gray-400"}`}
+                  />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight
+                    className={`h-4 w-4 ${isSubItemActive ? "text-white" : "text-gray-400"}`}
+                  />
                 )}
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="pl-7 rtl:pr-7 pt-1 space-y-1">
+            <CollapsibleContent className="pl-4 rtl:pr-4 pt-1 space-y-1">
               {item.children?.map((child) =>
                 renderNavigationItem(child, level + 1),
               )}
@@ -539,19 +577,29 @@ const MainLayout: React.FC = () => {
       return (
         <Button
           key={item.id}
-          variant={isActive ? "secondary" : "ghost"}
-          className={`w-full justify-start ${collapsed ? "justify-center px-2" : ""}`}
+          variant="ghost"
+          className={`w-full justify-start mb-2 h-auto py-3 ${collapsed ? "justify-center px-2" : ""} ${
+            isActive
+              ? "bg-blue-500 text-white hover:bg-blue-600 hover:text-white rounded-xl shadow-md"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 rounded-xl"
+          }`}
           asChild
           onClick={() => mobile && closeSheet?.()}
           title={collapsed ? title : undefined}
         >
           <Link to={item.route || "#"}>
             <IconComponent
-              className={`h-4 w-4 ${
-                mobile ? "h-5 w-5" : ""
-              } ${collapsed ? "" : "mr-3 rtl:ml-3 rtl:mr-0"}`}
+              className={`h-5 w-5 ${
+                mobile ? "h-6 w-6" : ""
+              } ${collapsed ? "" : "mr-3 rtl:ml-3 rtl:mr-0"} ${iconColorClass}`}
             />
-            {!collapsed && title}
+            {!collapsed && (
+              <span
+                className={`font-medium ${isActive ? "text-white" : "text-gray-600 dark:text-gray-300"}`}
+              >
+                {title}
+              </span>
+            )}
           </Link>
         </Button>
       );
@@ -559,8 +607,8 @@ const MainLayout: React.FC = () => {
 
     return (
       <nav
-        className={`grid items-start gap-1 px-2 text-sm font-medium lg:px-4 ${
-          mobile ? "text-lg py-4" : "py-2"
+        className={`flex flex-col gap-2 px-3 text-sm font-medium lg:px-4 ${
+          mobile ? "text-lg py-4" : "py-4"
         }`}
       >
         {navigationItems.map((item) => renderNavigationItem(item))}
@@ -578,15 +626,15 @@ const MainLayout: React.FC = () => {
         isMenuPage
           ? "grid-cols-1"
           : isSidebarCollapsed
-            ? "md:grid-cols-[60px_1fr]"
-            : "md:grid-cols-[132px_1fr] lg:grid-cols-[250px_1fr]"
+            ? "md:grid-cols-[80px_1fr]"
+            : "md:grid-cols-[280px_1fr]"
       }`}
     >
       {/* Desktop Sidebar - Hidden on MenuPage */}
       {!isMenuPage && (
-        <div className="hidden border-r bg-background md:block dark:bg-muted/40">
+        <div className="hidden bg-background md:block dark:bg-muted/40 h-screen sticky top-0">
           <div className="flex h-full max-h-screen flex-col gap-2">
-            <div className="flex h-14 shrink-0 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <div className="flex h-20 shrink-0 items-center px-4 lg:px-6">
               <div className="flex items-center justify-between w-full">
                 {!isSidebarCollapsed && (
                   <Link
@@ -595,10 +643,10 @@ const MainLayout: React.FC = () => {
                   >
                     <AppIcon
                       iconUrl={settings?.company_logo_url}
-                      className="h-6 w-6"
+                      className="h-8 w-8"
                       fallbackIcon={Shirt}
                     />
-                    <span className="text-lg">
+                    <span className="text-xl font-bold text-blue-600">
                       {settings?.app_name || t("appName", { ns: "common" })}
                     </span>
                   </Link>
@@ -607,7 +655,7 @@ const MainLayout: React.FC = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="ml-auto"
+                  className="ml-auto text-gray-400 hover:text-gray-600"
                   title={
                     isSidebarCollapsed
                       ? t("expandSidebar", {
@@ -621,14 +669,14 @@ const MainLayout: React.FC = () => {
                   }
                 >
                   {isSidebarCollapsed ? (
-                    <PanelLeftOpen className="h-4 w-4" />
+                    <PanelLeftOpen className="h-5 w-5" />
                   ) : (
-                    <PanelLeftClose className="h-4 w-4" />
+                    <PanelLeftClose className="h-5 w-5" />
                   )}
                 </Button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
               <SidebarNav collapsed={isSidebarCollapsed} />
             </div>
           </div>

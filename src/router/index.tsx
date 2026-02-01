@@ -81,6 +81,9 @@ const OrderTimelinePage = React.lazy(
 const OrdersTimelinePage = React.lazy(
   () => import("@/pages/orders/OrdersTimelinePage"),
 );
+const OrderStatusScreen = React.lazy(
+  () => import("@/pages/orders/OrderStatusScreen"),
+);
 // const EditOrderPage = React.lazy(() => import('@/pages/orders/EditOrderPage')); // Future
 
 // Service Management Pages (Admin)
@@ -388,6 +391,14 @@ export const router = createHashRouter([
             element: (
               <React.Suspense fallback={<RouteSuspenseFallback />}>
                 <OrdersTimelinePage />
+              </React.Suspense>
+            ),
+          },
+          {
+            path: "orders/status",
+            element: (
+              <React.Suspense fallback={<RouteSuspenseFallback />}>
+                <OrderStatusScreen />
               </React.Suspense>
             ),
           },

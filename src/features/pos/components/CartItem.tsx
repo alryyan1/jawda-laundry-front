@@ -133,6 +133,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
                       ? item.serviceOffering.productType.image_url
                       : `${BASE_URL.replace("/api", "")}/storage/${item.productType.image_url}`
                   }
+
                   alt={item.productType.name}
                   className="h-full w-full object-cover"
                   onError={(e) => {

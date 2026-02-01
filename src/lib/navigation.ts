@@ -76,6 +76,21 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
+      {
+        id: 33,
+        key: "order-status-screen",
+        title: {
+          en: "Status Screen",
+          ar: "شاشة الحالة",
+        },
+        icon: "MonitorPlay",
+        route: "/orders/status",
+        sort_order: 3,
+        is_active: true,
+        is_default: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
     ],
   },
   {
@@ -140,10 +155,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       },
       {
         id: 53,
-        key: "product-types",
+        key: "service-list",
         title: {
-          en: "Product Types",
-          ar: "أنواع المنتجات",
+          en: "Service List",
+          ar: "خدمات",
         },
         icon: "Tags",
         route: "/admin/product-types",
