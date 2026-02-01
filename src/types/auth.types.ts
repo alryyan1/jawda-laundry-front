@@ -1,5 +1,4 @@
 // src/types/auth.types.ts
-import type { Role } from './admin.types';
 
 export interface User {
   id: number;
@@ -7,9 +6,7 @@ export interface User {
   username: string;
   email: string;
   avatar_url?: string | null;
-  role?: string; // The primary display role, if you keep it
-  roles: Role[] | string[]; // List of all role objects or role names from Spatie
-  permissions: string[]; // List of all permission names from Spatie
+  user_type: "admin" | "staff";
   created_at: string;
   updated_at: string;
 }
@@ -20,5 +17,5 @@ export interface UserFormData {
   email: string;
   password?: string;
   password_confirmation?: string;
-  role_ids: number[];
+  user_type: "admin" | "staff";
 }

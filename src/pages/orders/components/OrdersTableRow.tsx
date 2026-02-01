@@ -36,7 +36,6 @@ type OrdersTableRowProps = {
   isCompleting?: boolean;
   isDelivering?: boolean;
   onEdit: (order: Order) => void;
-  can: (permission: string) => boolean;
   t: (key: string, options?: Record<string, unknown>) => string;
   currencySymbol: string;
   language: string;
@@ -54,7 +53,6 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   isCompleting,
   isDelivering,
   onEdit,
-  can,
   t,
   currencySymbol,
   language,
@@ -132,7 +130,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
 
       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-col gap-1">
-          {!order.completed_at && can("order:update-status") && (
+          {!order.completed_at && (
             <Button
               variant="outline"
               size="sm"
@@ -146,7 +144,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               {t("markComplete", { defaultValue: "Mark Complete" })}
             </Button>
           )}
-          {order.status === "completed" && can("order:update-status") && (
+          {order.status === "completed" && (
             <Button
               variant="outline"
               size="sm"
@@ -160,7 +158,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               {t("markDelivered", { defaultValue: "Mark Delivered" })}
             </Button>
           )}
-          {order.status === "delivered" && can("order:record-payment") && (
+          {order.status === "delivered" && (
             <Button
               variant="outline"
               size="sm"
@@ -202,21 +200,20 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               <Eye className="mr-2 h-4 w-4" />
               {t("viewDetails")}
             </DropdownMenuItem>
-            {can("order:record-payment") && (
-              <DropdownMenuItem onClick={() => onOpenPayments(order)}>
-                <CreditCard className="mr-2 h-4 w-4" />
-                {t("viewPayments")}
+
+            <DropdownMenuItem onClick={() => onOpenPayments(order)}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              {t("viewPayments")}
+            </DropdownMenuItem>
+
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onEdit(order)}>
+                <Edit3 className="mr-2 h-4 w-4" />
+                {t("editOrder")}
               </DropdownMenuItem>
-            )}
-            {can("order:update") && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onEdit(order)}>
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {t("editOrder")}
-                </DropdownMenuItem>
-              </>
-            )}
+            </>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => downloadOrderInvoice(order.id)}>
               <FileText className="mr-2 h-4 w-4" />

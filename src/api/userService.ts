@@ -1,56 +1,76 @@
 // src/api/userService.ts
-import apiClient from './apiClient';
-import type { User, PaginatedResponse } from '@/types'; // Or from specific auth.types
+import apiClient from "./apiClient";
+import type { User, PaginatedResponse } from "@/types"; // Or from specific auth.types
 
-export interface UserFormData { // For admin creating/editing users
-    name: string;
-    username: string;
-    email: string;
-    password?: string; // Optional on update
-    password_confirmation?: string;
-    role_ids?: (number | string)[]; // Array of role IDs to assign/sync
+export interface UserFormData {
+  // For admin creating/editing users
+  name: string;
+  username: string;
+  email: string;
+  password?: string; // Optional on update
+  password_confirmation?: string;
+  user_type: "admin" | "staff";
 }
 
 // Admin: Get all users
 export const getUsers = async (
-    page: number = 1,
-    perPage: number = 10,
-    search?: string,
-    role?: string
+  page: number = 1,
+  perPage: number = 10,
+  search?: string,
+  role?: string,
 ): Promise<PaginatedResponse<User>> => {
-    const params: any = { page, per_page: perPage };
-    if (search) params.search = search;
-    if (role) params.role = role; // Assuming backend filters by a primary role name if sent
-    const { data } = await apiClient.get<PaginatedResponse<User>>('/admin/users', { params });
-    return data;
+  const params: Record<string, any> = { page, per_page: perPage };
+  if (search) params.search = search;
+  if (role) params.role = role; // Assuming backend filters by a primary role name if sent
+  const { data } = await apiClient.get<PaginatedResponse<User>>(
+    "/admin/users",
+    { params },
+  );
+  return data;
 };
 
 // Admin: Get a single user
 export const getUserById = async (id: number | string): Promise<User> => {
-    const { data } = await apiClient.get<{ data: User }>(`/admin/users/${id}`);
-    return data.data;
+  const { data } = await apiClient.get<{ data: User }>(`/admin/users/${id}`);
+  return data.data;
 };
 
 // Admin: Create a user
-export const createUserAsAdmin = async (userData: UserFormData): Promise<User> => {
-    const payload = { ...userData }; // Backend now expects 'role_ids' key
-    const { data } = await apiClient.post<{ data: User }>('/admin/users', payload);
-    return data.data;
+export const createUserAsAdmin = async (
+  userData: UserFormData,
+): Promise<User> => {
+  const payload = { ...userData };
+  const { data } = await apiClient.post<{ data: User }>(
+    "/admin/users",
+    payload,
+  );
+  return data.data;
 };
 
 // Admin: Update a user
-export const updateUserAsAdmin = async (id: number | string, userData: Partial<UserFormData>): Promise<User> => {
-    const payload = { ...userData }; // Backend now expects 'role_ids' key
-    // Remove password/password_confirmation if they are empty strings, so backend doesn't try to update with empty
-    if (payload.password === '') delete payload.password;
-    if (payload.password_confirmation === '') delete payload.password_confirmation;
+export const updateUserAsAdmin = async (
+  id: number | string,
+  userData: Partial<UserFormData>,
+): Promise<User> => {
+  const payload = { ...userData };
+  // Remove password/password_confirmation if they are empty strings
+  if (payload.password === "") delete payload.password;
+  if (payload.password_confirmation === "")
+    delete payload.password_confirmation;
 
-    const { data } = await apiClient.put<{ data: User }>(`/admin/users/${id}`, payload);
-    return data.data;
+  const { data } = await apiClient.put<{ data: User }>(
+    `/admin/users/${id}`,
+    payload,
+  );
+  return data.data;
 };
 
 // Admin: Delete a user
-export const deleteUserAsAdmin = async (id: number | string): Promise<{ message: string }> => {
-    const { data } = await apiClient.delete<{ message: string }>(`/admin/users/${id}`);
-    return data;
+export const deleteUserAsAdmin = async (
+  id: number | string,
+): Promise<{ message: string }> => {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/admin/users/${id}`,
+  );
+  return data;
 };

@@ -10,6 +10,7 @@ export default defineConfig({
     host: true,
     port: 3000,
   },
+  
 
   plugins: [react(), tailwindcss(), reactClickToComponent()],
   resolve: {

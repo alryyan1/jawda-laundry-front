@@ -1,6 +1,6 @@
 // src/features/auth/hooks/useAuth.ts
-import { useAuthStore } from '@/store/authStore';
-import type { User } from '@/types';
+import { useAuthStore } from "@/store/authStore";
+import type { User } from "@/types";
 
 /**
  * Custom hook for accessing and managing authentication state and actions.
@@ -24,50 +24,47 @@ export const useAuth = () => {
   // --- DERIVED STATE & AUTHORIZATION HELPERS ---
 
   /**
-   * Checks if the currently authenticated user has a specific role.
-   * Relies on the 'roles' array provided by Spatie.
-   * @param targetRole The role name (string) or an array of role names to check against.
-   * @returns `true` if the user has at least one of the specified roles, otherwise `false`.
+   * Checks if the currently authenticated user is of a specific type (formerly roles).
+   * @param targetRole The user type (string) or an array of user types to check against.
+   * @returns `true` if the user matches at least one of the specified types, otherwise `false`.
    */
   const hasRole = (targetRole: string | string[]): boolean => {
-    if (!isAuthenticated || !user?.roles) {
+    if (!isAuthenticated || !user?.user_type) {
       return false;
     }
 
     if (Array.isArray(targetRole)) {
-      // Check if the user's roles array has any intersection with the target roles array.
-      return user.roles.some(userRole => targetRole.includes(userRole));
+      // Check if the user's type is in the target array.
+      return targetRole.includes(user.user_type);
     }
-    // Check for a single role.
-    return user.roles.includes(targetRole);
+    // Check for a single type.
+    return user.user_type === targetRole;
   };
 
   /**
-   * Checks if the currently authenticated user has a specific permission.
-   * This is the primary method for granular action authorization.
-   * It includes a client-side shortcut that automatically grants all permissions
-   * if the user has the 'admin' role.
+   * Checks if the currently authenticated user implies admin privileges.
+   * Since granular permissions are removed, this mainly checks if user is admin.
    *
-   * @param permissionName The name of the permission to check (e.g., 'order:create').
-   * @returns `true` if the user has the permission, otherwise `false`.
+   * @param permissionName The name of the permission to check (ignored in current simplified model).
+   * @returns `true` if the user is admin, otherwise `false`.
    */
   const can = (permissionName: string): boolean => {
-    if (!isAuthenticated || !user?.permissions) {
+    if (!isAuthenticated || !user) {
       return false;
     }
 
     // Client-side shortcut: An 'admin' can do anything.
-    // The ultimate source of truth is always the backend's Gate/Policy, but this
-    // is extremely useful for hiding/showing UI elements without an API call.
-    if (user.roles?.includes('admin')) {
+    if (user.user_type === "admin") {
       return true;
     }
 
-    return user.permissions.includes(permissionName);
+    // Default deny for non-admins if relying on explicit permissions which are now removed.
+    // Unless we assume staff has some permissions. For now, defaulting to false unless admin.
+    return false;
   };
 
-  // A convenient boolean derived from the hasRole helper.
-  const isAdmin = hasRole('admin');
+  // A convenient boolean derived from the user_type.
+  const isAdmin = user?.user_type === "admin";
 
   /**
    * A wrapper around the store's login action for consistent naming and potential future logic.
@@ -87,7 +84,7 @@ export const useAuth = () => {
     // ---- STATE ----
     /** The authentication token, or null if not authenticated. */
     token,
-    /** The authenticated user object, or null if not authenticated. Contains roles and permissions. */
+    /** The authenticated user object, or null if not authenticated. */
     user,
     /** A boolean flag indicating if the user is currently authenticated. */
     isAuthenticated,
@@ -104,14 +101,14 @@ export const useAuth = () => {
 
     // ---- AUTHORIZATION HELPERS ----
     /**
-     * Checks if the user has a specific permission.
+     * Checks if the user is authorized (simplistic check for now).
      * @example can('order:create')
      */
     can,
     /**
-     * Checks if the user has a specific role or one of several roles.
-     * @example hasRole('receptionist')
-     * @example hasRole(['admin', 'receptionist'])
+     * Checks if the user has a specific user type.
+     * @example hasRole('staff')
+     * @example hasRole(['admin', 'staff'])
      */
     hasRole,
     /** A convenient boolean flag to check if the user is an admin. */

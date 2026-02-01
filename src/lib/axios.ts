@@ -5,21 +5,9 @@ import { BASE_URL } from "./constants";
 // Be cautious with this pattern if it causes circular dependencies.
 // import { useAuthStore } from '@/store/authStore';
 
-// Determine the base URL based on environment
-const getBaseURL = () => {
-  // For local development with XAMPP
-  if (
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
-  ) {
-    return BASE_URL;
-  }
-  // For production or other environments
-  return import.meta.env.VITE_API_BASE_URL || "https://192.168.100.6/api";
-};
-
+// Use constant directly
 const apiClient = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

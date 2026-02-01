@@ -1,0 +1,103 @@
+{
+  "user": {
+    "list": "User Management",
+    "view": "User Management",
+    "create": "User Management",
+    "update": "User Management",
+    "delete": "User Management",
+    "assign-roles": "User Management"
+  },
+  "order": {
+    "list": "Order Management",
+    "view": "Order Management",
+    "create": "Order Management",
+    "update": "Order Management",
+    "delete": "Order Management",
+    "update-status": "Order Management",
+    "cancel": "Order Management",
+    "record-payment": "Order Management"
+  },
+  "customer": {
+    "list": "Customer Management",
+    "view": "Customer Management",
+    "create": "Customer Management",
+    "update": "Customer Management",
+    "delete": "Customer Management"
+  },
+  "dashboard": {
+    "view": "Dashboard Management"
+  },
+  "settings": {
+    "view-profile": "Settings Management",
+    "edit-profile": "Settings Management",
+    "update-profile": "Settings Management",
+    "change-password": "Settings Management",
+    "manage-application": "Settings Management"
+  },
+  "role": {
+    "list": "Role Management",
+    "view": "Role Management",
+    "create": "Role Management",
+    "update": "Role Management",
+    "delete": "Role Management"
+  },
+  "service": {
+    "list": "Service Management",
+    "view": "Service Management",
+    "create": "Service Management",
+    "update": "Service Management",
+    "delete": "Service Management"
+  },
+  "expense": {
+    "list": "Expense Management",
+    "view": "Expense Management",
+    "create": "Expense Management",
+    "update": "Expense Management",
+    "delete": "Expense Management"
+  },
+  "purchase": {
+    "list": "Purchase Management",
+    "view": "Purchase Management",
+    "create": "Purchase Management",
+    "update": "Purchase Management",
+    "delete": "Purchase Management"
+  },
+  "supplier": {
+    "list": "Supplier Management",
+    "view": "Supplier Management",
+    "create": "Supplier Management",
+    "update": "Supplier Management",
+    "delete": "Supplier Management"
+  },
+  "permission": {
+    "list": "Permission Management"
+  },
+  "product-type": {
+    "list": "Product Type Management",
+    "view": "Product Type Management",
+    "create": "Product Type Management",
+    "update": "Product Type Management",
+    "delete": "Product Type Management"
+  },
+  "report": {
+    "view-financial": "Report Management",
+    "view-operational": "Report Management"
+  },
+  "service-action": {
+    "list": "Service Action Management",
+    "view": "Service Action Management",
+    "create": "Service Action Management",
+    "update": "Service Action Management",
+    "delete": "Service Action Management"
+  },
+  "service-admin": {
+    "manage": "Service Administration"
+  },
+  "service-offering": {
+    "list": "Service Offering Management",
+    "view": "Service Offering Management",
+    "create": "Service Offering Management",
+    "update": "Service Offering Management",
+    "delete": "Service Offering Management"
+  }
+} 
