@@ -1,6 +1,13 @@
 // src/types/customer.types.ts
 import type { User } from "./auth.types";
 
+export interface CustomerType {
+  id: number;
+  name: string;
+  description?: string;
+  discount_percentage?: number;
+}
+
 export interface Customer {
   id: number;
   name: string;

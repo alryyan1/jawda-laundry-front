@@ -122,7 +122,7 @@ export const TodayOrdersColumn: React.FC<TodayOrdersColumnProps> = ({
                     key={order.id}
                     onClick={() => onOrderSelect(order)}
                     className={cn(
-                      "group relative w-20 h-20 rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-1",
+                      "group relative w-20 h-20 cursor-pointer rounded-xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-1",
                       isSelected
                         ? "border-primary bg-primary text-primary-foreground shadow-lg scale-105 z-10 ring-2 ring-primary/20"
                         : `${statusStyles} hover:border-slate-400 hover:shadow-md hover:-translate-y-0.5`,

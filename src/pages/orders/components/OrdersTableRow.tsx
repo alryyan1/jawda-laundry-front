@@ -34,6 +34,7 @@ type OrdersTableRowProps = {
   onMarkDelivered: (order: Order) => void;
   onOpenTimeline: (order: Order) => void;
   isCompleting?: boolean;
+  isDelivering?: boolean;
   onEdit: (order: Order) => void;
   can: (permission: string) => boolean;
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -51,6 +52,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   onMarkDelivered,
   onOpenTimeline,
   isCompleting,
+  isDelivering,
   onEdit,
   can,
   t,
@@ -149,8 +151,12 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               variant="outline"
               size="sm"
               onClick={() => onMarkDelivered(order)}
+              disabled={!!isDelivering}
               className="h-7 text-xs"
             >
+              {isDelivering ? (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              ) : null}
               {t("markDelivered", { defaultValue: "Mark Delivered" })}
             </Button>
           )}

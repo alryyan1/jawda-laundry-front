@@ -600,6 +600,7 @@ const POSPage: React.FC = () => {
 
   const handleSelectProduct = React.useCallback(
     (product: ProductType) => {
+      // alert('ss')
       // Prevent adding items to received orders
       if (selectedOrder?.received) {
         toast.error(
@@ -633,7 +634,7 @@ const POSPage: React.FC = () => {
       const productOfferings = serviceOfferingsToUse.filter(
         (offering) => offering.product_type_id === product.id,
       );
-
+      console.log(productOfferings,'productOfferings');
       if (productOfferings.length === 1 && hasCustomer) {
         const offering = productOfferings[0];
         handleAddToCart(product, offering);
@@ -1061,8 +1062,7 @@ const POSPage: React.FC = () => {
 
                         {/* Cart - Only show when there are items */}
                         {cartItems.length > 0 && (
-                          <Card className="flex-1">
-                            <CardContent className="p-1 h-full">
+                          
                               <CartColumn
                                 items={cartItems}
                                 onRemoveItem={handleRemoveItem}
@@ -1090,8 +1090,7 @@ const POSPage: React.FC = () => {
                                 isReceived={selectedOrder?.received === true}
                                 paymentStatus={selectedOrder?.payment_status}
                               />
-                            </CardContent>
-                          </Card>
+                            
                         )}
                       </>
                     </div>
@@ -1169,8 +1168,7 @@ const POSPage: React.FC = () => {
 
                   {/* Right Section: Cart - Only show when there are items */}
                   {cartItems.length > 0 && (
-                    <Card className="w-[300px] flex-shrink-0">
-                      <CardContent className="p-1 h-full">
+                  
                         <CartColumn
                           items={cartItems}
                           onRemoveItem={handleRemoveItem}
@@ -1194,8 +1192,7 @@ const POSPage: React.FC = () => {
                           isReceived={selectedOrder?.received === true}
                           paymentStatus={selectedOrder?.payment_status}
                         />
-                      </CardContent>
-                    </Card>
+                
                   )}
                 </>
               )}

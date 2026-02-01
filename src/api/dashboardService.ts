@@ -1,15 +1,21 @@
 // src/api/dashboardService.ts
-import apiClient from './apiClient';
-import type { DashboardSummary, OrderTrendItem, OrderItemTrendItem, RevenueBreakdownItem, TodaySummary } from '@/types';
+import apiClient from "./apiClient";
+import type {
+  DashboardSummary,
+  OrderTrendItem,
+  OrderItemTrendItem,
+  RevenueBreakdownItem,
+  TodaySummary,
+} from "@/types";
 
 /**
  * Fetches the main summary statistics for the dashboard cards.
  * @returns A promise that resolves to the DashboardSummary object.
  */
 export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
-    // The backend endpoint should return the object directly
-    const { data } = await apiClient.get<DashboardSummary>('/dashboard-summary');
-    return data;
+  // The backend endpoint should return the object directly
+  const { data } = await apiClient.get<DashboardSummary>("/dashboard-summary");
+  return data;
 };
 
 /**
@@ -17,21 +23,30 @@ export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
  * @param days The number of days to look back for the trend data. Defaults to 7.
  * @returns A promise that resolves to an array of OrderTrendItem objects.
  */
-export const fetchOrdersTrend = async (days: number = 7): Promise<OrderTrendItem[]> => {
-    // Laravel ResourceCollections wrap arrays in a "data" key.
-    const { data } = await apiClient.get<{ data: OrderTrendItem[] }>('/dashboard/orders-trend', {
-        params: { days }
-    });
-    return data.data;
+export const fetchOrdersTrend = async (
+  days: number = 7,
+): Promise<OrderTrendItem[]> => {
+  // Laravel ResourceCollections wrap arrays in a "data" key.
+  const { data } = await apiClient.get<{ data: OrderTrendItem[] }>(
+    "/dashboard/orders-trend",
+    {
+      params: { days },
+    },
+  );
+  return data.data;
 };
 
 /**
  * Fetches data for the "Revenue Breakdown" pie chart.
  * @returns A promise that resolves to an array of RevenueBreakdownItem objects.
  */
-export const fetchRevenueBreakdown = async (): Promise<RevenueBreakdownItem[]> => {
-    const { data } = await apiClient.get<{ data: RevenueBreakdownItem[] }>('/dashboard/revenue-breakdown');
-    return data.data;
+export const fetchRevenueBreakdown = async (): Promise<
+  RevenueBreakdownItem[]
+> => {
+  const { data } = await apiClient.get<{ data: RevenueBreakdownItem[] }>(
+    "/dashboard/revenue-breakdown",
+  );
+  return data.data;
 };
 
 /**
@@ -39,14 +54,38 @@ export const fetchRevenueBreakdown = async (): Promise<RevenueBreakdownItem[]> =
  * @param days The number of days to look back for the trend data. Defaults to 7.
  * @returns A promise that resolves to an array of OrderItemTrendItem objects.
  */
-export const fetchOrderItemsTrend = async (days: number = 7): Promise<OrderItemTrendItem[]> => {
-    const { data } = await apiClient.get<{ data: OrderItemTrendItem[] }>('/dashboard/order-items-trend', {
-        params: { days }
-    });
-    return data.data;
+export const fetchOrderItemsTrend = async (
+  days: number = 7,
+): Promise<OrderItemTrendItem[]> => {
+  const { data } = await apiClient.get<{ data: OrderItemTrendItem[] }>(
+    "/dashboard/order-items-trend",
+    {
+      params: { days },
+    },
+  );
+  return data.data;
 };
 
 export const fetchTodaySummary = async (): Promise<TodaySummary> => {
-    const { data } = await apiClient.get<{ data: TodaySummary }>('/dashboard/today-summary');
-    return data.data;
+  const { data } = await apiClient.get<{ data: TodaySummary }>(
+    "/dashboard/today-summary",
+  );
+  return data.data;
+};
+
+export interface TodaysDeliveryOrder {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  item_images: string[];
+  items_count: number;
+}
+
+export const fetchTodaysDeliveries = async (): Promise<
+  TodaysDeliveryOrder[]
+> => {
+  const { data } = await apiClient.get<{ data: TodaysDeliveryOrder[] }>(
+    "/dashboard/todays-deliveries",
+  );
+  return data.data;
 };

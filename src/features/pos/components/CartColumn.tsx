@@ -77,41 +77,11 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col h-full relative bg-white border-l border-slate-100 shadow-sm",
+        "flex flex-col h-full relative bg-white border-l w-[400px]  border-slate-100 shadow-sm",
         isReceived && "bg-slate-50/50",
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <ShoppingCart className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800">
-              {mode === "cart"
-                ? t("currentOrder", {
-                    ns: "orders",
-                    defaultValue: "Current Order",
-                  })
-                : mode === "order_edit"
-                  ? t("editOrder", { ns: "orders", defaultValue: "Edit Order" })
-                  : t("orderDetails", {
-                      ns: "orders",
-                      defaultValue: "Order Details",
-                    })}
-            </h2>
-            {orderNumber && (
-              <p className="text-xs text-muted-foreground">#{orderNumber}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600">
-            {items.length} {t("items", { ns: "common", defaultValue: "items" })}
-          </span>
-        </div>
-      </div>
+     
 
       {/* Items List */}
       <ScrollArea className="flex-1 min-h-0">

@@ -100,6 +100,9 @@ const OrdersListPage: React.FC = () => {
   const [isCompletingOrderId, setIsCompletingOrderId] = useState<number | null>(
     null,
   );
+  const [isDeliveringOrderId, setIsDeliveringOrderId] = useState<number | null>(
+    null,
+  );
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
   const currentLocale = i18n.language.startsWith("ar") ? arSA : enUS;
@@ -251,7 +254,16 @@ const OrdersListPage: React.FC = () => {
   // Handler to mark order as delivered
   const handleMarkDelivered = async (order: Order) => {
     try {
+      if (isDeliveringOrderId) return;
+      setIsDeliveringOrderId(order.id);
       await markOrderAsDelivered(order.id);
+
+      toast.success(
+        t("orderMarkedAsDelivered", {
+          defaultValue: "Order marked as delivered",
+        }),
+      );
+
       // Update the cache
       queryClient.setQueryData(
         queryKey,
@@ -274,6 +286,13 @@ const OrdersListPage: React.FC = () => {
       );
     } catch (error) {
       console.error("Error updating order status:", error);
+      toast.error(
+        t("failedToMarkDelivered", {
+          defaultValue: "Failed to mark as delivered",
+        }),
+      );
+    } finally {
+      setIsDeliveringOrderId(null);
     }
   };
 
@@ -702,6 +721,7 @@ const OrdersListPage: React.FC = () => {
                       setIsTimelineOpen(true);
                     }}
                     isCompleting={isCompletingOrderId === order.id}
+                    isDelivering={isDeliveringOrderId === order.id}
                     onEdit={(o) => navigate(`/orders/${o.id}/edit`)}
                     can={can}
                     t={t}

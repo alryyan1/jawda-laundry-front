@@ -137,7 +137,7 @@ export const ProductColumn: React.FC<ProductColumnProps> = ({
                     )}
 
                     {/* Image Container */}
-                    <div className="mb-3 flex aspect-square w-full items-center justify-center rounded-lg bg-slate-50 p-2 group-hover:bg-slate-100 transition-colors">
+                    <div className="mb-3 cursor-pointer flex aspect-square w-full items-center justify-center rounded-lg bg-slate-50 p-2 group-hover:bg-slate-100 transition-colors">
                       {product.image_url ? (
                         <img
                           src={getImageUrl(product.image_url)}
