@@ -1,5 +1,5 @@
 // src/components/common/PdfPreviewDialog.tsx
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -24,6 +24,10 @@ interface PdfPreviewDialogProps {
    * Optional Tailwind width class for the dialog (e.g. w-[380px] for thermal printer)
    */
   widthClass?: string;
+  /**
+   * If true, automatically trigger print dialog when PDF loads
+   */
+  autoPrint?: boolean;
 }
 
 const PdfPreviewDialog: React.FC<PdfPreviewDialogProps> = ({
@@ -34,8 +38,10 @@ const PdfPreviewDialog: React.FC<PdfPreviewDialogProps> = ({
   fileName = "document.pdf",
   isLoading,
   widthClass,
+  autoPrint = false,
 }) => {
   const { t } = useTranslation(["common"]);
+  const hasAutoPrintedRef = useRef(false);
 
   const handleActualPrint = () => {
     const iframe = document.getElementById(
@@ -46,6 +52,53 @@ const PdfPreviewDialog: React.FC<PdfPreviewDialogProps> = ({
       iframe.contentWindow.print();
     }
   };
+
+  // Handle auto-print when PDF loads
+  useEffect(() => {
+    if (!autoPrint || !isOpen || !pdfUrl || isLoading) {
+      return;
+    }
+
+    // Reset the flag when dialog opens with a new PDF URL
+    hasAutoPrintedRef.current = false;
+
+    const iframe = document.getElementById(
+      "pdf-preview-iframe",
+    ) as HTMLIFrameElement;
+
+    if (!iframe) {
+      return;
+    }
+
+    const handleIframeLoad = () => {
+      // Only print once per PDF load
+      if (!hasAutoPrintedRef.current) {
+        // Small delay to ensure PDF is fully rendered
+        setTimeout(() => {
+          handleActualPrint();
+          hasAutoPrintedRef.current = true;
+        }, 200);
+      }
+    };
+
+    // Check if iframe is already loaded
+    if (iframe.contentDocument?.readyState === "complete") {
+      handleIframeLoad();
+    } else {
+      iframe.addEventListener("load", handleIframeLoad);
+    }
+
+    return () => {
+      iframe.removeEventListener("load", handleIframeLoad);
+    };
+  }, [autoPrint, isOpen, pdfUrl, isLoading]);
+
+  // Reset auto-print flag when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      hasAutoPrintedRef.current = false;
+    }
+  }, [isOpen]);
 
   // Function to modify PDF URL to fit to width by default
   const getPdfUrlWithFitToWidth = (url: string | null): string => {
@@ -88,6 +141,9 @@ const PdfPreviewDialog: React.FC<PdfPreviewDialogProps> = ({
               src={getPdfUrlWithFitToWidth(pdfUrl)}
               className="w-full h-full border-0"
               title={title || "PDF Preview"}
+              onLoad={() => {
+                // This is handled in the useEffect above, but keeping for compatibility
+              }}
             />
           )}
           {!isLoading && !pdfUrl && (
@@ -130,6 +186,7 @@ interface PdfDialogProps {
   title?: string;
   fileName?: string;
   widthClass?: string;
+  autoPrint?: boolean;
 }
 
 export const PdfDialog: React.FC<PdfDialogProps> = ({
@@ -139,6 +196,7 @@ export const PdfDialog: React.FC<PdfDialogProps> = ({
   title,
   fileName,
   widthClass,
+  autoPrint,
 }) => {
   const { t } = useTranslation(["orders"]);
 
@@ -153,6 +211,7 @@ export const PdfDialog: React.FC<PdfDialogProps> = ({
       title={title || t("paymentReceipt", { defaultValue: "Payment Receipt" })}
       fileName={fileName || defaultFileName}
       widthClass={widthClass || "w-[300px]"}
+      autoPrint={autoPrint}
     />
   );
 };

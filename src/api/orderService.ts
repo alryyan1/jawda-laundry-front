@@ -170,11 +170,20 @@ export const createOrder = async (
     OrderResponseWithWarnings | { data: Order }
   >("/orders", payload);
 
+  console.log("API response data:", data);
+
   // Handle both response formats (with warnings or without)
-  if ("warnings" in data) {
+  if ("warnings" in data || "order" in data) {
+    // Response has warnings or order property (OrderResponseWithWarnings format)
     return data as OrderResponseWithWarnings;
+  } else if ("data" in data) {
+    // Response has nested data property
+    return { order: (data as { data: Order }).data };
   } else {
-    return { order: data.data };
+    // Response might be the order directly, or we need to check the structure
+    console.warn("Unexpected response format:", data);
+    // Try to return as-is if it looks like an order, otherwise wrap it
+    return { order: data as any };
   }
 };
 

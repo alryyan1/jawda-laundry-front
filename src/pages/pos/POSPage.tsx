@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from "uuid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useNewOrder } from "@/context/NewOrderContext";
 import { useDate } from "@/context/DateContext";
 import { useSearch } from "@/context/SearchContext";
 
 import type {
   ProductType,
+  ProductCategory,
   ServiceOffering,
   OrderItemFormLine,
   NewOrderFormData,
@@ -37,6 +37,7 @@ import {
   deleteOrderItem,
   cancelOrder,
   markOrderReceived,
+  getOrderById,
 } from "@/api/orderService";
 import apiClient from "@/lib/axios";
 import type { OrderResponseWithWarnings } from "@/api/orderService";
@@ -61,7 +62,6 @@ import {
 const POSPage: React.FC = () => {
   const { t } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
-  const { can } = useAuth();
   const { selectedDate } = useDate();
   const { setSearchTerm } = useSearch();
 
@@ -95,6 +95,7 @@ const POSPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isTodayOrdersOpen, setIsTodayOrdersOpen] = useState(false);
   const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
+  const [pdfOrderId, setPdfOrderId] = useState<number | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isServiceOfferingDialogOpen, setIsServiceOfferingDialogOpen] =
@@ -107,6 +108,8 @@ const POSPage: React.FC = () => {
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
+  const [shouldAutoPrint, setShouldAutoPrint] = useState(false);
+  const [isLoadingOrderItems, setIsLoadingOrderItems] = useState(false);
 
   // Use ref for cart items to avoid re-creating handlers
   const cartItemsRef = React.useRef(cartItems);
@@ -143,13 +146,14 @@ const POSPage: React.FC = () => {
     mutationFn: (orderData: NewOrderFormData) =>
       createOrder(orderData, allServiceOfferings),
     onSuccess: async (response) => {
+      console.log("createOrderMutation onSuccess response:", response);
       const createdOrder = handleOrderResponse(
         response,
         t("orderCreatedSuccessfully", { ns: "orders" }),
       );
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
-
+      console.log("createdOrder", createdOrder);
       // Clear the cart and reset selections - ensure cart is empty for new orders
       setCartItems([]);
 
@@ -160,19 +164,118 @@ const POSPage: React.FC = () => {
       setSelectedCategoryId(null);
       setSelectedProductType(null);
       // setOrderType(createdOrder.order_type);
-      setIsProcessing(false);
 
       // Clear dialog state
       setSelectedProductForDialog(null);
       setIsServiceOfferingDialogOpen(false);
       setIsNewOrderMode(true); // Keep new order mode active
 
-      // Automatically select the newly created order
+      // Automatically select the newly created order and receive it
       if (createdOrder) {
-        setSelectedOrder(createdOrder);
+        try {
+          // Set loading state while fetching order items
+          setIsLoadingOrderItems(true);
 
-        // Auto-show PDF when order is created
-        setIsPdfDialogOpen(true);
+          // Automatically receive the order after creation
+          const receivedOrderResponse = await markOrderReceived(createdOrder.id);
+          console.log("receivedOrderResponse", receivedOrderResponse);
+          
+          // Fetch the full order with items to populate cart
+          const fullOrder = await getOrderById(receivedOrderResponse.order.id);
+          
+          // Update the selected order with the received status
+          setSelectedOrder(fullOrder);
+
+          // Set PDF order ID from received order to ensure PDF dialog has the correct order ID
+          setPdfOrderId(fullOrder.id);
+
+          // Populate cart items from the fetched order
+          if (fullOrder.items && fullOrder.items.length > 0) {
+            const cartItemsFromOrder: CartItem[] = fullOrder.items.map((item) => ({
+              id: uuidv4(), // Generate new ID for cart item
+              backendId: item.id.toString(), // Store backend ID
+              productType: {
+                id: item.serviceOffering?.product_type_id || 0,
+                product_category_id:
+                  item.serviceOffering?.productType?.product_category_id || 0,
+                name: item.serviceOffering?.productType?.name || "Unknown Product",
+                is_dimension_based:
+                  item.serviceOffering?.productType?.is_dimension_based || false,
+                is_active: item.serviceOffering?.productType?.is_active || true,
+              } as ProductType,
+              serviceOffering: item.serviceOffering || ({} as ServiceOffering),
+              quantity: item.quantity,
+              price: item.calculated_price_per_unit_item,
+              notes: item.notes || undefined,
+              length_meters: item.length_meters || undefined,
+              width_meters: item.width_meters || undefined,
+              _isQuoting: false,
+              _quotedSubTotal: item.sub_total,
+              _isExistingOrderItem: true, // Mark as existing order item
+            }));
+            setCartItems(cartItemsFromOrder);
+          }
+
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          queryClient.invalidateQueries({ queryKey: ["todayOrders"] });
+
+          toast.success(
+            t("orderReceivedSuccessfully", {
+              ns: "orders",
+              defaultValue: "Order received successfully",
+            }),
+          );
+
+          // Auto-show PDF when order is created and received with auto-print enabled
+          setShouldAutoPrint(true);
+          setIsPdfDialogOpen(true);
+
+          // Auto-send WhatsApp notifications based on settings
+          if (settings) {
+            if (
+              settings.pos_auto_send_whatsapp_invoice &&
+              receivedOrderResponse.order.customer?.phone
+            ) {
+              try {
+                await apiClient.post(
+                  `/orders/${receivedOrderResponse.order.id}/send-whatsapp-invoice`,
+                );
+                toast.success(
+                  t("invoiceSentSuccessfully", {
+                    ns: "orders",
+                    defaultValue: "Invoice sent successfully via WhatsApp",
+                  }),
+                );
+              } catch (error) {
+                console.error("Failed to auto-send WhatsApp invoice:", error);
+                toast.error(
+                  t("failedToSendInvoice", {
+                    ns: "orders",
+                    defaultValue: "Failed to send invoice",
+                  }),
+                );
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Failed to receive order after creation:", error);
+          toast.error(
+            t("failedToReceiveOrder", {
+              ns: "orders",
+              defaultValue: "Failed to receive order",
+            }),
+          );
+          // Still show PDF dialog even if receive fails
+          setSelectedOrder(createdOrder);
+          setPdfOrderId(createdOrder.id);
+          setIsPdfDialogOpen(true);
+        } finally {
+          setIsProcessing(false);
+          setIsLoadingOrderItems(false);
+        }
+      } else {
+        setIsProcessing(false);
       }
     },
     onError: (error) => {
@@ -280,6 +383,8 @@ const POSPage: React.FC = () => {
   }, [selectedDate]);
 
   const handleReceiveOrder = React.useCallback(async () => {
+    console.log("handleReceiveOrder");
+    // alert("handleReceiveOrder");
     if (!selectedOrder) {
       toast.error(
         t("noOrderSelected", {
@@ -287,6 +392,8 @@ const POSPage: React.FC = () => {
           defaultValue: "No order selected",
         }),
       );
+      // Reset auto-print flag if receive fails
+      setShouldAutoPrint(false);
       return;
     }
 
@@ -298,6 +405,8 @@ const POSPage: React.FC = () => {
           defaultValue: "This order is already received",
         }),
       );
+      // Reset auto-print flag if receive fails
+      setShouldAutoPrint(false);
       return;
     }
 
@@ -310,18 +419,73 @@ const POSPage: React.FC = () => {
             "Please select a customer for this order before receiving it",
         }),
       );
+      // Reset auto-print flag if receive fails
+      setShouldAutoPrint(false);
       return;
     }
 
-    // Mark order as received - backend will recalculate total from order items
+    // Check if cart has items (required for receiving)
+    if (cartItems.length === 0) {
+      toast.error(t("cartIsEmpty", { ns: "orders" }));
+      // Reset auto-print flag if receive fails
+      setShouldAutoPrint(false);
+      return;
+    }
+
+    // Update order items and receive in one action
     try {
       setIsProcessing(true);
 
-      // Use the markOrderReceived endpoint - backend will recalculate total from order items
-      const response = await markOrderReceived(selectedOrder.id);
+      // 1. Construct item payload from cart
+      const orderItems: OrderItemFormLine[] = cartItems.map((item) => ({
+        id: item.backendId || item.id,
+        service_offering_id: item.serviceOffering.id,
+        product_type_id: item.productType.id.toString(),
+        service_action_id: item.serviceOffering.service_action_id.toString(),
+        quantity: item.quantity,
+        notes: item.notes,
+        length_meters: item.length_meters,
+        width_meters: item.width_meters,
+        _derivedServiceOffering: item.serviceOffering,
+        _pricingStrategy: item.productType.is_dimension_based
+          ? "dimension_based"
+          : "fixed",
+        _quoted_price_per_unit_item: item.price,
+        _quoted_sub_total: item._quotedSubTotal || item.price * item.quantity,
+      }));
+
+      // 2. Handle explicit deletions
+      if (deletedItemIds.length > 0) {
+        await Promise.all(deletedItemIds.map((id) => deleteOrderItem(id)));
+        setDeletedItemIds([]);
+      }
+
+      // 3. Update order with cart items
+      const orderData = {
+        customer_id:
+          selectedCustomerId || selectedOrder.customer?.id?.toString() || "",
+        items: orderItems,
+        notes: selectedOrder.notes || undefined,
+        due_date: selectedOrder.due_date || undefined,
+        order_type: orderType,
+      };
+
+      const updatedOrderResponse = await updateOrder(
+        selectedOrder.id,
+        orderData,
+        allServiceOfferings,
+      );
+
+      setSelectedOrder(updatedOrderResponse.order);
+
+      // 4. Mark order as received - backend will recalculate total from order items
+      const response = await markOrderReceived(updatedOrderResponse.order.id);
 
       // Update the selected order with the received status
       setSelectedOrder(response.order);
+
+      // Set PDF order ID to ensure PDF dialog has the correct order ID
+      setPdfOrderId(response.order.id);
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -334,7 +498,8 @@ const POSPage: React.FC = () => {
         }),
       );
 
-      // Auto-show PDF when order is received
+      // Auto-show PDF when order is received with auto-print enabled
+      setShouldAutoPrint(true);
       setIsPdfDialogOpen(true);
 
       // Auto-send WhatsApp notifications based on settings
@@ -372,12 +537,26 @@ const POSPage: React.FC = () => {
           defaultValue: "Failed to receive order",
         }),
       );
+      // Reset auto-print flag if receive fails
+      setShouldAutoPrint(false);
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedOrder, selectedCustomerId, settings, queryClient, t]);
+  }, [
+    selectedOrder,
+    selectedCustomerId,
+    cartItems,
+    deletedItemIds,
+    orderType,
+    allServiceOfferings,
+    settings,
+    queryClient,
+    t,
+  ]);
 
   const handleCheckout = React.useCallback(async () => {
+    console.log("handleCheckout");
+    alert("handleCheckout");
     if (!selectedCustomerId && !selectedOrder?.customer) {
       toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
       return;
@@ -411,6 +590,7 @@ const POSPage: React.FC = () => {
 
       // If we have a selected order, update it first
       if (selectedOrder) {
+        alert("selectedOrder");
         // 1. Handle explicit deletions
         if (deletedItemIds.length > 0) {
           await Promise.all(deletedItemIds.map((id) => deleteOrderItem(id)));
@@ -436,7 +616,8 @@ const POSPage: React.FC = () => {
 
         setSelectedOrder(updatedOrderResponse.order);
 
-        // 4. Proceed to receive
+        // 4. Proceed to receive with auto-print enabled
+        setShouldAutoPrint(true);
         await handleReceiveOrder();
       } else {
         // Create new order
@@ -448,6 +629,7 @@ const POSPage: React.FC = () => {
           order_type: orderType,
         };
 
+        // Create order - PDF will auto-print via onSuccess callback
         createOrderMutation.mutate(orderData);
       }
     } catch (error) {
@@ -931,8 +1113,12 @@ const POSPage: React.FC = () => {
           // Only trigger checkout if we have items and not processing
           if (cartItems.length > 0 && !isProcessing) {
             if (selectedOrder) {
+              // For existing orders: Update items and receive in one action
+              setShouldAutoPrint(true);
               handleReceiveOrder();
             } else {
+              // For new orders: Create order and receive it with auto-print
+              setShouldAutoPrint(true);
               handleCheckout();
             }
           }
@@ -1014,21 +1200,6 @@ const POSPage: React.FC = () => {
                           </Button>
                         </div>
 
-                        {/* Show helpful message when customer is selected but cart is empty (iPad) */}
-                        {(selectedCustomerId || selectedOrder?.customer) &&
-                          cartItems.length === 0 && (
-                            <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs z-10">
-                              <div className="flex items-center gap-2 text-sm text-primary">
-                                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                                <span>
-                                  {t("addItemsToCart", {
-                                    ns: "orders",
-                                    defaultValue: "Add items to see cart",
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          )}
 
                         {/* Products */}
                         <div className="flex-1 flex flex-col p-1">
@@ -1036,7 +1207,18 @@ const POSPage: React.FC = () => {
                             // Show ActionsComponent when order is received
                             <ActionsComponent
                               order={selectedOrder}
-                              onPaymentClick={() => setIsPaymentModalOpen(true)}
+                              onPaymentClick={() => {
+                                if (!selectedOrder) {
+                                  toast.error(
+                                    t("noOrderSelected", {
+                                      ns: "orders",
+                                      defaultValue: "No order selected",
+                                    }),
+                                  );
+                                  return;
+                                }
+                                setIsPaymentModalOpen(true);
+                              }}
                               onInvoiceClick={handleSendInvoice}
                               onPdfClick={() => setIsPdfDialogOpen(true)}
                               onWhatsAppTextClick={handleSendWhatsAppText}
@@ -1068,36 +1250,35 @@ const POSPage: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Cart - Only show when there are items */}
-                        {cartItems.length > 0 && (
-                          <CartColumn
-                            items={cartItems}
-                            onRemoveItem={handleRemoveItem}
-                            onUpdateQuantity={handleUpdateQuantity}
-                            onUpdateDimensions={handleUpdateDimensions}
-                            onUpdateNotes={handleUpdateNotes}
-                            onCheckout={
-                              selectedOrder
-                                ? handleReceiveOrder
-                                : handleCheckout
-                            }
-                            onCancelOrder={
-                              selectedOrder?.received
-                                ? handleCancelOrder
-                                : undefined
-                            }
-                            isProcessing={isProcessing}
-                            mode={selectedOrder ? "order_edit" : "cart"}
-                            orderNumber={
-                              selectedOrder?.category_sequences_string ||
-                              selectedOrder?.daily_order_number?.toString() ||
-                              selectedOrder?.id?.toString()
-                            }
-                            isReadOnly={selectedOrder?.received}
-                            isReceived={selectedOrder?.received === true}
-                            paymentStatus={selectedOrder?.payment_status}
-                          />
-                        )}
+                        {/* Cart - Always visible */}
+                        <CartColumn
+                          items={cartItems}
+                          onRemoveItem={handleRemoveItem}
+                          onUpdateQuantity={handleUpdateQuantity}
+                          onUpdateDimensions={handleUpdateDimensions}
+                          onUpdateNotes={handleUpdateNotes}
+                          onCheckout={
+                            selectedOrder
+                              ? handleReceiveOrder
+                              : handleCheckout
+                          }
+                          onCancelOrder={
+                            selectedOrder?.received
+                              ? handleCancelOrder
+                              : undefined
+                          }
+                          isProcessing={isProcessing}
+                          isLoading={isLoadingOrderItems}
+                          mode={selectedOrder ? "order_edit" : "cart"}
+                          orderNumber={
+                            selectedOrder?.category_sequences_string ||
+                            selectedOrder?.daily_order_number?.toString() ||
+                            selectedOrder?.id?.toString()
+                          }
+                          isReadOnly={selectedOrder?.received}
+                          isReceived={selectedOrder?.received === true}
+                          paymentStatus={selectedOrder?.payment_status}
+                        />
                       </>
                     </div>
                   )}
@@ -1125,7 +1306,18 @@ const POSPage: React.FC = () => {
                         // Show ActionsComponent when order is received
                         <ActionsComponent
                           order={selectedOrder}
-                          onPaymentClick={() => setIsPaymentModalOpen(true)}
+                          onPaymentClick={() => {
+                            if (!selectedOrder) {
+                              toast.error(
+                                t("noOrderSelected", {
+                                  ns: "orders",
+                                  defaultValue: "No order selected",
+                                }),
+                              );
+                              return;
+                            }
+                            setIsPaymentModalOpen(true);
+                          }}
                           onInvoiceClick={handleSendInvoice}
                           onPdfClick={() => setIsPdfDialogOpen(true)}
                           onWhatsAppTextClick={handleSendWhatsAppText}
@@ -1160,46 +1352,30 @@ const POSPage: React.FC = () => {
                     {/* Removed ServiceOfferingColumn - now handled by dialog */}
                   </div>
 
-                  {/* Show helpful message when customer is selected but cart is empty */}
-                  {(selectedCustomerId || selectedOrder?.customer) &&
-                    cartItems.length === 0 && (
-                      <div className="absolute top-4 right-4 bg-primary/10 border border-primary/20 rounded-lg p-3 max-w-xs">
-                        <div className="flex items-center gap-2 text-sm text-primary">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                          <span>
-                            {t("addItemsToCart", {
-                              ns: "orders",
-                              defaultValue: "Add items to see cart",
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
-                  {/* Right Section: Cart - Only show when there are items */}
-                  {cartItems.length > 0 && (
-                    <CartColumn
-                      items={cartItems}
-                      onRemoveItem={handleRemoveItem}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onUpdateDimensions={handleUpdateDimensions}
-                      onUpdateNotes={handleUpdateNotes}
-                      onCheckout={handleCheckout}
-                      onCancelOrder={
-                        selectedOrder?.received ? handleCancelOrder : undefined
-                      }
-                      isProcessing={isProcessing}
-                      mode={selectedOrder ? "order_edit" : "cart"}
-                      orderNumber={
-                        selectedOrder?.category_sequences_string ||
-                        selectedOrder?.daily_order_number?.toString() ||
-                        selectedOrder?.id?.toString()
-                      }
-                      isReadOnly={selectedOrder?.received}
-                      isReceived={selectedOrder?.received === true}
-                      paymentStatus={selectedOrder?.payment_status}
-                    />
-                  )}
+                  {/* Right Section: Cart - Always visible */}
+                  <CartColumn
+                    items={cartItems}
+                    onRemoveItem={handleRemoveItem}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onUpdateDimensions={handleUpdateDimensions}
+                    onUpdateNotes={handleUpdateNotes}
+                    onCheckout={handleCheckout}
+                    onCancelOrder={
+                      selectedOrder?.received ? handleCancelOrder : undefined
+                    }
+                    isProcessing={isProcessing}
+                    isLoading={isLoadingOrderItems}
+                    mode={selectedOrder ? "order_edit" : "cart"}
+                    orderNumber={
+                      selectedOrder?.category_sequences_string ||
+                      selectedOrder?.daily_order_number?.toString() ||
+                      selectedOrder?.id?.toString()
+                    }
+                    isReadOnly={selectedOrder?.received}
+                    isReceived={selectedOrder?.received === true}
+                    paymentStatus={selectedOrder?.payment_status}
+                  />
                 </>
               )}
             </>
@@ -1261,10 +1437,17 @@ const POSPage: React.FC = () => {
 
       <PdfPreviewDialog
         isOpen={isPdfDialogOpen}
-        onOpenChange={setIsPdfDialogOpen}
+        onOpenChange={(open) => {
+          setIsPdfDialogOpen(open);
+          // Reset auto-print flag when dialog closes
+          if (!open) {
+            setShouldAutoPrint(false);
+            setPdfOrderId(null);
+          }
+        }}
         pdfUrl={
-          selectedOrder
-            ? `${BASE_URL.replace("/api", "")}/orders/${selectedOrder.id}/pos-invoice-pdf`
+          pdfOrderId || selectedOrder?.id
+            ? `${BASE_URL.replace("/api", "")}/orders/${pdfOrderId || selectedOrder?.id}/pos-invoice-pdf`
             : null
         }
         title={t("paymentReceipt", {
@@ -1273,17 +1456,16 @@ const POSPage: React.FC = () => {
         })}
         fileName={`receipt-${selectedOrder?.id || "order"}.pdf`}
         widthClass="w-[300px]"
+        autoPrint={shouldAutoPrint}
       />
 
       {/* Payment Modal */}
-      {can("order:record-payment") && (
-        <RecordPaymentModal
-          order={selectedOrder}
-          isOpen={isPaymentModalOpen}
-          onOpenChange={setIsPaymentModalOpen}
-          onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
-        />
-      )}
+      <RecordPaymentModal
+        order={selectedOrder}
+        isOpen={isPaymentModalOpen}
+        onOpenChange={setIsPaymentModalOpen}
+        onOrderUpdate={(updatedOrder) => setSelectedOrder(updatedOrder)}
+      />
 
       {/* Payment Calculator */}
       <PaymentCalculator

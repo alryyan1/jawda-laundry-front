@@ -121,20 +121,22 @@ export const POSHeader: React.FC<POSHeaderProps> = ({
           )}
         </div>
 
-        {/* Center Section: Order ID (if selected) */}
         {selectedOrder && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full border border-slate-100 shadow-inner">
-            <div className="bg-primary/10 p-1 rounded-full">
-              <Hash className="h-4 w-4 text-primary" />
+          <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-slate-50 via-blue-50/30 to-slate-50 rounded-lg border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md border border-blue-400/30">
+                <Hash className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {t("order", { ns: "orders", defaultValue: "Order" })}
+                </span>
+                <span className="font-bold text-lg text-slate-900 leading-tight">
+                  #{selectedOrder.id}
+                </span>
+              </div>
             </div>
-            <span className="font-bold text-lg text-slate-700">
-              {selectedOrder.id}
-            </span>
-            {selectedOrder.status && (
-              <Badge variant="secondary" className="ml-2 capitalize">
-                {selectedOrder.status.replace("_", " ")}
-              </Badge>
-            )}
+         
           </div>
         )}
 

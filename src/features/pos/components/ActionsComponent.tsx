@@ -97,33 +97,39 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
     label: string;
     value: string;
   }) => (
-    <div className="flex items-start gap-3 py-2">
-      <div className="mt-0.5 p-1.5 rounded-full bg-slate-100 text-slate-500">
-        <Icon className="h-3.5 w-3.5" />
+    <div className="flex items-start gap-3 py-2.5">
+      <div className="mt-0.5 p-2 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 text-slate-600 shadow-sm">
+        <Icon className="h-4 w-4" />
       </div>
-      <div className="flex-1 space-y-0.5">
-        <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+      <div className="flex-1 space-y-1">
+        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           {label}
         </div>
-        <div className="text-sm font-semibold text-slate-900">{value}</div>
+        <div className="text-sm font-semibold text-slate-900 leading-tight">{value}</div>
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-full gap-4 max-w-2xl mx-auto px-1">
+    <div className="flex flex-col h-full gap-5 max-w-2xl mx-auto px-2">
       {/* Order Status Card */}
-      <Card className="shadow-sm border-slate-200 overflow-hidden">
-        <div className="bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500">
-              <FileText className="h-4 w-4" />
+      <Card className="shadow-md border-slate-200/80 overflow-hidden bg-white">
+        <div className="bg-gradient-to-r from-slate-50 via-slate-50 to-white border-b border-slate-200/60 p-5 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50 flex items-center justify-center text-blue-600 shadow-sm">
+              <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800">Order #{order.id}</h3>
-              <p className="text-xs text-slate-500">
+              <h3 className="font-bold text-lg text-slate-900 tracking-tight">
+                Order #{order.id}
+              </h3>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">
                 {order.created_at
-                  ? new Date(order.created_at).toLocaleDateString()
+                  ? new Date(order.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
                   : "N/A"}
               </p>
             </div>
@@ -131,7 +137,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
           <Badge
             variant="outline"
             className={cn(
-              "px-2.5 py-0.5 capitalize bg-white",
+              "px-3 py-1.5 capitalize bg-white font-semibold text-xs shadow-sm border-2",
               paymentStatus.color,
             )}
           >
@@ -140,8 +146,8 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         </div>
 
         <CardContent className="p-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-            <div className="p-4 space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60">
+            <div className="p-5 space-y-1 bg-slate-50/30">
               <InfoRow
                 icon={User}
                 label={t("customer", {
@@ -168,7 +174,13 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 })}
                 value={
                   order.pickup_date
-                    ? new Date(order.pickup_date).toLocaleString(i18n.language)
+                    ? new Date(order.pickup_date).toLocaleString(i18n.language, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
                     : t("notSet", { ns: "common", defaultValue: "Not set" })
                 }
               />
@@ -180,28 +192,36 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                 })}
                 value={
                   order.completed_at
-                    ? new Date(order.completed_at).toLocaleString(i18n.language)
+                    ? new Date(order.completed_at).toLocaleString(i18n.language, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
                     : t("pending", { ns: "common", defaultValue: "Pending" })
                 }
               />
             </div>
-            <div className="p-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-2 rounded bg-slate-50/50">
-                  <span className="text-sm text-slate-500">Total</span>
-                  <span className="text-lg font-bold text-slate-900">
+            <div className="p-5 bg-white">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3.5 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/50 shadow-sm">
+                  <span className="text-sm font-semibold text-slate-600 uppercase tracking-wide">
+                    Total
+                  </span>
+                  <span className="text-xl font-bold text-slate-900">
                     {formatCurrency(totalAmount, "USD", i18n.language, 3)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-sm text-slate-500">Paid</span>
-                  <span className="text-sm font-semibold text-green-600">
+                <div className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-green-50/50 border border-green-200/50">
+                  <span className="text-sm font-medium text-slate-600">Paid</span>
+                  <span className="text-base font-bold text-green-700">
                     {formatCurrency(paidAmount, "USD", i18n.language, 3)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-sm text-slate-500">Balance</span>
-                  <span className="text-sm font-semibold text-red-600">
+                <div className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
+                  <span className="text-sm font-medium text-slate-600">Balance</span>
+                  <span className="text-base font-bold text-red-700">
                     {formatCurrency(remainingAmount, "USD", i18n.language, 3)}
                   </span>
                 </div>
@@ -209,15 +229,15 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-50/50 p-4 border-t border-slate-100 flex flex-wrap gap-3">
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-5 border-t border-slate-200/60 flex flex-wrap gap-3">
             <Button
               onClick={onPaymentClick}
               disabled={isProcessing || isFullyPaid}
               className={cn(
-                "flex-1 h-10 font-medium shadow-sm",
+                "flex-1 h-11 font-semibold shadow-md transition-all duration-200",
                 isFullyPaid
-                  ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200"
-                  : "",
+                  ? "bg-green-100 text-green-700 border-2 border-green-300 hover:bg-green-200 hover:shadow-lg cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200/50 hover:shadow-lg",
               )}
               variant={isFullyPaid ? "secondary" : "default"}
             >
@@ -233,7 +253,7 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               onClick={onInvoiceClick}
               disabled={isProcessing || isSendingInvoice}
               variant="outline"
-              className="flex-1 h-10 font-medium bg-white"
+              className="flex-1 h-11 font-semibold bg-white border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm hover:shadow-md transition-all duration-200"
             >
               {isSendingInvoice ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -247,30 +267,32 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
               onClick={onPdfClick}
               variant="outline"
               size="icon"
-              className="h-10 w-10 bg-white"
+              className="h-11 w-11 bg-white border-2 border-slate-300 hover:bg-slate-50 hover:border-slate-400 shadow-sm hover:shadow-md transition-all duration-200"
               title="Print Receipt"
             >
-              <Printer className="h-4 w-4 text-slate-600" />
+              <Printer className="h-4 w-4 text-slate-700" />
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Payment History Section */}
-      <Card className="shadow-sm border-slate-200 flex-1 flex flex-col overflow-hidden">
+      <Card className="shadow-md border-slate-200/80 flex-1 flex flex-col overflow-hidden bg-white">
         <div
-          className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center cursor-pointer hover:bg-slate-100/80 transition-colors"
+          className="p-5 bg-gradient-to-r from-slate-50 via-slate-50 to-white border-b border-slate-200/60 flex justify-between items-center cursor-pointer hover:bg-slate-100/60 transition-all duration-200"
           onClick={() => setShowPaymentHistory(!showPaymentHistory)}
         >
-          <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
+          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-blue-50 border border-blue-200/50">
+              <CreditCard className="h-4 w-4 text-blue-600" />
+            </div>
             Payment History ({payments.length})
           </h3>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-slate-200/50 rounded-lg">
             {showPaymentHistory ? (
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4 text-slate-600" />
             ) : (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-slate-600" />
             )}
           </Button>
         </div>
@@ -278,36 +300,36 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
         {showPaymentHistory && (
           <ScrollArea className="flex-1 bg-white">
             {payments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
-                  <DollarSign className="h-6 w-6 opacity-50" />
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/50 flex items-center justify-center mb-4 shadow-sm">
+                  <DollarSign className="h-7 w-7 opacity-60" />
                 </div>
-                <p className="text-sm">No payments recorded</p>
+                <p className="text-sm font-medium">No payments recorded</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-200/60">
                 {payments.map((payment, index) => (
                   <div
                     key={payment.id || index}
-                    className="p-4 hover:bg-slate-50 transition-colors flex justify-between items-center group"
+                    className="p-5 hover:bg-slate-50/50 transition-all duration-200 flex justify-between items-center group border-l-4 border-transparent hover:border-l-blue-400"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div
                         className={cn(
-                          "mt-1 p-1.5 rounded-full",
+                          "mt-0.5 p-2.5 rounded-xl shadow-sm border",
                           payment.type === "payment"
-                            ? "bg-green-100 text-green-600"
-                            : "bg-red-100 text-red-600",
+                            ? "bg-gradient-to-br from-green-50 to-emerald-50 text-green-700 border-green-200/50"
+                            : "bg-gradient-to-br from-red-50 to-rose-50 text-red-700 border-red-200/50",
                         )}
                       >
                         {payment.type === "payment" ? (
-                          <DollarSign className="h-3 w-3" />
+                          <DollarSign className="h-4 w-4" />
                         ) : (
-                          <AlertCircle className="h-3 w-3" />
+                          <AlertCircle className="h-4 w-4" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">
+                      <div className="flex-1">
+                        <p className="font-bold text-base text-slate-900 mb-1">
                           {formatCurrency(
                             payment.amount,
                             "USD",
@@ -315,26 +337,32 @@ export const ActionsComponent: React.FC<ActionsComponentProps> = ({
                             3,
                           )}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                          <span>{payment.method}</span>
-                          <span>•</span>
+                        <div className="flex items-center gap-2.5 text-xs font-medium text-slate-600 mt-1.5">
+                          <span className="px-2 py-0.5 bg-slate-100 rounded-md">
+                            {payment.method}
+                          </span>
+                          <span className="text-slate-400">•</span>
                           <span>
                             {payment.payment_date
                               ? new Date(
                                   payment.payment_date,
-                                ).toLocaleDateString()
+                                ).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })
                               : "N/A"}
                           </span>
                         </div>
                         {payment.notes && (
-                          <p className="text-xs text-slate-500 mt-1 italic group-hover:text-slate-700">
+                          <p className="text-xs text-slate-500 mt-2 italic group-hover:text-slate-700 leading-relaxed">
                             "{payment.notes}"
                           </p>
                         )}
                       </div>
                     </div>
                     {payment.transaction_id && (
-                      <div className="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                      <div className="text-xs font-mono bg-slate-100/80 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200/50 shadow-sm">
                         {payment.transaction_id}
                       </div>
                     )}

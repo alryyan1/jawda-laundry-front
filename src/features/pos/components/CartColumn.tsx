@@ -27,6 +27,7 @@ interface CartColumnProps {
   onCheckout: () => void;
   onCancelOrder?: () => void;
   isProcessing: boolean;
+  isLoading?: boolean;
   mode?: "cart" | "order_view" | "order_edit";
   orderNumber?: string;
   isReadOnly?: boolean;
@@ -49,6 +50,7 @@ export const CartColumn: React.FC<CartColumnProps> = ({
   onCheckout,
   onCancelOrder,
   isProcessing,
+  isLoading = false,
   mode = "cart",
   orderNumber,
   isReadOnly = false,
@@ -86,7 +88,29 @@ export const CartColumn: React.FC<CartColumnProps> = ({
       {/* Items List */}
       <ScrollArea className="flex-1 min-h-0">
         <div className={cn("p-4 space-y-3", isReceived && "opacity-90")}>
-          {itemsToShow.length === 0 ? (
+          {isLoading ? (
+            // Skeleton loading state
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="border border-slate-200 rounded-lg p-4 space-y-3 animate-pulse"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                    </div>
+                    <div className="h-8 w-8 bg-slate-200 rounded"></div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="h-4 bg-slate-200 rounded w-20"></div>
+                    <div className="h-4 bg-slate-200 rounded w-24"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : itemsToShow.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
               <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center">
                 <ShoppingCart className="h-8 w-8 text-slate-200" />
