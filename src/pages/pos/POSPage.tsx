@@ -556,7 +556,7 @@ const POSPage: React.FC = () => {
 
   const handleCheckout = React.useCallback(async () => {
     console.log("handleCheckout");
-    alert("handleCheckout");
+    // alert("handleCheckout");
     if (!selectedCustomerId && !selectedOrder?.customer) {
       toast.error(t("pleaseSelectCustomer", { ns: "orders" }));
       return;
@@ -590,7 +590,7 @@ const POSPage: React.FC = () => {
 
       // If we have a selected order, update it first
       if (selectedOrder) {
-        alert("selectedOrder");
+        // alert("selectedOrder");
         // 1. Handle explicit deletions
         if (deletedItemIds.length > 0) {
           await Promise.all(deletedItemIds.map((id) => deleteOrderItem(id)));

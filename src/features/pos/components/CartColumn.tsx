@@ -71,6 +71,10 @@ export const CartColumn: React.FC<CartColumnProps> = ({
     0,
   );
 
+  // Calculate total number of items and total quantity
+  const totalItems = items.length;
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+
   // Determine which items to display
   const itemsToShow = selectedItemId
     ? items.filter((item) => item.id === selectedItemId)
@@ -83,11 +87,31 @@ export const CartColumn: React.FC<CartColumnProps> = ({
         isReceived && "bg-slate-50/50",
       )}
     >
-     
+      {/* Totals Header */}
+      {items.length > 0 && (
+        <div className="border-b border-slate-200 bg-slate-50/50 px-4 py-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
+              <div>
+                <span className="text-slate-600 font-medium">
+                  {t("items", { ns: "orders", defaultValue: "Items" })}:
+                </span>
+                <span className="ml-1 font-bold text-slate-900">{totalItems}</span>
+              </div>
+              <div>
+                <span className="text-slate-600 font-medium">
+                  {t("quantity", { ns: "orders", defaultValue: "Quantity" })}:
+                </span>
+                <span className="ml-1 font-bold text-slate-900">{totalQuantity}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Items List */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className={cn("p-4 space-y-3", isReceived && "opacity-90")}>
+        <div className={cn("p-2 space-y-2", isReceived && "opacity-90")}>
           {isLoading ? (
             // Skeleton loading state
             <div className="space-y-3">

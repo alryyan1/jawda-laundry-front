@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +7,6 @@ import { arSA, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -27,14 +26,15 @@ import type { Order, OrderStatus, OrderItem as OrderItemType } from "@/types";
 import {
   getOrderById,
   updateOrderStatus,
+  triggerOrderPrintJob,
   type OrderResponseWithWarnings,
 } from "@/api/orderService";
-import { ORDER_STATUSES, BASE_URL } from "@/lib/constants";
+import { ORDER_STATUSES } from "@/lib/constants";
 import { Loader2 } from "lucide-react";
 import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
 import { OrderPaymentsList } from "@/features/orders/components/OrderPaymentsList";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
+import { PdfDialog } from "@/features/orders/components/PdfDialog";
 import { useCurrency } from "@/hooks/useCurrency";
 import {
   Dialog,
@@ -59,7 +59,7 @@ const OrderDetailsPage: React.FC = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isPaymentsHistoryOpen, setIsPaymentsHistoryOpen] = useState(false);
-  const { can } = useAuth();
+  const [isInvoicePdfDialogOpen, setIsInvoicePdfDialogOpen] = useState(false);
   const {
     data: order,
     isLoading,
@@ -109,6 +109,21 @@ const OrderDetailsPage: React.FC = () => {
     }
   };
 
+  // Trigger print job when PDF dialog opens
+  useEffect(() => {
+    if (isInvoicePdfDialogOpen && order) {
+      triggerOrderPrintJob(order.id)
+        .then(() => {
+          // Print job triggered successfully
+          console.log('Print job triggered for order', order.id);
+        })
+        .catch((error) => {
+          // Log error but don't show toast to avoid interrupting user experience
+          console.error('Failed to trigger print job:', error);
+        });
+    }
+  }, [isInvoicePdfDialogOpen, order]);
+
   if (isLoading)
     return (
       <div className="flex items-center justify-center h-64">
@@ -139,11 +154,6 @@ const OrderDetailsPage: React.FC = () => {
         </Button>
       </div>
     );
-  const apiBaseUrl = BASE_URL;
-  const invoiceUrl = `${apiBaseUrl.replace(
-    "/api",
-    "",
-  )}/orders/${order.id}/invoice/download`;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-screen bg-gray-50/50">
@@ -198,8 +208,8 @@ const OrderDetailsPage: React.FC = () => {
                     :{" "}
                   </span>
                   <div className="flex items-center bg-gray-100 px-2 py-0.5 rounded text-sm">
-                    {order.pickup_date
-                      ? format(new Date(order.pickup_date), "dd/MM/yyyy", {
+                    {order.delivered_date
+                      ? format(new Date(order.delivered_date), "dd/MM/yyyy", {
                           locale: currentLocale,
                         })
                       : "-"}
@@ -214,31 +224,27 @@ const OrderDetailsPage: React.FC = () => {
                     :
                   </span>
                   {/* Status Dropdown */}
-                  {can("order:update-status") ? (
-                    <Select
-                      value={order.status}
-                      onValueChange={(newStatus: OrderStatus) =>
-                        handleStatusChange(newStatus)
-                      }
-                      disabled={
-                        updateStatusMutation.isPending ||
-                        order.status === "completed"
-                      }
-                    >
-                      <SelectTrigger className="w-[140px] h-9 bg-gray-500 text-white border-0 focus:ring-0">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ORDER_STATUSES.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {t(`status_${status}`, { ns: "orders" })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge className="bg-gray-500">{order.status}</Badge>
-                  )}
+                  <Select
+                    value={order.status}
+                    onValueChange={(newStatus: OrderStatus) =>
+                      handleStatusChange(newStatus)
+                    }
+                    disabled={
+                      updateStatusMutation.isPending ||
+                      order.status === "completed"
+                    }
+                  >
+                    <SelectTrigger className="w-[140px] h-9 bg-gray-500 text-white border-0 focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {t(`status_${status}`, { ns: "orders" })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -351,10 +357,61 @@ const OrderDetailsPage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            {/* Payment Status Alert moved here if needed or kept minimal */}
-            {order.payment_status !== "paid" && (
-              <div className="text-sm text-red-500 font-medium mb-2">
-                Status: {t(`payment_status_${order.payment_status}`)}
+            {/* Payment Summary */}
+            <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  {t("totalAmount", { ns: "orders", defaultValue: "Total Amount" })}:
+                </span>
+                <span className="font-semibold text-gray-800">
+                  {new Intl.NumberFormat(i18n.language, {
+                    style: "currency",
+                    currency: currencyCode,
+                  }).format(order.total_amount || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  {t("paidAmount", { ns: "orders", defaultValue: "Paid Amount" })}:
+                </span>
+                <span className="font-semibold text-green-600">
+                  {new Intl.NumberFormat(i18n.language, {
+                    style: "currency",
+                    currency: currencyCode,
+                  }).format(order.paid_amount || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-t pt-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {t("amountDue", { ns: "orders", defaultValue: "Amount Due" })}:
+                </span>
+                <span className={`font-bold text-lg ${
+                  (order.total_amount || 0) - (order.paid_amount || 0) > 0
+                    ? "text-red-600"
+                    : "text-green-600"
+                }`}>
+                  {new Intl.NumberFormat(i18n.language, {
+                    style: "currency",
+                    currency: currencyCode,
+                  }).format((order.total_amount || 0) - (order.paid_amount || 0))}
+                </span>
+              </div>
+            </div>
+
+            {/* Payment Status */}
+            {order.payment_status && (
+              <div className={`text-sm font-medium p-2 rounded ${
+                order.payment_status === "paid"
+                  ? "bg-green-100 text-green-700"
+                  : order.payment_status === "partially_paid"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-red-100 text-red-700"
+              }`}>
+                {t("paymentStatus", { ns: "orders", defaultValue: "Payment Status" })}:{" "}
+                {t(`payment_status_${order.payment_status}`, {
+                  ns: "orders",
+                  defaultValue: order.payment_status,
+                })}
               </div>
             )}
 
@@ -362,14 +419,32 @@ const OrderDetailsPage: React.FC = () => {
             <Button
               className="w-full h-12 text-base font-semibold bg-[#a7f3d0] hover:bg-[#6ee7b7] text-green-800 border-none shadow-none transition-colors"
               onClick={() => setIsPaymentModalOpen(true)}
+              disabled={
+                (order.total_amount || 0) - (order.paid_amount || 0) <= 0
+              }
             >
               {t("addPayment", { ns: "orders", defaultValue: "ADD PAYMENT" })}
             </Button>
 
+            {/* View Payments History Button */}
+            {order.payments && order.payments.length > 0 && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setIsPaymentsHistoryOpen(true)}
+              >
+                {t("viewPayments", {
+                  ns: "orders",
+                  defaultValue: "View Payments",
+                })}{" "}
+                ({order.payments.length})
+              </Button>
+            )}
+
             {/* Print Invoice Button */}
             <Button
               className="w-full h-12 text-base font-semibold bg-[#fcd34d] hover:bg-[#fbbf24] text-yellow-900 border-none shadow-none transition-colors"
-              onClick={() => window.open(invoiceUrl, "_blank")}
+              onClick={() => setIsInvoicePdfDialogOpen(true)}
             >
               {t("printInvoice", {
                 ns: "orders",
@@ -395,20 +470,34 @@ const OrderDetailsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {can("order:record-payment") && (
-        <RecordPaymentModal
-          order={order}
-          isOpen={isPaymentModalOpen}
-          onOpenChange={setIsPaymentModalOpen}
-        />
-      )}
-      {can("order:send-whatsapp") && (
-        <WhatsAppMessageDialog
-          order={order}
-          isOpen={isWhatsAppModalOpen}
-          onOpenChange={setIsWhatsAppModalOpen}
-        />
-      )}
+      <RecordPaymentModal
+        order={order}
+        isOpen={isPaymentModalOpen}
+        onOpenChange={setIsPaymentModalOpen}
+        onOrderUpdate={(updatedOrder) => {
+          // Update the order in the query cache
+          queryClient.setQueryData(["order", id], updatedOrder);
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          // Refetch to ensure we have the latest data
+          refetch();
+        }}
+      />
+      <WhatsAppMessageDialog
+        order={order}
+        isOpen={isWhatsAppModalOpen}
+        onOpenChange={setIsWhatsAppModalOpen}
+      />
+      <PdfDialog
+        orderId={order.id}
+        isOpen={isInvoicePdfDialogOpen}
+        onOpenChange={setIsInvoicePdfDialogOpen}
+        title={t("printInvoice", {
+          ns: "orders",
+          defaultValue: "Print Invoice",
+        })}
+        fileName={`invoice-order-${order.id}.pdf`}
+        widthClass="w-[300px]"
+      />
     </div>
   );
 };

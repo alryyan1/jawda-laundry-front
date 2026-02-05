@@ -13,11 +13,11 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
+import { EditCustomerDialog } from '@/features/customers/components/EditCustomerDialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -40,9 +40,6 @@ import {
     Edit3,
     Loader2,
     FileText,
-    Star,
-    StarOff,
-    Mail,
     Phone,
     Calendar,
     ShoppingBag,
@@ -59,6 +56,7 @@ const CustomersListPage: React.FC = () => {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({}); // Manage selection state manually
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+    const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
     const itemsPerPage = 10;
     const currentLocale = i18n.language.startsWith('ar') ? arSA : enUS;
 
@@ -129,10 +127,25 @@ const CustomersListPage: React.FC = () => {
 
     // --- Mobile Card Component ---
     const CustomerCard = ({ customer }: { customer: Customer }) => (
-        <Card className={`w-full ${customer.is_default ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-800' : ''} ${selectedRows[customer.id] ? 'ring-2 ring-primary' : ''}`}>
+        <Card 
+            className={`w-full cursor-pointer hover:bg-muted/50 ${customer.is_default ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-800' : ''} ${selectedRows[customer.id] ? 'ring-2 ring-primary' : ''}`}
+            onClick={(e) => {
+                // Don't navigate if clicking on checkbox, button, or dropdown menu
+                const target = e.target as HTMLElement;
+                if (
+                    target.closest('button') ||
+                    target.closest('[role="checkbox"]') ||
+                    target.closest('[role="menuitem"]') ||
+                    target.closest('[data-radix-popper-content-wrapper]')
+                ) {
+                    return;
+                }
+                setCustomerToEdit(customer);
+            }}
+        >
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                         <Checkbox
                             checked={!!selectedRows[customer.id]}
                             onCheckedChange={(checked) => handleSelectRow(customer.id, !!checked)}
@@ -142,24 +155,19 @@ const CustomersListPage: React.FC = () => {
                             <CardTitle className="text-lg font-semibold truncate">
                                 {customer.name}
                             </CardTitle>
-                            {customer.is_default && (
-                                <Badge variant="secondary" className="mt-1 inline-flex items-center gap-1">
-                                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-600" />
-                                    {t('default', { ns: 'customers', defaultValue: 'Default' })}
-                                </Badge>
-                            )}
                         </div>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <span className="sr-only">{t('openMenu')}</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <span className="sr-only">{t('openMenu')}</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/edit`)}>
+                            <DropdownMenuItem onClick={() => setCustomerToEdit(customer)}>
                                 <Edit3 className="mr-2 h-4 w-4" />
                                 {t('edit')}
                             </DropdownMenuItem>
@@ -173,20 +181,12 @@ const CustomersListPage: React.FC = () => {
                                 {t('priceList', { defaultValue: 'Price List' })}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                        <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                            ID: {customer.id}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate">{customer.email || t('notAvailable')}</span>
-                    </div>
                     <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <span>{customer.phone || t('notAvailable')}</span>
@@ -200,20 +200,6 @@ const CustomersListPage: React.FC = () => {
                         <span>{format(new Date(customer.registered_date), "dd/MM/yyyy", { locale: currentLocale })}</span>
                     </div>
                 </div>
-                {!customer.is_default && (
-                    <div className="pt-2">
-                        <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => setDefaultMutation.mutate(customer.id)}
-                            className="w-full"
-                            title={t('setAsDefault', { ns: 'customers', defaultValue: 'Set as default' })}
-                        >
-                            <StarOff className="mr-2 h-4 w-4" />
-                            {t('setAsDefault', { ns: 'customers', defaultValue: 'Set as default' })}
-                        </Button>
-                    </div>
-                )}
             </CardContent>
         </Card>
     );
@@ -297,20 +283,17 @@ const CustomersListPage: React.FC = () => {
                                         aria-label={t('selectAll')}
                                     />
                                 </TableHead>
-                                <TableHead className="w-[80px] text-center">ID</TableHead>
                                 <TableHead className="min-w-[200px] text-center">{t('name', { ns: 'common' })}</TableHead>
-                                <TableHead className="min-w-[200px] text-center">{t('email', { ns: 'common' })}</TableHead>
                                 <TableHead className="text-center">{t('phone', { ns: 'customers' })}</TableHead>
                                 <TableHead className="text-center">{t('totalOrders', { ns: 'customers' })}</TableHead>
                                 <TableHead className="text-center">{t('registeredDate', { ns: 'customers' })}</TableHead>
-                                <TableHead className="text-center">{t('default', { ns: 'customers', defaultValue: 'Default' })}</TableHead>
                                 <TableHead className="text-center w-[80px]">{t('actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {(isLoading || isFetching) && customers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         <div className="flex justify-center items-center">
                                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                         </div>
@@ -318,39 +301,38 @@ const CustomersListPage: React.FC = () => {
                                 </TableRow>
                             ) : customers.length > 0 ? (
                                 customers.map((customer: Customer) => (
-                                    <TableRow key={customer.id} data-state={selectedRows[customer.id] && "selected"} className={customer.is_default ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}>
-                                        <TableCell className='text-center'>
+                                    <TableRow 
+                                        key={customer.id} 
+                                        data-state={selectedRows[customer.id] && "selected"} 
+                                        className={`cursor-pointer hover:bg-muted/50 ${customer.is_default ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                                        onClick={(e) => {
+                                            // Don't navigate if clicking on checkbox, button, or dropdown menu
+                                            const target = e.target as HTMLElement;
+                                            if (
+                                                target.closest('button') ||
+                                                target.closest('[role="checkbox"]') ||
+                                                target.closest('[role="menuitem"]') ||
+                                                target.closest('[data-radix-popper-content-wrapper]')
+                                            ) {
+                                                return;
+                                            }
+                                            setCustomerToEdit(customer);
+                                        }}
+                                    >
+                                        <TableCell className='text-center' onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={!!selectedRows[customer.id]}
                                                 onCheckedChange={(checked) => handleSelectRow(customer.id, !!checked)}
                                                 aria-label={t('selectRow')}
                                             />
                                         </TableCell>
-                                        <TableCell className="text-center">
-                                            <span className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                                                {customer.id}
-                                            </span>
-                                        </TableCell>
                                         <TableCell className="font-medium text-center">{customer.name}</TableCell>
-                                        <TableCell className="text-center">{customer.email || t('notAvailable')}</TableCell>
                                         <TableCell className="text-center">{customer.phone || t('notAvailable')}</TableCell>
                                         <TableCell className="text-center">{customer.total_orders ?? 0}</TableCell>
                                         <TableCell>
                                             {format(new Date(customer.registered_date), "dd/MM/yyyy", { locale: currentLocale })}
                                         </TableCell>
-                                        <TableCell className="text-center">
-                                            {customer.is_default ? (
-                                                <span className="inline-flex items-center gap-1 text-yellow-600 font-bold">
-                                                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-600" />
-                                                    {t('default', { ns: 'customers', defaultValue: 'Default' })}
-                                                </span>
-                                            ) : (
-                                                <Button size="icon" variant="ghost" onClick={() => setDefaultMutation.mutate(customer.id)} title={t('setAsDefault', { ns: 'customers', defaultValue: 'Set as default' })}>
-                                                    <StarOff className="h-5 w-5 text-muted-foreground" />
-                                                </Button>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-center">
+                                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -360,7 +342,10 @@ const CustomersListPage: React.FC = () => {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/edit`)}>
+                                                    <DropdownMenuItem onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCustomerToEdit(customer);
+                                                    }}>
                                                         <Edit3 className="mr-2 h-4 w-4" />
                                                         {t('edit')}
                                                     </DropdownMenuItem>
@@ -380,7 +365,7 @@ const CustomersListPage: React.FC = () => {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="h-24 text-center">
+                                    <TableCell colSpan={6} className="h-24 text-center">
                                         {t('noResults')}
                                     </TableCell>
                                 </TableRow>
@@ -424,6 +409,15 @@ const CustomersListPage: React.FC = () => {
                 itemName={customerToDelete?.name}
                 itemType="customerLC"
                 isPending={deleteMutation.isPending}
+            />
+            <EditCustomerDialog
+                customerId={customerToEdit?.id || null}
+                isOpen={!!customerToEdit}
+                onOpenChange={(open) => !open && setCustomerToEdit(null)}
+                onSuccess={() => {
+                    refetch();
+                    setCustomerToEdit(null);
+                }}
             />
         </div>
     );

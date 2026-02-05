@@ -1,10 +1,10 @@
 // src/pages/orders/OrdersListPage.tsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
+  useInfiniteQuery,
   useQuery,
-  keepPreviousData,
   useQueryClient,
 } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -61,7 +61,6 @@ import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentMo
 import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
 import OrdersTableRow from "./components/OrdersTableRow";
-import OrdersPagination from "./components/OrdersPagination";
 import { OrderStatusTimelineDialog } from "@/features/orders/components/OrderStatusTimelineDialog";
 
 const OrdersListPage: React.FC = () => {
@@ -73,7 +72,6 @@ const OrdersListPage: React.FC = () => {
   const currencySymbol = getSetting("currency_symbol", "$") || "$";
 
   // --- State Management ---
-  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
     search?: string;
     orderId?: string;
@@ -111,7 +109,7 @@ const OrdersListPage: React.FC = () => {
   const queryKey = useMemo(
     () => [
       "orders",
-      currentPage,
+      "infinite",
       itemsPerPage,
       filters.status,
       debouncedSearch,
@@ -124,7 +122,6 @@ const OrdersListPage: React.FC = () => {
       filters.showOnlyIncomplete,
     ],
     [
-      currentPage,
       itemsPerPage,
       filters.status,
       debouncedSearch,
@@ -152,26 +149,29 @@ const OrdersListPage: React.FC = () => {
       };
     });
 
-    // Update the cache for the orders list
+    // Update the cache for the orders list (infinite query structure)
     queryClient.setQueryData(
       queryKey,
-      (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
+      (oldData: any) => {
+        if (!oldData?.pages) return oldData;
         return {
           ...oldData,
-          data: oldData.data.map((order) => {
-            if (order.id === orderItemsDialogOrder?.id) {
-              return {
-                ...order,
-                items: order.items.map((item) =>
-                  item.id === itemId
-                    ? { ...item, status: newStatus as OrderStatus }
-                    : item,
-                ),
-              };
-            }
-            return order;
-          }),
+          pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+            ...page,
+            data: page.data.map((order) => {
+              if (order.id === orderItemsDialogOrder?.id) {
+                return {
+                  ...order,
+                  items: order.items.map((item) =>
+                    item.id === itemId
+                      ? { ...item, status: newStatus as OrderStatus }
+                      : item,
+                  ),
+                };
+              }
+              return order;
+            }),
+          })),
         };
       },
     );
@@ -194,26 +194,29 @@ const OrdersListPage: React.FC = () => {
       };
     });
 
-    // Update the cache for the orders list
+    // Update the cache for the orders list (infinite query structure)
     queryClient.setQueryData(
       queryKey,
-      (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
+      (oldData: any) => {
+        if (!oldData?.pages) return oldData;
         return {
           ...oldData,
-          data: oldData.data.map((order) => {
-            if (order.id === orderItemsDialogOrder?.id) {
-              return {
-                ...order,
-                items: order.items.map((item) =>
-                  item.id === itemId
-                    ? { ...item, picked_up_quantity: pickedUpQuantity }
-                    : item,
-                ),
-              };
-            }
-            return order;
-          }),
+          pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+            ...page,
+            data: page.data.map((order) => {
+              if (order.id === orderItemsDialogOrder?.id) {
+                return {
+                  ...order,
+                  items: order.items.map((item) =>
+                    item.id === itemId
+                      ? { ...item, picked_up_quantity: pickedUpQuantity }
+                      : item,
+                  ),
+                };
+              }
+              return order;
+            }),
+          })),
         };
       },
     );
@@ -221,22 +224,25 @@ const OrdersListPage: React.FC = () => {
 
   // Handler to update order status in cache
   const handleOrderStatusChange = (orderId: number, newStatus: string) => {
-    // Update the cache for the orders list
+    // Update the cache for the orders list (infinite query structure)
     queryClient.setQueryData(
       queryKey,
-      (oldData: PaginatedResponse<Order> | undefined) => {
-        if (!oldData) return oldData;
+      (oldData: any) => {
+        if (!oldData?.pages) return oldData;
         return {
           ...oldData,
-          data: oldData.data.map((order) => {
-            if (order.id === orderId) {
-              return {
-                ...order,
-                status: newStatus as OrderStatus,
-              };
-            }
-            return order;
-          }),
+          pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+            ...page,
+            data: page.data.map((order) => {
+              if (order.id === orderId) {
+                return {
+                  ...order,
+                  status: newStatus as OrderStatus,
+                };
+              }
+              return order;
+            }),
+          })),
         };
       },
     );
@@ -264,23 +270,26 @@ const OrdersListPage: React.FC = () => {
         }),
       );
 
-      // Update the cache
+      // Update the cache (infinite query structure)
       queryClient.setQueryData(
         queryKey,
-        (oldData: PaginatedResponse<Order> | undefined) => {
-          if (!oldData) return oldData;
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
           return {
             ...oldData,
-            data: oldData.data.map((o) => {
-              if (o.id === order.id) {
-                return {
-                  ...o,
-                  status: "delivered" as OrderStatus,
-                  delivered_date: new Date().toISOString(),
-                };
-              }
-              return o;
-            }),
+            pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+              ...page,
+              data: page.data.map((o) => {
+                if (o.id === order.id) {
+                  return {
+                    ...o,
+                    status: "delivered" as OrderStatus,
+                    delivered_date: new Date().toISOString(),
+                  };
+                }
+                return o;
+              }),
+            })),
           };
         },
       );
@@ -304,20 +313,23 @@ const OrdersListPage: React.FC = () => {
       await updateOrderStatus(order.id, "completed");
       queryClient.setQueryData(
         queryKey,
-        (oldData: PaginatedResponse<Order> | undefined) => {
-          if (!oldData) return oldData;
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
           return {
             ...oldData,
-            data: oldData.data.map((o) => {
-              if (o.id === order.id) {
-                return {
-                  ...o,
-                  status: "completed" as OrderStatus,
-                  completed_at: new Date().toISOString(),
-                };
-              }
-              return o;
-            }),
+            pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+              ...page,
+              data: page.data.map((o) => {
+                if (o.id === order.id) {
+                  return {
+                    ...o,
+                    status: "completed" as OrderStatus,
+                    completed_at: new Date().toISOString(),
+                  };
+                }
+                return o;
+              }),
+            })),
           };
         },
       );
@@ -356,14 +368,17 @@ const OrdersListPage: React.FC = () => {
   });
 
   const {
-    data: paginatedData,
+    data,
     isLoading,
     isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     refetch,
-  } = useQuery<PaginatedResponse<Order>, Error>({
+  } = useInfiniteQuery<PaginatedResponse<Order>, Error>({
     queryKey,
-    queryFn: () =>
-      getOrders(currentPage, itemsPerPage, {
+    queryFn: ({ pageParam = 1 }) =>
+      getOrders(pageParam, itemsPerPage, {
         status: filters.status,
         search: debouncedSearch,
         orderId: filters.orderId,
@@ -374,26 +389,45 @@ const OrdersListPage: React.FC = () => {
         category_sequence_search: filters.categorySequenceSearch,
         show_only_incomplete: filters.showOnlyIncomplete,
       }),
-    placeholderData: keepPreviousData,
+    getNextPageParam: (lastPage) => {
+      const currentPage = lastPage.meta?.current_page || 1;
+      const lastPageNum = lastPage.meta?.last_page || 1;
+      return currentPage < lastPageNum ? currentPage + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 
-  useEffect(() => {
-    if (currentPage !== 1) setCurrentPage(1);
-  }, [
-    filters.status,
-    debouncedSearch,
-    filters.orderId,
-    filters.customerId,
-    filters.productTypeId,
-    filters.dateFrom,
-    filters.dateTo,
-    filters.categorySequenceSearch,
-    filters.showOnlyIncomplete,
-  ]);
+  // Flatten all pages into a single array
+  const orders = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) || [];
+  }, [data]);
 
-  const orders = paginatedData?.data || [];
-  const totalItems = paginatedData?.meta?.total || 0;
-  const totalPages = paginatedData?.meta?.last_page || 1;
+  const totalItems = data?.pages[0]?.meta?.total || 0;
+
+  // Scroll detection for infinite loading
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Mobile Order Card Component
 
@@ -741,19 +775,20 @@ const OrdersListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Pagination */}
-      <OrdersPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        isFetching={isFetching}
-        setCurrentPage={setCurrentPage}
-        t={t}
-        showingText={t("showingItems", {
-          first: paginatedData?.meta.from || 0,
-          last: paginatedData?.meta.to || 0,
-          total: totalItems,
-        })}
-      />
+      {/* Infinite Scroll Loading Indicator */}
+      <div ref={observerTarget} className="h-20 flex items-center justify-center">
+        {isFetchingNextPage && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>{t("loadingMore", { defaultValue: "Loading more orders..." })}</span>
+          </div>
+        )}
+        {!hasNextPage && orders.length > 0 && (
+          <div className="text-muted-foreground text-sm">
+            {t("allOrdersLoaded", { defaultValue: "All orders loaded" })} ({totalItems} {t("total", { defaultValue: "total" })})
+          </div>
+        )}
+      </div>
 
       {selectedOrderForPayments && (
         <PaymentsListDialog
@@ -784,16 +819,19 @@ const OrdersListPage: React.FC = () => {
             // Update the order in the cache
             queryClient.setQueryData(
               queryKey,
-              (oldData: PaginatedResponse<Order> | undefined) => {
-                if (!oldData) return oldData;
+              (oldData: any) => {
+                if (!oldData?.pages) return oldData;
                 return {
                   ...oldData,
-                  data: oldData.data.map((order) => {
-                    if (order.id === updatedOrder.id) {
-                      return updatedOrder;
-                    }
-                    return order;
-                  }),
+                  pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+                    ...page,
+                    data: page.data.map((order) => {
+                      if (order.id === updatedOrder.id) {
+                        return updatedOrder;
+                      }
+                      return order;
+                    }),
+                  })),
                 };
               },
             );

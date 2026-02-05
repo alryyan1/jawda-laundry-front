@@ -507,6 +507,18 @@ export const cancelOrder = async (
   return data;
 };
 
+/**
+ * Trigger a print job for an order invoice
+ */
+export const triggerOrderPrintJob = async (
+  orderId: string | number
+): Promise<{ message: string; order_id: number }> => {
+  const { data } = await apiClient.post<{ message: string; order_id: number }>(
+    `/orders/${orderId}/trigger-print-job`
+  );
+  return data;
+};
+
 export const markOrderReceived = async (
   orderId: string | number,
 ): Promise<{ order: Order; message: string }> => {

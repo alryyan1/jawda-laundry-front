@@ -60,7 +60,11 @@ export interface CostSummaryReport {
 export interface DailyRevenueRecord {
     date: string; // YYYY-MM-DD
     order_count: number;
-    daily_revenue: number;
+    daily_revenue: number; // Keep for backward compatibility
+    total_income: number;
+    total_cash: number;
+    total_visa: number;
+    total_bank_transfer: number;
 }
 
 export interface DailyRevenueReport {
@@ -70,7 +74,11 @@ export interface DailyRevenueReport {
         month_name: string;
     };
     summary: {
-        total_revenue: number;
+        total_revenue: number; // Keep for backward compatibility
+        total_income: number;
+        total_cash: number;
+        total_visa: number;
+        total_bank_transfer: number;
         total_orders: number;
         average_daily_revenue: number;
     };

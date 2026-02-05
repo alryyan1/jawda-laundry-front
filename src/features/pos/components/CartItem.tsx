@@ -3,17 +3,11 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, X, Plus, Minus, Ruler, AlertCircle } from "lucide-react";
-import { formatCurrency } from "@/lib/formatters";
+import { Loader2, X, Plus, Minus, AlertCircle } from "lucide-react";
 import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
-import { useSettings } from "@/context/SettingsContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BASE_URL } from "@/lib/constants";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -57,13 +51,8 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
 }) => {
   // Only use the isReadOnly prop, don't make existing order items read-only
   const effectiveReadOnly = isReadOnly;
-  const { t, i18n } = useTranslation(["common", "orders", "services"]);
-  const { getSetting } = useSettings();
-  const [isDetailsOpen] = useState(!!item.notes);
+  const { i18n } = useTranslation(["common", "orders", "services"]);
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
-
-  // Get currency from settings, fallback to USD
-  const currency = getSetting("currency_symbol", "OMR");
 
   const isDimensionBased = item.productType.is_dimension_based;
 
@@ -75,262 +64,146 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
       onUpdateQuantity(item.id, value === "" ? 1 : parseInt(value, 10));
     }
   };
-  console.log(item, "item");
+  // Calculate dimension display value (length × width or just length)
+  const dimensionValue = isDimensionBased
+    ? item.length_meters && item.width_meters
+      ? `${item.length_meters} × ${item.width_meters}`
+      : item.length_meters || item.width_meters || "0"
+    : null;
+
   return (
     <>
       {item._isAdding ? (
         // Skeleton loading state while adding to backend
-        <div className="relative rounded-lg border bg-card text-card-foreground shadow-sm">
-          <div className="flex items-start justify-between p-1 border-b">
-            <div className="flex-1 pr-2">
-              <Skeleton className="h-4 w-16 mb-1" />
-              <Skeleton className="h-6 w-32 mb-1" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <Skeleton className="h-8 w-8" />
+        <div className="flex items-center gap-3 p-2 border rounded-md bg-card">
+          <Skeleton className="h-12 w-12 rounded" />
+          <div className="flex-1 space-y-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-16" />
           </div>
-          <div className="p-3 space-y-3">
-            <div className="grid grid-cols-5 gap-2 items-end">
-              <div className="col-span-2">
-                <Skeleton className="h-3 w-12 mb-1" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-              <div className="col-span-2">
-                <Skeleton className="h-3 w-12 mb-1" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-              <div className="col-span-1">
-                <Skeleton className="h-8 w-full" />
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-8 w-20" />
-            </div>
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-          </div>
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-8 w-20" />
         </div>
       ) : (
         <div
           dir={i18n.language === "ar" ? "rtl" : "ltr"}
           className={cn(
-            "relative  border bg-card text-card-foreground shadow-sm",
+            "flex items-center gap-3 p-2 border rounded-md bg-card hover:bg-card/80 transition-colors",
             item._isQuoting && "opacity-70 pointer-events-none",
           )}
         >
-          {/* Header */}
-          <div className="flex items-center  justify-center p-1 border-b">
-            {item?.serviceOffering?.productType?.image_url && (
-              <div className="mr-3 h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                <img
-                  src={
-                    item.serviceOffering.productType.image_url.startsWith(
-                      "http",
-                    )
-                      ? item.serviceOffering.productType.image_url
-                      : `${BASE_URL.replace("/api", "")}/storage/${item.productType.image_url}`
+          {/* Left: Product Info */}
+          <div className="flex-1 min-w-0">
+            {/* Product Name - Bold */}
+            <p className="text-base font-bold text-gray-800 truncate">
+              {item.productType.name}
+            </p>
+            {/* Arabic Name / Display Name */}
+            
+            {/* Service Type - Blue */}
+            <p className="text-xs font-medium text-blue-500 truncate">
+              [{item.serviceOffering.serviceAction?.name || ""} {item.serviceOffering.serviceAction?.description || ""}]
+            </p>
+          </div>
+
+          {/* Dimension Value */}
+          {isDimensionBased && (
+            <div className="h-10 w-16 rounded-md border border-gray-200 bg-white flex items-center justify-center flex-shrink-0">
+              {effectiveReadOnly ? (
+                <span className="text-xs text-gray-700 font-medium">
+                  {dimensionValue || "-"}
+                </span>
+              ) : (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={item.length_meters || ""}
+                  onChange={(e) =>
+                    onUpdateDimensions(item.id, {
+                      length: parseFloat(e.target.value) || undefined,
+                      width: item.width_meters,
+                    })
                   }
-
-                  alt={item.productType.name}
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
+                  onFocus={(e) => e.target.select()}
+                  className="h-8 w-full text-center text-xs px-1"
+                  disabled={item._isQuoting}
+                  placeholder="0"
                 />
-              </div>
-            )}
-            <div className="flex-1 pr-2">
-              <Badge variant="info" className="text-xs mb-1">
-                {item.serviceOffering.display_name}
-              </Badge>
-              <p className=" text-2xl">{item.productType.name}</p>
-              {item.productType.category && (
-                <p className="text-xs font-bold text-sky-500">
-                  {item.productType.category.name}
-                </p>
               )}
             </div>
-            <div className="flex items-center gap-1">
-              {!effectiveReadOnly && (
+          )}
+
+          {/* Quantity Controls */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {effectiveReadOnly ? (
+              <span className="text-sm font-medium text-gray-700 w-8 text-center">
+                {item.quantity}
+              </span>
+            ) : (
+              <>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="icon"
-                  className="h-8 w-8 hover:text-destructive"
-                  onClick={() => onRemoveItem(item.id)}
-                  disabled={item._isDeleting}
+                  className="h-8 w-8"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                  disabled={item.quantity <= 1 || item._isQuoting}
                 >
-                  {item._isDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
+                  <Minus className="h-3 w-3" />
                 </Button>
+                <Input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={handleQuantityChange}
+                  className="w-10 h-8 px-1 text-center text-sm"
+                  disabled={item._isQuoting}
+                  onFocus={(e) => e.target.select()}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
+                  onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                  disabled={item._isQuoting}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Remove Button */}
+          {!effectiveReadOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:text-destructive flex-shrink-0"
+              onClick={() => onRemoveItem(item.id)}
+              disabled={item._isDeleting}
+            >
+              {item._isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <X className="h-4 w-4" />
               )}
+            </Button>
+          )}
+
+          {/* Quote Loading Indicator */}
+          {item._isQuoting && (
+            <div className="flex-shrink-0">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
-          </div>
+          )}
 
-          {/* Content */}
-          <div className="p-1 space-y-1">
-            {/* Dimensions */}
-            {isDimensionBased && (
-              <div className="grid grid-cols-5 gap-2 items-end">
-                <div className="col-span-2">
-                  <Label className="text-xs mb-1 font-normal">
-                    {t("length", { ns: "orders" })} (m)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={item.length_meters || ""}
-                    onChange={(e) =>
-                      onUpdateDimensions(item.id, {
-                        length: parseFloat(e.target.value) || undefined,
-                        width: item.width_meters,
-                      })
-                    }
-                    onFocus={(e) => e.target.select()}
-                    className="h-8"
-                    disabled={effectiveReadOnly || item._isQuoting}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs mb-1 font-normal">
-                    {t("width", { ns: "orders" })} (m)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={item.width_meters || ""}
-                    onChange={(e) =>
-                      onUpdateDimensions(item.id, {
-                        length: item.length_meters,
-                        width: parseFloat(e.target.value) || undefined,
-                      })
-                    }
-                    onFocus={(e) => e.target.select()}
-                    className="h-8"
-                    disabled={effectiveReadOnly || item._isQuoting}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => setIsSizeDialogOpen(true)}
-                    disabled={effectiveReadOnly || item._isQuoting}
-                  >
-                    <Ruler className="h-4 w-4" />
-                    <span className="sr-only">
-                      {t("selectPredefinedSize", { ns: "services" })}
-                    </span>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Quantity and Price */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {effectiveReadOnly ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {t("quantity", { ns: "orders" })}:
-                    </span>
-                    <span className="font-medium">{item.quantity}</span>
-                  </div>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() =>
-                        onUpdateQuantity(item.id, item.quantity - 1)
-                      }
-                      disabled={item.quantity <= 1 || item._isQuoting}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={handleQuantityChange}
-                      className="w-16 h-7 px-2 text-center"
-                      disabled={item._isQuoting}
-                      onFocus={(e) => e.target.select()}
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() =>
-                        onUpdateQuantity(item.id, item.quantity + 1)
-                      }
-                      disabled={item._isQuoting}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
-              </div>
-              <div className="text-right">
-                {item._isQuoting ? (
-                  <div className="flex items-center gap-2 h-10">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(item.price, currency, i18n.language, 3)} ×{" "}
-                      {item.quantity}
-                    </p>
-                    <p className="font-medium">
-                      {formatCurrency(
-                        item._quotedSubTotal || item.price * item.quantity,
-                        currency,
-                        i18n.language,
-                        3,
-                      )}
-                    </p>
-                  </>
-                )}
-              </div>
+          {/* Quote Error Display */}
+          {item._quoteError && !item._isQuoting && (
+            <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-destructive/10 border border-destructive/50 rounded text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="h-3 w-3" />
+              <p className="truncate">{item._quoteError}</p>
             </div>
-
-            {/* Notes appear when toggled or if they already have content */}
-            {(isDetailsOpen || item.notes) && (
-              <div className="pt-2">
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">
-                    {t("itemNotesOptional", { ns: "orders" })}
-                  </Label>
-                  <Textarea
-                    value={item.notes || ""}
-                    onChange={(e) => onUpdateNotes(item.id, e.target.value)}
-                    placeholder={t("itemNotesPlaceholder", { ns: "orders" })}
-                    className="h-16 resize-none text-xs"
-                    disabled={effectiveReadOnly || item._isQuoting}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Quote Error Display */}
-            {item._quoteError && !item._isQuoting && (
-              <div className="pt-2 border-t border-destructive/50 flex items-center gap-2 text-xs text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                <p>{item._quoteError}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       )}
 

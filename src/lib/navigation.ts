@@ -168,6 +168,21 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
+      {
+        id: 54,
+        key: "service-actions",
+        title: {
+          en: "Service Actions",
+          ar: "إجراءات الخدمة",
+        },
+        icon: "Wand2",
+        route: "/admin/service-actions",
+        sort_order: 4,
+        is_active: true,
+        is_default: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
     ],
   },
   {

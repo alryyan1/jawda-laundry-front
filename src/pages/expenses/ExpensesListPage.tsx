@@ -10,8 +10,49 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 
-import { PageHeader } from "@/components/shared/PageHeader";
-import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Menu,
+  Chip,
+  CircularProgress,
+  Stack,
+  Card,
+  CardContent,
+  CardHeader,
+  Pagination,
+  Tooltip,
+  useTheme,
+} from "@mui/material";
+import {
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Refresh as RefreshIcon,
+  Search as SearchIcon,
+  AccountBalanceWallet as BankIcon,
+  AttachMoney as CashIcon,
+  FolderOpen as FolderOpenIcon,
+} from "@mui/icons-material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+
 import { ExpenseFormModal } from "@/features/expenses/components/ExpenseFormModal";
 import {
   getExpenses,
@@ -24,55 +65,20 @@ import { formatCurrency } from "@/lib/formatters";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useSettings } from "@/context/SettingsContext";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import {
-  PlusCircle,
-  MoreHorizontal,
-  Edit3,
-  Trash2,
-  Loader2,
-  Landmark,
-  Banknote,
-  FolderOpen,
-} from "lucide-react";
-
 const ExpensesListPage: React.FC = () => {
   const { t, i18n } = useTranslation(["common", "expenses"]);
   const { can } = useAuth();
   const { getSetting } = useSettings();
+  const theme = useTheme();
 
   // Get currency from settings, fallback to USD
-  const currency = getSetting('currency_symbol', 'USD');
+  const currency = getSetting("currency_symbol", "USD");
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [itemToDelete, setItemToDelete] = useState<Expense | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<{
@@ -83,12 +89,13 @@ const ExpensesListPage: React.FC = () => {
   const debouncedSearch = useDebounce(filters.search, 500);
   const itemsPerPage = 15;
 
-  const { data: categoriesData } = useQuery<{ id: number; name: string; description?: string }[], Error>({
+  const { data: categoriesData } = useQuery<
+    { id: number; name: string; description?: string }[],
+    Error
+  >({
     queryKey: ["expenseCategories"],
     queryFn: getExpenseCategories,
   });
-
-
 
   const queryKey = useMemo(
     () => [
@@ -158,281 +165,479 @@ const ExpensesListPage: React.FC = () => {
     setEditingExpense(null);
     setIsFormModalOpen(true);
   };
+
   const handleOpenEditModal = (expense: Expense) => {
     setEditingExpense(expense);
     setIsFormModalOpen(true);
+    handleMenuClose();
   };
 
-  const MemoizedTableRow = React.memo(({ expense }: { expense: Expense }) => (
-    <TableRow key={expense.id}>
-      <TableCell className="text-center">
-        <div className="font-medium">{expense.name}</div>
-        <div className="text-xs text-muted-foreground truncate max-w-xs">
-          {expense.description}
-        </div>
-      </TableCell>
-      <TableCell className="text-center">
-        <div className="font-mono text-xs p-1 px-2 rounded-full bg-muted w-fit">
-          {expense.expense_category_id ? 
-            categoriesData?.find(cat => cat.id === expense.expense_category_id)?.name || "-" 
-            : "-"}
-        </div>
-      </TableCell>
-      <TableCell className="text-center">
-        <div className="flex items-center gap-2 text-sm capitalize">
-          {expense.payment_method === "cash" ? (
-            <Banknote className="h-4 w-4 text-green-600" />
-          ) : (
-            <Landmark className="h-4 w-4 text-blue-600" />
-          )}
-          <span>
-            {t(`method_${expense.payment_method}`, {
-              ns: "expenses",
-              defaultValue: expense.payment_method,
-            })}
-          </span>
-        </div>
-      </TableCell>
-                  <TableCell className="text-center">{format(new Date(expense.expense_date), "dd/MM/yyyy")}</TableCell>
-      <TableCell className="text-center font-semibold">
-        {formatCurrency(expense.amount, currency, i18n.language)}
-      </TableCell>
-      <TableCell className="text-muted-foreground text-xs">
-        {expense.user?.name || "-"}
-      </TableCell>
-      <TableCell className="text-center">
-        {can("expense:update") || can("expense:delete") ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t("actions")}</DropdownMenuLabel>
-              {can("expense:update") && (
-                <DropdownMenuItem onClick={() => handleOpenEditModal(expense)}>
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {t("edit")}
-                </DropdownMenuItem>
-              )}
-              {can("expense:delete") && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setItemToDelete(expense)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("delete")}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-      </TableCell>
-    </TableRow>
-  ));
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    expense: Expense
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedExpense(expense);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedExpense(null);
+  };
+
+  const handleDeleteClick = (expense: Expense) => {
+    setItemToDelete(expense);
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate(itemToDelete.id);
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <PageHeader
-        title={t("title", { ns: "expenses" })}
-        description={t("description", { ns: "expenses" })}
-        actionButton={
-          can("expense:create")
-            ? {
-                label: t("newExpense", { ns: "expenses" }),
-                icon: PlusCircle,
-                onClick: handleOpenAddModal,
-              }
-            : undefined
-        }
-        showRefreshButton
-        onRefresh={refetch}
-        isRefreshing={isFetching && !isLoading}
-      />
-
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-lg">{t("filters")}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
-          <Input
-            placeholder={t("searchExpenses", { ns: "expenses" })}
-            value={filters.search || ""}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
-            className="max-w-sm"
-          />
-          <Select
-            value={filters.category || ""}
-            onValueChange={(value) =>
-              setFilters((prev) => ({
-                ...prev,
-                category: value === "all" ? undefined : value,
-              }))
-            }
-          >
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue
-                placeholder={t("filterByCategory", { ns: "expenses" })}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("allCategories", { ns: "expenses" })}
-              </SelectItem>
-              {categoriesData?.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id.toString()}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <DatePickerWithRange
-            date={filters.dateRange}
-            onDateChange={(range) =>
-              setFilters((prev) => ({ ...prev, dateRange: range }))
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <div className="rounded-md border bg-card max-w-7xl mx-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[250px] text-center">
-                {t("expenseName", { ns: "expenses" })}
-              </TableHead>
-              <TableHead className="text-center">{t("category")}</TableHead>
-              <TableHead className="text-center">{t("paymentMethod", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-center">{t("expenseDate", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-center">{t("amount")}</TableHead>
-              <TableHead className="text-center">{t("recordedBy", { ns: "expenses" })}</TableHead>
-              <TableHead className="text-center w-[80px]">
-                {t("actions")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                </TableCell>
-              </TableRow>
-            ) : expenses.length > 0 ? (
-              expenses.map((expense) => (
-                <MemoizedTableRow key={expense.id} expense={expense} />
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="h-48 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <FolderOpen className="h-10 w-10" />
-                    <h3 className="font-semibold">
-                      {t("noExpensesFound", { ns: "expenses" })}
-                    </h3>
-                    <p className="text-sm">
-                      {t("noExpensesFoundHint", { ns: "expenses" })}
-                    </p>
-                    {can("expense:create") && (
-                      <Button
-                        size="sm"
-                        className="mt-4"
-                        onClick={handleOpenAddModal}
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t("addFirstExpense", { ns: "expenses" })}
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {t("pagination.showingItems", {
-              first: paginatedData?.meta.from || 0,
-              last: paginatedData?.meta.to || 0,
-              total: totalItems,
-            })}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1 || isFetching}
-            >
-              {" "}
-              {t("firstPage")}{" "}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1 || isFetching}
-            >
-              {" "}
-              {t("previous")}{" "}
-            </Button>
-            <span className="text-sm font-medium">
-              {t("pageWithTotal", { currentPage, totalPages })}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages || isFetching}
-            >
-              {" "}
-              {t("next")}{" "}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || isFetching}
-            >
-              {" "}
-              {t("lastPage")}{" "}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {(can("expense:create") || can("expense:update")) && (
-        <ExpenseFormModal
-          isOpen={isFormModalOpen}
-          onOpenChange={setIsFormModalOpen}
-          editingExpense={editingExpense}
-        />
-      )}
-      {can("expense:delete") && (
-        <DeleteConfirmDialog
-          isOpen={!!itemToDelete}
-          onOpenChange={(open) => !open && setItemToDelete(null)}
-          onConfirm={() => {
-            if (itemToDelete) deleteMutation.mutate(itemToDelete.id);
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box sx={{ maxWidth: "1400px", mx: "auto", px: 3, py: 4 }}>
+        {/* Header Section */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            mb: 4,
+            flexWrap: "wrap",
+            gap: 2,
           }}
-          itemName={itemToDelete?.name}
-          itemType="expenseLC"
-          isPending={deleteMutation.isPending}
-        />
-      )}
-    </div>
+        >
+          <Box>
+            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+              {t("title", { ns: "expenses" })}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t("description", { ns: "expenses" })}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={2}>
+            {can("expense:create") && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenAddModal}
+                sx={{ minWidth: 140 }}
+              >
+                {t("newExpense", { ns: "expenses" })}
+              </Button>
+            )}
+            <Tooltip title={t("refresh")}>
+              <IconButton
+                onClick={() => refetch()}
+                disabled={isFetching && !isLoading}
+                color="primary"
+              >
+                <RefreshIcon
+                  sx={{
+                    animation: isFetching && !isLoading ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </Box>
+
+        {/* Filters Card */}
+        <Card sx={{ mb: 3 }}>
+          <CardHeader
+            title={
+              <Typography variant="h6" fontWeight="600">
+                {t("filters")}
+              </Typography>
+            }
+            sx={{ pb: 1 }}
+          />
+          <CardContent>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={2}
+              flexWrap="wrap"
+            >
+              <TextField
+                placeholder={t("searchExpenses", { ns: "expenses" })}
+                value={filters.search || ""}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, search: e.target.value }))
+                }
+                size="small"
+                sx={{ minWidth: { xs: "100%", sm: 300 } }}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: "text.secondary" }} />,
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 200 } }}>
+                <InputLabel>{t("filterByCategory", { ns: "expenses" })}</InputLabel>
+                <Select
+                  value={filters.category || ""}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      category: e.target.value === "all" ? undefined : e.target.value,
+                    }))
+                  }
+                  label={t("filterByCategory", { ns: "expenses" })}
+                >
+                  <MenuItem value="all">
+                    {t("allCategories", { ns: "expenses" })}
+                  </MenuItem>
+                  {categoriesData?.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <DatePicker
+                label={t("fromDate", { ns: "common", defaultValue: "From Date" })}
+                value={filters.dateRange?.from || null}
+                onChange={(newValue) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    dateRange: {
+                      from: newValue || undefined,
+                      to: prev.dateRange?.to,
+                    },
+                  }));
+                }}
+                maxDate={filters.dateRange?.to || undefined}
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    sx: { minWidth: { xs: "100%", sm: 150 } },
+                  },
+                }}
+              />
+              <DatePicker
+                label={t("toDate", { ns: "common", defaultValue: "To Date" })}
+                value={filters.dateRange?.to || null}
+                onChange={(newValue) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    dateRange: {
+                      from: prev.dateRange?.from,
+                      to: newValue || undefined,
+                    },
+                  }));
+                }}
+                minDate={filters.dateRange?.from || undefined}
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    sx: { minWidth: { xs: "100%", sm: 150 } },
+                  },
+                }}
+              />
+            </Stack>
+          </CardContent>
+        </Card>
+
+        {/* Table Section */}
+        <TableContainer component={Paper} elevation={1}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.02)" }}>
+                <TableCell align="center" sx={{ fontWeight: 600, minWidth: 250 }}>
+                  {t("expenseName", { ns: "expenses" })}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  {t("category")}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  {t("paymentMethod", { ns: "expenses" })}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  {t("expenseDate", { ns: "expenses" })}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  {t("amount")}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                  {t("recordedBy", { ns: "expenses" })}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, width: 80 }}>
+                  {t("actions")}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              ) : expenses.length > 0 ? (
+                expenses.map((expense) => (
+                  <TableRow
+                    key={expense.id}
+                    hover
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.01)",
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {expense.name}
+                        </Typography>
+                        {expense.description && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              maxWidth: 300,
+                            }}
+                          >
+                            {expense.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={
+                          expense.expense_category_id
+                            ? categoriesData?.find(
+                                (cat) => cat.id === expense.expense_category_id
+                              )?.name || "-"
+                            : "-"
+                        }
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        {expense.payment_method === "cash" ? (
+                          <CashIcon sx={{ fontSize: 18, color: "success.main" }} />
+                        ) : (
+                          <BankIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                        )}
+                        <Typography variant="body2" textTransform="capitalize">
+                          {t(`method_${expense.payment_method}`, {
+                            ns: "expenses",
+                            defaultValue: expense.payment_method,
+                          })}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="center">
+                      {format(new Date(expense.expense_date), "dd/MM/yyyy")}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2" fontWeight="semibold">
+                        {formatCurrency(expense.amount, currency, i18n.language)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {expense.user?.name || "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      {(can("expense:update") || can("expense:delete")) && (
+                        <>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, expense)}
+                            aria-label="more actions"
+                          >
+                            <MoreVertIcon fontSize="small" />
+                          </IconButton>
+                          <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl && selectedExpense?.id === expense.id)}
+                            onClose={handleMenuClose}
+                            anchorOrigin={{
+                              vertical: "bottom",
+                              horizontal: "right",
+                            }}
+                            transformOrigin={{
+                              vertical: "top",
+                              horizontal: "right",
+                            }}
+                          >
+                            {can("expense:update") && (
+                              <MenuItem onClick={() => handleOpenEditModal(expense)}>
+                                <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                                {t("edit")}
+                              </MenuItem>
+                            )}
+                            {can("expense:delete") && (
+                              <MenuItem
+                                onClick={() => handleDeleteClick(expense)}
+                                sx={{ color: "error.main" }}
+                              >
+                                <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+                                {t("delete")}
+                              </MenuItem>
+                            )}
+                          </Menu>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <Stack spacing={2} alignItems="center">
+                      <FolderOpenIcon sx={{ fontSize: 48, color: "text.secondary" }} />
+                      <Typography variant="h6" fontWeight="semibold">
+                        {t("noExpensesFound", { ns: "expenses" })}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t("noExpensesFoundHint", { ns: "expenses" })}
+                      </Typography>
+                      {can("expense:create") && (
+                        <Button
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={handleOpenAddModal}
+                          sx={{ mt: 2 }}
+                        >
+                          {t("addFirstExpense", { ns: "expenses" })}
+                        </Button>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mt: 3,
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t("pagination.showingItems", {
+                first: paginatedData?.meta.from || 0,
+                last: paginatedData?.meta.to || 0,
+                total: totalItems,
+              })}
+            </Typography>
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={(_, page) => setCurrentPage(page)}
+              color="primary"
+              shape="rounded"
+              disabled={isFetching}
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
+
+        {/* Modals */}
+        {(can("expense:create") || can("expense:update")) && (
+          <ExpenseFormModal
+            isOpen={isFormModalOpen}
+            onOpenChange={setIsFormModalOpen}
+            editingExpense={editingExpense}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {can("expense:delete") && itemToDelete && (
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1300,
+            }}
+            onClick={() => setItemToDelete(null)}
+          >
+            <Paper
+              sx={{
+                p: 4,
+                maxWidth: 400,
+                mx: 2,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                {t("deleteConfirmationTitle", {
+                  item: t("expenseLC", { ns: "expenses", defaultValue: "expense" }),
+                })}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                {t("deleteConfirmationMessage", {
+                  itemName: itemToDelete.name || t("thisItem", { defaultValue: "this item" }),
+                })}
+                <br />
+                {t("irreversibleAction")}
+              </Typography>
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button
+                  variant="outlined"
+                  onClick={() => setItemToDelete(null)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleConfirmDelete}
+                  disabled={deleteMutation.isPending}
+                  startIcon={
+                    deleteMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <DeleteIcon />
+                    )
+                  }
+                >
+                  {t("delete")}
+                </Button>
+              </Stack>
+            </Paper>
+          </Box>
+        )}
+      </Box>
+    </LocalizationProvider>
   );
 };
 
