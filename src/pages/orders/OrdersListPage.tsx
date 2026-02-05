@@ -262,7 +262,7 @@ const OrdersListPage: React.FC = () => {
     try {
       if (isDeliveringOrderId) return;
       setIsDeliveringOrderId(order.id);
-      await markOrderAsDelivered(order.id);
+      const response = await markOrderAsDelivered(order.id);
 
       toast.success(
         t("orderMarkedAsDelivered", {
@@ -270,29 +270,35 @@ const OrdersListPage: React.FC = () => {
         }),
       );
 
-      // Update the cache (infinite query structure)
-      queryClient.setQueryData(
-        queryKey,
-        (oldData: any) => {
-          if (!oldData?.pages) return oldData;
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
-              ...page,
-              data: page.data.map((o) => {
-                if (o.id === order.id) {
-                  return {
-                    ...o,
-                    status: "delivered" as OrderStatus,
-                    delivered_date: new Date().toISOString(),
-                  };
-                }
-                return o;
-              }),
-            })),
-          };
-        },
-      );
+      // Use backend response to update cache with correct delivered_date from server
+      const updatedOrder = response.order || (response as any).data;
+      if (updatedOrder?.delivered_date) {
+        queryClient.setQueryData(
+          queryKey,
+          (oldData: any) => {
+            if (!oldData?.pages) return oldData;
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page: PaginatedResponse<Order>) => ({
+                ...page,
+                data: page.data.map((o) => {
+                  if (o.id === order.id) {
+                    return {
+                      ...o,
+                      status: "delivered" as OrderStatus,
+                      delivered_date: updatedOrder.delivered_date, // Use backend date from server
+                    };
+                  }
+                  return o;
+                }),
+              })),
+            };
+          },
+        );
+      } else {
+        // Fallback: invalidate query to refetch from backend if response structure is unexpected
+        queryClient.invalidateQueries({ queryKey });
+      }
     } catch (error) {
       console.error("Error updating order status:", error);
       toast.error(

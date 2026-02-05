@@ -207,7 +207,7 @@ export const updateOrderStatus = async (
 };
 
 /**
- * Marks an order as delivered and sets the delivered_date to current date
+ * Marks an order as delivered and sets the delivered_date to current date (backend time)
  */
 export const markOrderAsDelivered = async (
   orderId: string | number,
@@ -216,7 +216,7 @@ export const markOrderAsDelivered = async (
     OrderResponseWithWarnings | { data: Order }
   >(`/orders/${orderId}/status`, {
     status: "delivered",
-    delivered_date: new Date().toISOString(),
+    // Let backend set delivered_date using server time
   });
 
   // Handle both response formats (with warnings or without)
