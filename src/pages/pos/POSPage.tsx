@@ -48,6 +48,8 @@ import { getProductCategories } from "@/api/productCategoryService";
 import { useRealtimeUpdates } from "@/hooks/useRealtimeUpdates";
 import settingService from "@/services/settingService";
 import { getTodayDate } from "@/lib/dateUtils";
+import { formatCurrency } from "@/lib/formatters";
+import { useSettings } from "@/context/SettingsContext";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,10 +62,12 @@ import {
 } from "@/components/ui/dialog";
 
 const POSPage: React.FC = () => {
-  const { t } = useTranslation(["common", "orders"]);
+  const { t, i18n } = useTranslation(["common", "orders"]);
   const queryClient = useQueryClient();
   const { selectedDate } = useDate();
   const { setSearchTerm } = useSearch();
+  const { getSetting } = useSettings();
+  const currency = getSetting("currency_symbol", "USD");
 
   // Initialize real-time updates
   useRealtimeUpdates();
@@ -1500,14 +1504,17 @@ const POSPage: React.FC = () => {
                 .map((offering) => (
                   <Button
                     key={offering.id}
-                    className="w-full justify-start text-left h-auto p-4 border-2 border-sky-300 text-base"
+                    className="w-full justify-between h-auto p-4 border-2 border-sky-300 text-base"
                     onClick={() => handleServiceOfferingSelect(offering)}
                   >
-                    <div className="flex flex-col items-start">
-                      <div className="font-medium text-base">
-                        {offering.display_name}
-                      </div>
+                    <div className="font-medium text-base">
+                      {offering.display_name}
                     </div>
+                    {offering.default_price !== null && offering.default_price !== undefined && (
+                      <div className="text-sm font-semibold text-blue-600">
+                        {formatCurrency(offering.default_price, currency, i18n.language)}
+                      </div>
+                    )}
                   </Button>
                 ))}
           </div>

@@ -27,14 +27,16 @@ import {
   getOrderById,
   updateOrderStatus,
   triggerOrderPrintJob,
+  deleteOrder,
   type OrderResponseWithWarnings,
 } from "@/api/orderService";
 import { ORDER_STATUSES } from "@/lib/constants";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { RecordPaymentModal } from "@/features/orders/components/RecordPaymentModal";
 import { OrderPaymentsList } from "@/features/orders/components/OrderPaymentsList";
 import { WhatsAppMessageDialog } from "@/features/orders/components/WhatsAppMessageDialog";
 import { PdfDialog } from "@/features/orders/components/PdfDialog";
+import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { useCurrency } from "@/hooks/useCurrency";
 import {
   Dialog,
@@ -60,6 +62,7 @@ const OrderDetailsPage: React.FC = () => {
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isPaymentsHistoryOpen, setIsPaymentsHistoryOpen] = useState(false);
   const [isInvoicePdfDialogOpen, setIsInvoicePdfDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const {
     data: order,
     isLoading,
@@ -98,6 +101,36 @@ const OrderDetailsPage: React.FC = () => {
       toast.error(
         error.message || t("orderStatusUpdateFailed", { ns: "orders" }),
       );
+    },
+  });
+
+  // Mutation for deleting order
+  const deleteOrderMutation = useMutation<
+    { message: string },
+    Error,
+    string | number
+  >({
+    mutationFn: (orderId) => deleteOrder(orderId),
+    onSuccess: () => {
+      toast.success(
+        t("orderDeletedSuccess", {
+          ns: "orders",
+          defaultValue: "Order deleted successfully",
+        }),
+      );
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      navigate("/orders");
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        t("orderDeleteFailed", {
+          ns: "orders",
+          defaultValue: "Failed to delete order",
+        });
+      toast.error(errorMessage);
+      setIsDeleteDialogOpen(false);
     },
   });
 
@@ -198,6 +231,22 @@ const OrderDetailsPage: React.FC = () => {
                       locale: currentLocale,
                     })}
                   </span>
+                </div>
+                <div className="text-gray-600 flex md:justify-end items-center gap-2">
+                  <span>
+                    {t("expectedDeliveryDate", {
+                      ns: "orders",
+                      defaultValue: "Expected Delivery Date",
+                    })}
+                    :{" "}
+                  </span>
+                  <div className="flex items-center bg-gray-100 px-2 py-0.5 rounded text-sm">
+                    {order.expected_delivery_date
+                      ? format(new Date(order.expected_delivery_date), "dd/MM/yyyy", {
+                          locale: currentLocale,
+                        })
+                      : "-"}
+                  </div>
                 </div>
                 <div className="text-gray-600 flex md:justify-end items-center gap-2">
                   <span>
@@ -451,6 +500,20 @@ const OrderDetailsPage: React.FC = () => {
                 defaultValue: "Print Invoice",
               })}
             </Button>
+
+            {/* Delete Order Button */}
+            <Button
+              variant="destructive"
+              className="w-full h-12 text-base font-semibold"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              disabled={deleteOrderMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+              {t("deleteOrder", {
+                ns: "orders",
+                defaultValue: "Delete Order",
+              })}
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -497,6 +560,28 @@ const OrderDetailsPage: React.FC = () => {
         })}
         fileName={`invoice-order-${order.id}.pdf`}
         widthClass="w-[300px]"
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={() => {
+          if (order) {
+            deleteOrderMutation.mutate(order.id);
+          }
+        }}
+        itemName={`Order #ORD-${order?.id}`}
+        itemType="order"
+        isPending={deleteOrderMutation.isPending}
+        title={t("deleteOrder", {
+          ns: "orders",
+          defaultValue: "Delete Order",
+        })}
+        description={t("deleteOrderConfirmation", {
+          ns: "orders",
+          defaultValue: `Are you sure you want to delete Order #ORD-${order?.id}? This action cannot be undone.`,
+        })}
       />
     </div>
   );

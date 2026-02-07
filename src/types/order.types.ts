@@ -106,11 +106,12 @@ export interface Order {
   dining_table_id?: number | null;
   table?: { id: number; name: string } | null;
   notes?: string | null;
-  order_date: string;
-  due_date?: string | null;
-  pickup_date?: string | null;
-  delivered_date?: string | null;
-  completed_at?: string | null;
+    order_date: string;
+    due_date?: string | null;
+    pickup_date?: string | null;
+    delivered_date?: string | null;
+    expected_delivery_date?: string | null;
+    completed_at?: string | null;
   whatsapp_text_sent?: boolean;
   whatsapp_pdf_sent?: boolean;
   received?: boolean;

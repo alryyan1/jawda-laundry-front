@@ -44,6 +44,7 @@ import {
     Calendar,
     ShoppingBag,
     DollarSign,
+    Trash2,
 } from 'lucide-react';
 
 const CustomersListPage: React.FC = () => {
@@ -80,8 +81,10 @@ const CustomersListPage: React.FC = () => {
             setSelectedRows({}); // Clear selection after delete
             setCustomerToDelete(null);
         },
-        onError: (err) => {
-            toast.error(err.message || t('customerDeleteFailed', { ns: 'customers' }));
+        onError: (err: any) => {
+            // Extract error message from API response
+            const errorMessage = err?.response?.data?.message || err?.message || t('customerDeleteFailed', { ns: 'customers' });
+            toast.error(errorMessage);
             setCustomerToDelete(null);
         }
     });
@@ -166,19 +169,12 @@ const CustomersListPage: React.FC = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => setCustomerToEdit(customer)}>
-                                <Edit3 className="mr-2 h-4 w-4" />
-                                {t('edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/ledger`)}>
-                                <FileText className="mr-2 h-4 w-4" />
-                                {t('ledger')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/price-list`)}>
-                                <DollarSign className="mr-2 h-4 w-4" />
-                                {t('priceList', { defaultValue: 'Price List' })}
+                            <DropdownMenuItem 
+                                onClick={() => setCustomerToDelete(customer)}
+                                className="text-destructive focus:text-destructive"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t('delete')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
@@ -341,22 +337,15 @@ const CustomersListPage: React.FC = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                                                    <DropdownMenuItem onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setCustomerToEdit(customer);
-                                                    }}>
-                                                        <Edit3 className="mr-2 h-4 w-4" />
-                                                        {t('edit')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/ledger`)}>
-                                                        <FileText className="mr-2 h-4 w-4" />
-                                                        {t('ledger')}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => navigate(`/customers/${customer.id}/price-list`)}>
-                                                        <DollarSign className="mr-2 h-4 w-4" />
-                                                        {t('priceList', { defaultValue: 'Price List' })}
+                                                    <DropdownMenuItem 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCustomerToDelete(customer);
+                                                        }}
+                                                        className="text-destructive focus:text-destructive"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        {t('delete')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

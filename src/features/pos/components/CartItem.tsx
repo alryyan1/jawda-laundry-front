@@ -8,6 +8,8 @@ import type { ServiceOffering, ProductType } from "@/types";
 import { cn } from "@/lib/utils";
 import { SelectSizeDialog } from "./SelectSizeDialog"; // Import the size selection dialog
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/formatters";
+import { useSettings } from "@/context/SettingsContext";
 
 // The CartItem type definition should ideally live in a types file (e.g., src/types/pos.types.ts)
 // but exporting it here makes this component self-describing.
@@ -52,9 +54,14 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
   // Only use the isReadOnly prop, don't make existing order items read-only
   const effectiveReadOnly = isReadOnly;
   const { i18n } = useTranslation(["common", "orders", "services"]);
+  const { getSetting } = useSettings();
   const [isSizeDialogOpen, setIsSizeDialogOpen] = useState(false);
 
   const isDimensionBased = item.productType.is_dimension_based;
+  const currency = getSetting("currency_symbol", "USD");
+  
+  // Calculate the item subtotal (use quoted subtotal if available, otherwise price * quantity)
+  const itemSubtotal = item._quotedSubTotal || item.price * item.quantity;
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -103,6 +110,10 @@ export const CartItemComponent: React.FC<CartItemProps> = ({
             {/* Service Type - Blue */}
             <p className="text-xs font-medium text-blue-500 truncate">
               [{item.serviceOffering.serviceAction?.name || ""} {item.serviceOffering.serviceAction?.description || ""}]
+            </p>
+            {/* Price Display */}
+            <p className="text-sm font-semibold text-gray-700">
+              {formatCurrency(itemSubtotal, currency, i18n.language)}
             </p>
           </div>
 
