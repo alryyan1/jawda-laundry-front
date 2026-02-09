@@ -55,12 +55,12 @@ const COLUMNS: ColumnConfig[] = [
     queryKey: ["orders", "status-screen", "processing"],
   },
   {
-    id: "delivered", // Mapping 'delivered' status to "Ready To Deliver" UI column based on user request/old code
-    title: "READY TO DELIVER",
+    id: "completed",
+    title: "COMPLETED",
     color: "text-green-500",
     borderColor: "border-green-200",
     cardBorderColor: "border-green-400",
-    queryKey: ["orders", "status-screen", "delivered"],
+    queryKey: ["orders", "status-screen", "completed"],
   },
 ];
 
@@ -85,17 +85,16 @@ const OrderStatusScreen: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  const { data: deliveredData, isLoading: isDeliveredLoading } = useQuery({
+  const { data: completedData, isLoading: isCompletedLoading } = useQuery({
     queryKey: COLUMNS[2].queryKey,
-    queryFn: () => getOrders(1, 20, { status: "delivered" }),
+    queryFn: () => getOrders(1, 20, { status: "completed" }),
     refetchInterval: 30000,
   });
 
   const pendingOrders = pendingData?.data || [];
   const processingOrders = processingData?.data || [];
-  const deliveredOrders = deliveredData?.data || [];
-
-  const allOrders = [...pendingOrders, ...processingOrders, ...deliveredOrders];
+  const completedOrders = completedData?.data || [];
+  const allOrders = [...pendingOrders, ...processingOrders, ...completedOrders];
 
   // --- Dnd Sensors ---
   const sensors = useSensors(
@@ -191,8 +190,8 @@ const OrderStatusScreen: React.FC = () => {
             />
             <StatusColumn
               config={COLUMNS[2]}
-              orders={deliveredOrders}
-              isLoading={isDeliveredLoading}
+              orders={completedOrders}
+              isLoading={isCompletedLoading}
               locale={currentLocale}
               navigate={navigate}
             />

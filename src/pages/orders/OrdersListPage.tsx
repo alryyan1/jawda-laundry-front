@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 
 import {
@@ -53,7 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DarkThemeAutocomplete } from "@/components/ui/mui-autocomplete";
+import { Autocomplete, TextField } from "@mui/material";
 
 import { Loader2, FileText, Filter } from "lucide-react";
 import { PaymentsListDialog } from "@/features/orders/components/PaymentsListDialog";
@@ -62,6 +62,7 @@ import OrderItemsDialog from "@/features/orders/components/OrderItemsDialog";
 import MobileOrderCard from "./components/MobileOrderCard";
 import OrdersTableRow from "./components/OrdersTableRow";
 import { OrderStatusTimelineDialog } from "@/features/orders/components/OrderStatusTimelineDialog";
+import { isOrderFullyPaid } from "@/lib/orderUtils";
 
 const OrdersListPage: React.FC = () => {
   const { t, i18n } = useTranslation("orders");
@@ -83,8 +84,8 @@ const OrdersListPage: React.FC = () => {
     categorySequenceSearch?: string;
     showOnlyIncomplete?: boolean;
   }>({
-    dateFrom: format(new Date(), "yyyy-MM-dd"),
-    dateTo: format(new Date(), "yyyy-MM-dd"),
+    dateFrom: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+    dateTo: format(endOfMonth(new Date()), "yyyy-MM-dd"),
     showOnlyIncomplete: false,
   });
   const [selectedOrderForPayments, setSelectedOrderForPayments] =
@@ -569,36 +570,28 @@ const OrdersListPage: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-          <DarkThemeAutocomplete
-            options={[
-              { id: "all", name: t("allCustomers", { ns: "customers" }) },
-              ...customers,
-            ]}
-            getOptionLabel={(option) => {
-              if (option.id === "all") return option.name;
+          <Autocomplete<Customer, false, false, false>
+            options={customers}
+            getOptionLabel={(option: Customer) => {
               // Cast to any to access phone since the union type might be restrictive
               const customer = option as any;
               return customer.phone
                 ? `${customer.name} (${customer.phone})`
                 : customer.name;
             }}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
+            isOptionEqualToValue={(option: Customer, value: Customer) => option.id === value.id}
             value={
-              customers.find((c) => c.id.toString() === filters.customerId) || {
-                id: "all",
-                name: t("allCustomers", { ns: "customers" }),
-              }
+              customers.find((c) => c.id.toString() === filters.customerId) || null
             }
-            onChange={(_, newValue) =>
+            onChange={(_: any, newValue: Customer | null) =>
               setFilters((prev) => ({
                 ...prev,
-                customerId:
-                  newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                customerId: newValue ? newValue.id.toString() : undefined,
               }))
             }
-            filterOptions={(options, { inputValue }) => {
-              const searchTerm = inputValue.toLowerCase();
-              return options.filter((option) => {
+            filterOptions={(options: Customer[], state: any) => {
+              const searchTerm = state.inputValue.toLowerCase();
+              return options.filter((option: Customer) => {
                 const nameMatch = option.name
                   .toLowerCase()
                   .includes(searchTerm);
@@ -609,38 +602,35 @@ const OrdersListPage: React.FC = () => {
                 return nameMatch || phoneMatch;
               });
             }}
-            renderInput={(params) => (
-              <div ref={params.InputProps.ref}>
-                <Input
-                  {...params.inputProps}
-                  placeholder={t("filterByCustomer")}
-                />
-              </div>
+            renderInput={(params: any) => (
+              <TextField
+                {...params}
+                placeholder={t("filterByCustomer")}
+                size="small"
+              />
             )}
           />
-          <DarkThemeAutocomplete
-            options={[{ id: "all", name: t("allProducts") }, ...productTypes]}
-            getOptionLabel={(option) => option.name}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
+          <Autocomplete<ProductType, false, false, false>
+            options={productTypes}
+            getOptionLabel={(option: ProductType) => option.name}
+            isOptionEqualToValue={(option: ProductType, value: ProductType) => option.id === value.id}
             value={
               productTypes.find(
                 (pt) => pt.id.toString() === filters.productTypeId,
-              ) || { id: "all", name: t("allProducts") }
+              ) || null
             }
-            onChange={(_, newValue) =>
+            onChange={(_: any, newValue: ProductType | null) =>
               setFilters((prev) => ({
                 ...prev,
-                productTypeId:
-                  newValue?.id === "all" ? undefined : newValue?.id?.toString(),
+                productTypeId: newValue ? newValue.id.toString() : undefined,
               }))
             }
-            renderInput={(params) => (
-              <div ref={params.InputProps.ref}>
-                <Input
-                  {...params.inputProps}
-                  placeholder={t("filterByProduct")}
-                />
-              </div>
+            renderInput={(params: any) => (
+              <TextField
+                {...params}
+                placeholder={t("filterByProduct")}
+                size="small"
+              />
             )}
           />
           <Input
@@ -667,10 +657,7 @@ const OrdersListPage: React.FC = () => {
         ) : orders.length > 0 ? (
           <div className="space-y-1 sm:space-y-2">
             {orders.map((order) => {
-              const isFullyPaid =
-                order.amount_due === 0 ||
-                (order.total_amount > 0 &&
-                  order.paid_amount >= order.total_amount);
+              const isFullyPaid = isOrderFullyPaid(order);
               return (
                 <MobileOrderCard
                   key={order.id}

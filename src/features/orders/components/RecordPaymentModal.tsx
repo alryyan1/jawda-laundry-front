@@ -52,6 +52,10 @@ const paymentSchema = z.object({
   payment_date: z.string().nonempty({ message: "validation.dateRequired" }),
   transaction_id: z.string().optional().or(z.literal('')),
   notes: z.string().optional().or(z.literal('')),
+  discount_percentage: z.preprocess(
+    (val) => val === '' || val === null || val === undefined ? null : parseFloat(String(val)),
+    z.number().min(0).max(100).nullable().optional()
+  ),
 });
 
 // We only handle 'payment' type in this modal for simplicity. Refunds could be a separate feature.
@@ -61,6 +65,7 @@ type PaymentFormValues = {
   payment_date: string;
   transaction_id?: string;
   notes?: string;
+  discount_percentage?: number | null;
 };
 
 interface RecordPaymentModalProps {
@@ -81,6 +86,8 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { errors }
     } = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentSchema) as any,
@@ -90,8 +97,28 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
             payment_date: format(new Date(), 'yyyy-MM-dd'),
             transaction_id: '',
             notes: '',
+            discount_percentage: null,
         }
     });
+
+    const discountPercentage = watch('discount_percentage');
+    // Calculate original total: if there's already a discount, reverse it; otherwise use current total
+    const originalTotal = order 
+        ? (order.discount_percentage && order.discount_percentage > 0 
+            ? order.total_amount / (1 - (order.discount_percentage / 100))
+            : order.total_amount)
+        : 0;
+    // Calculate discounted total based on the discount percentage entered
+    const discountedTotal = discountPercentage && discountPercentage > 0 
+        ? originalTotal * (1 - (discountPercentage / 100))
+        : originalTotal;
+    // Round the discounted total to 2 decimal places
+    const roundedDiscountedTotal = Math.round(discountedTotal * 100) / 100;
+    
+    // Calculate new amount due based on discounted total
+    const newAmountDue = order ? Math.max(0, roundedDiscountedTotal - (order.paid_amount || 0)) : 0;
+    // Round the amount due to 2 decimal places
+    const roundedAmountDue = Math.round(newAmountDue * 100) / 100;
 
     const paymentMethodOptions = useMemo(() => {
         return PAYMENT_METHODS.map(method => ({
@@ -107,6 +134,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                 amount: amountDue,
                 method: 'cash' as PaymentMethod,
                 payment_date: format(new Date(), 'yyyy-MM-dd'),
+                discount_percentage: order.discount_percentage || null,
             });
         }
         // Reset PDF dialog when payment modal closes
@@ -114,6 +142,25 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
             setShowPdfDialog(false);
         }
     }, [order, isOpen, reset]);
+
+    // Update amount paid field when discount percentage changes
+    useEffect(() => {
+        if (order && isOpen) {
+            // Calculate new amount due based on current discount
+            const originalTotal = order.discount_percentage && order.discount_percentage > 0 
+                ? order.total_amount / (1 - (order.discount_percentage / 100))
+                : order.total_amount;
+            const currentDiscountedTotal = discountPercentage && discountPercentage > 0 
+                ? originalTotal * (1 - (discountPercentage / 100))
+                : originalTotal;
+            // Round the discounted total to 2 decimal places
+            const roundedDiscountedTotal = Math.round(currentDiscountedTotal * 100) / 100;
+            const updatedAmountDue = Math.max(0, roundedDiscountedTotal - (order.paid_amount || 0));
+            // Round the amount due to 2 decimal places
+            const roundedAmountDue = Math.round(updatedAmountDue * 100) / 100;
+            setValue('amount', roundedAmountDue);
+        }
+    }, [discountPercentage, order, isOpen, setValue]);
 
 
     const mutation = useMutation<Payment, Error, RecordPaymentFormData>({
@@ -149,7 +196,11 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
     });
 
     const onSubmit = (data: PaymentFormValues) => {
-        const payload: RecordPaymentFormData = { ...data, type: 'payment' };
+        const payload: RecordPaymentFormData = { 
+            ...data, 
+            type: 'payment',
+            discount_percentage: data.discount_percentage || null,
+        };
         mutation.mutate(payload);
     };
 
@@ -165,7 +216,16 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                         {t('recordPaymentForOrder', {ns:'orders', orderNumber: order.id})}
                     </DialogTitle>
                     <DialogDescription>
-                        {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, currencyCode, i18n.language)}</span>
+                        <div className="space-y-1">
+                            <div>
+                                {t('amountDue', {ns:'orders'})}: <span className="font-semibold text-primary">{formatCurrency(order.amount_due || 0, currencyCode, i18n.language)}</span>
+                            </div>
+                            {order.discount_percentage && order.discount_percentage > 0 && (
+                                <div className="text-sm text-muted-foreground">
+                                    {t('currentDiscount', {ns:'orders', defaultValue: 'Current Discount'})}: {order.discount_percentage}%
+                                </div>
+                            )}
+                        </div>
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4 py-2">
@@ -196,6 +256,27 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({ order, i
                                 )}
                             />
                             {errors.method && <p className="text-sm text-destructive">{t(errors.method.message as string)}</p>}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="discount_percentage">{t('discountPercentage', {ns:'orders', defaultValue: 'Discount Percentage'})} (%)</Label>
+                            <Input 
+                                id="discount_percentage" 
+                                type="number" 
+                                step="0.01" 
+                                min="0" 
+                                max="100"
+                                placeholder="0"
+                                {...register('discount_percentage', { valueAsNumber: true })}
+                            />
+                            {errors.discount_percentage && <p className="text-sm text-destructive">{t(errors.discount_percentage.message as string)}</p>}
+                            {discountPercentage && discountPercentage > 0 && (
+                                <div className="text-sm text-muted-foreground">
+                                    {t('discountedTotal', {ns:'orders', defaultValue: 'Discounted Total'})}: <span className="font-semibold text-green-600">{formatCurrency(roundedDiscountedTotal, currencyCode, i18n.language)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 

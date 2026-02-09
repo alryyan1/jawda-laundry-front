@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfWeek, endOfWeek, startOfDay } from "date-fns";
 
 import {
   Card,
@@ -88,12 +88,15 @@ const StatCard: React.FC<{
   </Card>
 );
 
+export type ReportPeriod = "day" | "week" | "month";
+
 const SalesSummaryPage: React.FC = () => {
   const { t, i18n } = useTranslation(["reports", "common"]);
   const queryClient = useQueryClient();
   const { currencyCode } = useCurrency();
 
   const currentDate = new Date();
+  const [period, setPeriod] = useState<ReportPeriod>("month");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     format(currentDate, "yyyy-MM"),
   );
@@ -102,14 +105,32 @@ const SalesSummaryPage: React.FC = () => {
   const month = parseInt(monthYear[1], 10);
   const year = parseInt(monthYear[0], 10);
 
-  const queryKey = ["dailyRevenueReport", month, year];
+  const getQueryParams = (): { month: number; year: number } | { dateFrom: string; dateTo: string } => {
+    const today = new Date();
+    if (period === "day") {
+      const d = format(startOfDay(today), "yyyy-MM-dd");
+      return { dateFrom: d, dateTo: d };
+    }
+    if (period === "week") {
+      const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+      return {
+        dateFrom: format(weekStart, "yyyy-MM-dd"),
+        dateTo: format(weekEnd, "yyyy-MM-dd"),
+      };
+    }
+    return { month, year };
+  };
+
+  const queryParams = getQueryParams();
+  const queryKey = ["dailyRevenueReport", period, ...(period === "month" ? [month, year] : [queryParams])];
   const {
     data: report,
     isLoading,
     isFetching,
   } = useQuery<DailyRevenueReport, Error>({
     queryKey,
-    queryFn: () => getDailyRevenueReport(month, year),
+    queryFn: () => getDailyRevenueReport(queryParams),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -124,18 +145,44 @@ const SalesSummaryPage: React.FC = () => {
         onRefresh={() => queryClient.invalidateQueries({ queryKey })}
         isRefreshing={isFetching}
       >
-        <TextField
-          id="month"
-          label={t("selectMonth", { ns: "reports", defaultValue: "Select Month" })}
-          type="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          size="small"
-          sx={{ width: 200 }}
-          InputLabelProps={{
-            shrink: true,
-          }}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="report-period-label">
+              {t("reportPeriod", { ns: "reports", defaultValue: "Report by" })}
+            </InputLabel>
+            <Select
+              labelId="report-period-label"
+              id="report-period"
+              value={period}
+              label={t("reportPeriod", { ns: "reports", defaultValue: "Report by" })}
+              onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
+            >
+              <MenuItem value="day">
+                {t("reportByDay", { ns: "reports", defaultValue: "Current day" })}
+              </MenuItem>
+              <MenuItem value="week">
+                {t("reportByWeek", { ns: "reports", defaultValue: "This week" })}
+              </MenuItem>
+              <MenuItem value="month">
+                {t("reportByMonth", { ns: "reports", defaultValue: "This month" })}
+              </MenuItem>
+            </Select>
+          </FormControl>
+          {period === "month" && (
+            <TextField
+              id="month"
+              label={t("selectMonth", { ns: "reports", defaultValue: "Select Month" })}
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              size="small"
+              sx={{ width: 200 }}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          )}
+        </Box>
       </PageHeader>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>

@@ -72,6 +72,8 @@ export interface DailyRevenueReport {
         month: number;
         year: number;
         month_name: string;
+        date_from?: string;
+        date_to?: string;
     };
     summary: {
         total_revenue: number; // Keep for backward compatibility

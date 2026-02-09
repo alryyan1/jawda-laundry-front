@@ -26,6 +26,7 @@ export interface RecordPaymentFormData {
   payment_date: string;
   transaction_id?: string;
   notes?: string;
+  discount_percentage?: number | null;
 }
 
 export interface QuoteItemPayload {
@@ -93,6 +94,7 @@ export interface Order {
   status: OrderStatus;
   order_complete?: boolean;
   total_amount: number;
+  discount_percentage?: number | null;
   paid_amount: number;
   amount_due?: number;
   payment_status?:

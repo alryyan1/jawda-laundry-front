@@ -81,7 +81,7 @@ const DailyRevenuePage: React.FC = () => {
     isFetching,
   } = useQuery<DailyRevenueReport, Error>({
     queryKey,
-    queryFn: () => getDailyRevenueReport(date.month, date.year),
+    queryFn: () => getDailyRevenueReport({ month: date.month, year: date.year }),
   });
 
   const months = Array.from({ length: 12 }, (_, i) => ({

@@ -180,6 +180,11 @@ export const MobileOrderCard: React.FC<MobileOrderCardProps> = ({
             <div className="font-semibold text-sm sm:text-base truncate">
               {formatCurrency(order.total_amount, currencySymbol, "en", 3)}
             </div>
+            {order.discount_percentage && order.discount_percentage > 0 && (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {order.discount_percentage}% {t("discount", { ns: "orders", defaultValue: "discount" })}
+              </div>
+            )}
           </div>
         </div>
 

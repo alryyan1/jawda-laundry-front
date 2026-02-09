@@ -21,6 +21,7 @@ import {
 import type { Order } from "@/types";
 import { OrderStatusBadge } from "@/features/orders/components/OrderStatusBadge";
 import { formatCurrency } from "@/lib/formatters";
+import { isOrderFullyPaid } from "@/lib/orderUtils";
 import { downloadOrderInvoice } from "@/api/orderService";
 import dayjs from "dayjs";
 
@@ -57,9 +58,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
   currencySymbol,
   language,
 }) => {
-  const isFullyPaid =
-    order.amount_due === 0 ||
-    (order.total_amount > 0 && order.paid_amount >= order.total_amount);
+  const isFullyPaid = isOrderFullyPaid(order);
 
   return (
     <TableRow
@@ -158,7 +157,7 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
               {t("markDelivered", { defaultValue: "Mark Delivered" })}
             </Button>
           )}
-          {order.status === "delivered" && (
+          {order.status === "delivered" && !isFullyPaid && (
             <Button
               variant="outline"
               size="sm"
@@ -171,7 +170,14 @@ const OrdersTableRow: React.FC<OrdersTableRowProps> = ({
         </div>
       </TableCell>
       <TableCell className="text-center font-bold text-lg">
-        {formatCurrency(order.total_amount, currencySymbol, language, 3)}
+        <div className="flex flex-col items-center gap-0.5">
+          <span>{formatCurrency(order.total_amount, currencySymbol, language, 3)}</span>
+          {order.discount_percentage && order.discount_percentage > 0 && (
+            <span className="text-xs font-normal text-muted-foreground">
+              {order.discount_percentage}% {t('discount', { ns: 'orders', defaultValue: 'discount' })}
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell
         className={`text-center font-bold text-lg ${order.paid_amount > 0 ? "text-green-600 dark:text-green-500" : ""}`}

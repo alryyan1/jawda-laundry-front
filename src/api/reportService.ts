@@ -59,9 +59,20 @@ export const getOverduePickupOrders = async (
     return data;
 };
 
-export const getDailyRevenueReport = async (month: number, year: number): Promise<DailyRevenueReport> => {
-    const params = { month, year };
-    const { data } = await apiClient.get<{ data: DailyRevenueReport }>('/reports/daily-revenue', { params });
+export type DailyRevenueReportParams =
+    | { month: number; year: number }
+    | { dateFrom: string; dateTo: string };
+
+export const getDailyRevenueReport = async (
+    params: DailyRevenueReportParams
+): Promise<DailyRevenueReport> => {
+    const requestParams =
+        'month' in params
+            ? { month: params.month, year: params.year }
+            : { date_from: params.dateFrom, date_to: params.dateTo };
+    const { data } = await apiClient.get<{ data: DailyRevenueReport }>('/reports/daily-revenue', {
+        params: requestParams,
+    });
     return data.data;
 };
 
